@@ -1,0 +1,42 @@
+name: Publish CommonLibrary to GitHub Packages
+
+on:
+  push:
+    branches: [ main ]
+  workflow_dispatch:
+
+env:
+  DOTNET_VERSION: '8.0.x'
+
+jobs:
+  build-and-publish:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Setup .NET SDK
+        uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: ${{ env.DOTNET_VERSION }}
+          source-url: https://nuget.pkg.github.com/${{ github.repository_owner }}/index.json
+
+      - name: Restore dependencies
+        run: dotnet restore ./CommonLibrary.csproj
+
+      - name: Build project
+        run: dotnet build ./CommonLibrary.csproj --configuration Release --no-restore
+
+      - name: Pack NuGet package
+        run: |
+          dotnet pack ./CommonLibrary.csproj \
+            --configuration Release \
+            --no-build \
+            --output ./nupkg
+
+      - name: Push package to GitHub Packages
+        run: |
+          dotnet nuget push ./nupkg/*.nupkg \
+            --api-key ${{ secrets.GITHUB_TOKEN }} \
+            --source "https://nuget.pkg.github.com/${{ github.repository_owner }}/index.json"
