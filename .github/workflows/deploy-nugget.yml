@@ -8,6 +8,10 @@ on:
 env:
   DOTNET_VERSION: '8.0.x'
 
+permissions:
+  packages: write
+  contents: read
+
 jobs:
   build-and-publish:
     runs-on: ubuntu-latest
@@ -21,6 +25,8 @@ jobs:
         with:
           dotnet-version: ${{ env.DOTNET_VERSION }}
           source-url: https://nuget.pkg.github.com/${{ github.repository_owner }}/index.json
+        env:
+          NUGET_AUTH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 
       - name: Restore dependencies
         run: dotnet restore ./CommonLibrary.csproj
