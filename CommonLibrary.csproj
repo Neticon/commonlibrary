@@ -4,13 +4,17 @@
     <TargetFramework>net8.0</TargetFramework>
     <ImplicitUsings>enable</ImplicitUsings>
     <Nullable>enable</Nullable>
-    <!-- Recomendado para NuGet -->
+
+    <!-- NuGet metadata -->
     <Version>1.0.0</Version>
     <Authors>Djordje Stojakovic</Authors>
     <Company>Neticon</Company>
     <PackageId>CommonLibrary</PackageId>
     <Description>CommonLibrary for internal services</Description>
     <RepositoryUrl>https://github.com/Neticon/commonlibrary</RepositoryUrl>
+
+    <!-- Exclude default output from package -->
+    <IncludeBuildOutput>false</IncludeBuildOutput>
   </PropertyGroup>
 
   <ItemGroup>
@@ -23,6 +27,13 @@
     <PackageReference Include="Newtonsoft.Json" Version="13.0.3" />
     <PackageReference Include="Npgsql" Version="9.0.3" />
     <PackageReference Include="StackExchange.Redis" Version="2.8.41" />
+  </ItemGroup>
+
+  <!-- Manually include only your compiled output -->
+  <ItemGroup>
+    <None Include="bin\Release\net8.0\*.dll" Pack="true" PackagePath="lib\net8.0" />
+    <None Include="bin\Release\net8.0\*.xml" Pack="true" PackagePath="lib\net8.0" />
+    <None Include="bin\Release\net8.0\*.pdb" Pack="true" PackagePath="lib\net8.0" />
   </ItemGroup>
 
 </Project>

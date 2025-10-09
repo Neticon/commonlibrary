@@ -31,15 +31,11 @@ jobs:
       - name: Restore dependencies
         run: dotnet restore ./CommonLibrary.csproj
 
-      - name: Build project
+      - name: Build project (Release)
         run: dotnet build ./CommonLibrary.csproj --configuration Release --no-restore
 
-      - name: Pack NuGet package
-        run: |
-          dotnet pack ./CommonLibrary.csproj \
-            --configuration Release \
-            --no-build \
-            --output ./nupkg
+      - name: Pack NuGet package (manual includes only)
+        run: dotnet pack ./CommonLibrary.csproj --configuration Release --no-build --output ./nupkg
 
       - name: Push package to GitHub Packages
         run: |
