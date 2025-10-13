@@ -46,13 +46,13 @@ namespace VenueGenerationService
             var templateJs = await _s3Servce.DownloadFileStringAsync(S3Bucket, JsTemplateFile);
 
             var venuesData = await GetVenueData(tenantId);
-            var jsValue = JsonConvert.SerializeObject(venuesData);
+            var jsValue = JsonConvert.SerializeObject(venuesData, Formatting.None);
             templateJs = templateJs.Replace(VenueDataPlaceholder, jsValue);
 
             var tenantData = await GetTenantData(tenantId);
             if (tenantData == null)
                 throw new Exception("Failed to get domains hash and org_code");
-            templateJs = templateJs.Replace(DomHashPlaceholder, JsonConvert.SerializeObject(tenantData.domains));
+            templateJs = templateJs.Replace(DomHashPlaceholder, JsonConvert.SerializeObject(tenantData.web_pages));
 
             var org_code = tenantData.org_code;
 
@@ -60,9 +60,10 @@ namespace VenueGenerationService
             templateJs = templateJs.Replace(TimestampPlaceholder, new DateTimeOffset(DateTime.UtcNow).ToUnixTimeSeconds().ToString());
             templateJs = templateJs.Replace(UISettingsPlaceholder, JsonConvert.SerializeObject(tenantData.library));
 
-            templateJs = ProcessLibrary(templateJs, SecretKey);
+            templateJs = ProcessLibrary(templateJs);
+
             //add timestamp after to be able to compare ob
-            templateJs = templateJs.Replace(TimestampPlaceholder, new DateTimeOffset(DateTime.UtcNow).ToUnixTimeSeconds().ToString());
+
             await WriteJsFileToS3(org_code, templateJs);
         }
 
@@ -96,12 +97,12 @@ namespace VenueGenerationService
             if (tenant == null)
                 return null;
             var domainsHash = new List<string>();
-            foreach (var domain in tenant.domains)
+            foreach (var domain in tenant.web_pages)
             {
                 domainsHash.Add(CreateDomainHash(domain));
             }
 
-            tenant.domains = domainsHash;
+            tenant.web_pages = domainsHash;
 
             return tenant;
         }
@@ -113,39 +114,34 @@ namespace VenueGenerationService
             return BitConverter.ToString(hash).Replace("-", "").ToLower();
         }
 
-        public bool ValidateLibrary(string jsContent, string secretKey)
-        {
-            // Find the HMAC in the content
-            var hmacStart = jsContent.IndexOf("\"oHS\": \"") + 8;
-            var hmacEnd = jsContent.IndexOf("\"", hmacStart);
-            var extractedHmac = jsContent.Substring(hmacStart, hmacEnd - hmacStart);
-            // Create content with zeros where the HMAC was
-            var contentWithoutHmac = jsContent.Remove(hmacStart, extractedHmac.Length)
-                                             .Insert(hmacStart, new string('0', HmacLength));
-            // Calculate what the HMAC should be
-            var byteLength = Encoding.UTF8.GetByteCount(contentWithoutHmac);
-            var combinedSecret = $"{secretKey}{byteLength}";
-            var expectedHmac = GenerateHmac(contentWithoutHmac, combinedSecret);
-            // Compare with constant-time comparison
-            return CryptographicEquals(extractedHmac, expectedHmac);
-        }
-
-        private string ProcessLibrary(string jsContent, string secretKey)
+        private string ProcessLibrary(string jsContent)
         {
             // Perform the actual replacement
-            return jsContent.Replace(ObfuscationPlaceholder, GetObfuscationValue(jsContent, secretKey));
+            return jsContent.Replace(ObfuscationPlaceholder, GetObfuscationValue(jsContent));
         }
 
-        private string GetObfuscationValue(string jsContent, string secretKey)
+        private string GetObfuscationValue(string jsContent)
         {
             var originalLength = Encoding.UTF8.GetByteCount(jsContent);
             var lengthAfterReplacement = originalLength; // Same length replacement
                                                          // Create temporary content with placeholder to calculate HMAC
             var tempContent = jsContent.Replace(ObfuscationPlaceholder, new string('0', HmacLength));
+            tempContent = tempContent
+                .Replace("\r", "")
+                .Replace("\uFEFF", "")
+                .Replace("\u200B", "")
+                .Replace("\u200C", "")
+                .Replace("\u200D", "")
+                .Normalize(NormalizationForm.FormC);
+
+            tempContent = CommonHelperFunctions.ReplaceWhitespace(tempContent, "");
             var byteLength = Encoding.UTF8.GetByteCount(tempContent);
-            // Generate HMAC using the byte length as part of the secret
-            var combinedSecret = $"{secretKey}{byteLength}";
-            var hmac = GenerateHmac(tempContent, combinedSecret);
+            var hmac = GenerateHmac(tempContent, byteLength.ToString());
+            tempContent = tempContent.TrimEnd();
+            var bytes = Encoding.UTF8.GetBytes(tempContent);
+            Console.WriteLine(Encoding.UTF8.EncodingName);
+            var a = tempContent.TrimStart('\uFEFF');
+            var bytes1 = Encoding.UTF8.GetBytes(a);
             return hmac;
         }
 
@@ -182,7 +178,7 @@ namespace VenueGenerationService
             else
                 domains.Add(domainsHash.Trim('"'));
 
-            var oHS = GetValueFromFile("oHS:", ",vDT", templateJs).Trim('\'').Trim('"');
+            var oHS = GetValueFromFile("oHS:", ",", templateJs).Trim('\'').Trim('"');
 
             //var oHS = GetObfuscationValue(templateJs, SecretKey);
             return new Tuple<List<string>, string>(domains, oHS);
@@ -216,7 +212,7 @@ namespace VenueGenerationService
 
         private class TenantData
         {
-            public List<string> domains { get; set; }
+            public List<string> web_pages { get; set; }
             public string org_code { get; set; }
             public object library { get; set; } 
         }

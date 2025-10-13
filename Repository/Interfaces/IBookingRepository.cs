@@ -14,5 +14,6 @@ namespace CommonLibrary.Repository.Interfaces
         Task<DoOperationResponse<Booking>> SaveBooking(Booking data);
         Task<BookingViewModel> GetBooking(Guid id);
         Task<DoOperationResponse<Booking>> UpdateBooking(Object model);
+        Task<string> GetBookingReason(Guid id);
     }
 }

@@ -6,6 +6,7 @@ using Microsoft.Extensions.Configuration;
 using Newtonsoft.Json;
 using ServicePortal.API.Infrastructure.Repository;
 using ServicePortal.Domain.PSQL;
+using System.Text.Json.Nodes;
 
 namespace CommonLibrary.Repository
 {
@@ -41,6 +42,21 @@ namespace CommonLibrary.Repository
             if(queryResult.success && queryResult.rows != null && queryResult.rows.Count > 0)
             {
                 return JsonConvert.DeserializeObject<BookingViewModel>(JsonConvert.SerializeObject(queryResult.rows[0]));
+            }
+            return null;
+        }
+
+        public async Task<string> GetBookingReason(Guid id)
+        {
+            var fieldName = "u_reason";
+            var fieldsDictionary = new Dictionary<string, string> { { fieldName, "\"\"" } };
+            var filters = new Dictionary<string, string> { { "booking_id", $"\"{id}\"" }, { "block_status", "{\"values\": [\"SCHEDULED\",\"RESCHEDULED\"], \"operator\": \"IN\"}" } };
+            var query = GenerateDoSelectQuery(fieldsDictionary, filters, meta._schema, meta._table);
+            var queryResult = await ExecuteDoSelectCommand(query);
+            if (queryResult.success && queryResult.rows != null && queryResult.rows.Count > 0)
+            {
+                var result = JsonConvert.DeserializeObject<dynamic>(JsonConvert.SerializeObject(queryResult.rows[0]));
+                return result[fieldName];
             }
             return null;
         }
