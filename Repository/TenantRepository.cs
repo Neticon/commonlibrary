@@ -2,7 +2,6 @@
 using CommonLibrary.Repository.Interfaces;
 using Microsoft.Extensions.Configuration;
 using ServicePortal.API.Infrastructure.Repository;
-using ServicePortal.Domain.Entities;
 
 namespace CommonLibrary.Repository
 {

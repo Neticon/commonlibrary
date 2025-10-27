@@ -1,11 +1,9 @@
 ﻿using Amazon;
-using Amazon.CognitoIdentityProvider;
-using Amazon.Runtime;
 using Amazon.S3;
 using Amazon.S3.Model;
 using Amazon.SecurityToken;
 using Amazon.SecurityToken.Model;
-using StackExchange.Redis;
+using ServicePortal.Application.Models;
 using System.Text;
 
 namespace CommonLibrary.Integrations
@@ -84,8 +82,13 @@ namespace CommonLibrary.Integrations
             return GetPublicUrl(bucketName, key);
         }
 
-        public async Task<string> UploadStreamAsync(string bucketName, string key, Stream stream, string contentType = "application/octet-stream", CancellationToken cancellationToken = default)
+        public async Task<string> UploadStreamAsync(string bucketName, string key, Stream stream, string uploadedBy, double? expireSeconds, string contentType = "application/octet-stream", CancellationToken cancellationToken = default)
         {
+            var cacheControl = "public";
+            if (expireSeconds.HasValue)
+            {
+                cacheControl = cacheControl + $", max-age={expireSeconds}";
+            }
             await InitializeClient();
             var putRequest = new PutObjectRequest
             {
@@ -93,6 +96,16 @@ namespace CommonLibrary.Integrations
                 Key = key,
                 InputStream = stream,
                 ContentType = contentType,
+                Metadata =
+                {
+                    ["x-amz-meta-uploaded-by"] = uploadedBy
+                },
+                Headers =
+                {
+                    ContentType = contentType,
+                    Expires = expireSeconds != null ? DateTime.UtcNow.AddSeconds(expireSeconds.Value) : null,
+                    CacheControl = cacheControl
+                }
             };
 
             await _s3Client.PutObjectAsync(putRequest, cancellationToken);
@@ -135,6 +148,55 @@ namespace CommonLibrary.Integrations
             using var reader = new StreamReader(stream, encoding, detectEncodingFromByteOrderMarks: true, leaveOpen: true);
             stream.Position = 0; // reset to beginning
             return await reader.ReadToEndAsync();
+        }
+
+        public async Task<List<S3FileMetadata>> ListFilesAsync(
+        string bucketName, string prefix,
+        string fileExtension = ".webp",
+        string? fileNameStartsWith = null)
+        {
+            await InitializeClient();
+            var files = new List<S3FileMetadata>();
+            string continuationToken = null;
+            do
+            {
+                var request = new ListObjectsV2Request
+                {
+                    BucketName = bucketName,
+                    Prefix = prefix.EndsWith("/") ? prefix : prefix + "/",
+                    ContinuationToken = continuationToken
+                };
+                var response = await _s3Client.ListObjectsV2Async(request);
+                var filtered = response.S3Objects
+                    .Where(o =>
+                        o.Key.EndsWith(fileExtension, StringComparison.OrdinalIgnoreCase) &&
+                        (fileNameStartsWith == null ||
+                         Path.GetFileName(o.Key).StartsWith(fileNameStartsWith, StringComparison.OrdinalIgnoreCase)))
+                    .Select(o => new S3FileMetadata
+                    {
+                        Key = o.Key,
+                        Size = o.Size,
+                        LastModified = o.LastModified
+                    });
+                files.AddRange(filtered);
+                continuationToken = response.IsTruncated.Value ? response.NextContinuationToken : null;
+            } while (continuationToken != null);
+            return files;
+        }
+
+        public async Task DeleteFileAsync(string bucket,string key)
+        {
+            await InitializeClient();
+            var request = new DeleteObjectRequest
+            {
+                BucketName = bucket,
+                Key = key // e.g., "images/output.webp"
+            };
+            var response = await _s3Client.DeleteObjectAsync(request);
+            if (response.HttpStatusCode != System.Net.HttpStatusCode.NoContent)
+            {
+                throw new Exception($"Failed to delete '{key}' from bucket '{bucket}'");
+            }
         }
 
         private static string GetContentType(string filePath)

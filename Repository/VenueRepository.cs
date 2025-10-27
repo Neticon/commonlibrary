@@ -2,12 +2,6 @@
 using CommonLibrary.Repository.Interfaces;
 using Microsoft.Extensions.Configuration;
 using ServicePortal.API.Infrastructure.Repository;
-using ServicePortal.Domain.Entities;
-using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
 
 namespace CommonLibrary.Repository
 {
@@ -25,7 +19,7 @@ namespace CommonLibrary.Repository
             var filters = new Dictionary<string, string>() { { "venue_id", $"\"{id}\"" } };
             var query = GenerateDoSelectQuery(fields, filters, meta._schema, meta._table);
             var result = await ExecuteDoSelectCommand(query);
-            if(result.success && result.rows.Count > 0)
+            if (result.success && result.rows.Count > 0)
             {
                 return result.rows.First().time_zone;
             }

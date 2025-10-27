@@ -18,18 +18,18 @@ namespace CommonLibrary.Repository
         {
         }
 
-        public async Task<DoOperationResponse<Booking>> SaveBooking(Booking data)
+        public async Task<GraphAPIResponse<Booking>> SaveBooking(Booking data)
         {
             var fieldsDictionary = ObjectConverters.ToPropertyDictionary(data, true);
             var query = GenerateDoOperationsQuery(fieldsDictionary, new Dictionary<string, string>(), meta._schema, meta._table, DoOperationQueryType.insert);
-            var queryResult = await ExecuteDoOperationsCommand(query);
+            var queryResult = await ExecuteStandardCommand(query);
             return queryResult;
         }
 
-        public async Task<DoOperationResponse<Booking>> UpdateBooking(Object model)
+        public async Task<GraphAPIResponse<Booking>> UpdateBooking(Object model)
         {
             var query = GenerateDoOperationsQuery(model, meta._schema, meta._table, DoOperationQueryType.update);
-            var queryResult = await ExecuteDoOperationsCommand(query);
+            var queryResult = await ExecuteStandardCommand(query);
             return queryResult;
         }
 

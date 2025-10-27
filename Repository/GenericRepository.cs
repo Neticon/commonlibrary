@@ -21,7 +21,7 @@ namespace ServicePortal.API.Infrastructure.Repository
             _connectionString = Environment.GetEnvironmentVariable("PSQLDB_CONNECTION_STRING");
         }
 
-        public async Task<DoOperationResponse<T>> ExecuteDoOperationsCommand(string query)
+        public async Task<GraphAPIResponse<T>> ExecuteStandardCommand(string query)
         {
             using (var conn = new NpgsqlConnection(_connectionString))
             {
@@ -33,7 +33,7 @@ namespace ServicePortal.API.Infrastructure.Repository
                         var commandResult = await command.ExecuteReaderAsync();
                         while (await commandResult.ReadAsync())
                         {
-                            var psqlResult = JsonConvert.DeserializeObject<DoOperationResponse<T>>(commandResult.GetValue(0).ToString());
+                            var psqlResult = JsonConvert.DeserializeObject<GraphAPIResponse<T>>(commandResult.GetValue(0).ToString());
                             if (!psqlResult.success)
                                 throw new PsqlResponseFailException(JsonConvert.SerializeObject(psqlResult));
                             return psqlResult;

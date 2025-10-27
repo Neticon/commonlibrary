@@ -79,7 +79,7 @@ public static class ObjectEncryption
             }
             else if (value.Type == JTokenType.Object)
             {
-                ProcessObject((JObject)value, key, fieldsToEncrypt, encrypt);
+                ProcessJObject((JObject)value, key, fieldsToEncrypt, encrypt);
             }
             else if (value.Type == JTokenType.Array)
             {
@@ -87,7 +87,7 @@ public static class ObjectEncryption
                 {
                     if (item.Type == JTokenType.Object)
                     {
-                        ProcessObject((JObject)item, key, fieldsToEncrypt, encrypt);
+                        ProcessJObject((JObject)item, key, fieldsToEncrypt, encrypt);
                     }
                 }
             }
@@ -102,6 +102,9 @@ public static class ObjectEncryption
         foreach (var prop in type.GetProperties(BindingFlags.Public | BindingFlags.Instance))
         {
             if (!prop.CanRead || !prop.CanWrite) continue;
+            //skipArrays, if it is nececearly add implementation for that as well, but for now only string field should support encryption
+            if (type.IsGenericType) // && type.GetGenericArguments()[0] != typeof(string))
+                continue; 
 
             var value = prop.GetValue(obj);
 
@@ -117,12 +120,12 @@ public static class ObjectEncryption
                 {
                     foreach (var item in (IEnumerable)value)
                     {
-                        ProcessObject(item, key, encrypt);
+                        ProcessObject(item, key, fieldsToEncrypt, encrypt);
                     }
                 }
                 else
                 {
-                    ProcessObject(value, key, encrypt);
+                    ProcessObject(value, key, fieldsToEncrypt, encrypt);
                 }
             }
         }

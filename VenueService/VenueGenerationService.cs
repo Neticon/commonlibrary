@@ -76,20 +76,20 @@ namespace VenueGenerationService
         private async Task WriteJsFileToS3(string orgCode, string jsContent)
         {
 
-            var resp = await _s3Servce.UploadStreamAsync(S3Bucket, $"r/{orgCode}/{JSFilename}", new MemoryStream(Encoding.UTF8.GetBytes(jsContent)), "application/javascript");
+            var resp = await _s3Servce.UploadStreamAsync(S3Bucket, $"r/{orgCode}/{JSFilename}", new MemoryStream(Encoding.UTF8.GetBytes(jsContent)),"web-api", null, "application/javascript");
         }
 
         private async Task<List<object>> GetVenueData(string tenantId)
         {
             var query = PredefinedQueryPatterns.GET_VENUE_DATA_REPLACEMENT_JS_QUERY.Replace(PredefinedQueryPatternsReplacements.GET_VENUE_DATA_REPLACEMENT_JS_TENANT, tenantId);
-            var results = await _repository.ExecuteDoOperationsCommand(query);
+            var results = await _repository.ExecuteStandardCommand(query);
             return results.rows;
         }
 
         private async Task<TenantData> GetTenantData(string tenantId)
         {
             var query = PredefinedQueryPatterns.GET_TENANT_REPLACEMENT_JS_QUERY.Replace(PredefinedQueryPatternsReplacements.GET_VENUE_DATA_REPLACEMENT_JS_TENANT, tenantId);
-            var results = await _repository.ExecuteDoOperationsCommand(query);
+            var results = await _repository.ExecuteStandardCommand(query);
             var tenantData = results.rows.Select(q => JsonConvert.DeserializeObject<TenantData>(q.ToString()));
             if (tenantData.Count() == 0)
                 return null;

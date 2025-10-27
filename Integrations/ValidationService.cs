@@ -183,19 +183,28 @@ namespace CommonLibrary.Integrations
             }
         }
 
-        public async Task<RedisDeviceIntel> GetRedisDeviceIntel(string email, string phone, string ip)
+        public async Task<RedisDeviceIntel> GetRedisDeviceIntel (string email, string phone, string ip)
         {
-            Console.WriteLine("VALUES=>"+email + "," + phone + "," + ip);
-            var keys = new List<string> { GetRedisKey(_venueGenerationService.GenerateHmac(email, "")), GetRedisKey(_venueGenerationService.GenerateHmac(phone, "")), GetRedisKey(_venueGenerationService.GenerateHmac(ip, "")) };
+            Console.WriteLine("VALUES=>" + email + "," + phone + "," + ip);
+            var keys = new List<string>();
+            if (!string.IsNullOrEmpty(email))
+                keys.Add(GetRedisKey(_venueGenerationService.GenerateHmac(email, "")));
+            if (!string.IsNullOrEmpty(phone))
+                GetRedisKey(_venueGenerationService.GenerateHmac(phone, ""));
+            if (!string.IsNullOrEmpty(ip))
+                GetRedisKey(_venueGenerationService.GenerateHmac(ip, ""));
             Console.WriteLine("KEYS=>" + string.Join(",", keys));
             var redisResult = await _redisService.MGet(keys);
             Console.WriteLine("REDIS=>" + string.Join(",", redisResult));
+            //some key not found - not valid
             foreach (var result in redisResult)
             {
                 if (string.IsNullOrEmpty(result))
                     return null;
             }
-            var phoneValidation = JsonConvert.DeserializeObject<PhoneValidationRedisModel>(redisResult[1]);
+            var phoneValidation = new PhoneValidationRedisModel();
+            if(!string.IsNullOrEmpty(phone))
+                phoneValidation = JsonConvert.DeserializeObject<PhoneValidationRedisModel>(redisResult[1]);
             return new RedisDeviceIntel
             {
                 EmailValidation = redisResult[0],
@@ -239,6 +248,13 @@ namespace CommonLibrary.Integrations
             //localhost
             if (ip == "::1")
                 return;
+            var ipInfo = GetIpData(ip);
+            var hashedIp = _venueGenerationService.GenerateHmac(ip, "");
+            await SaveDeviceIntelRecord(Guid.NewGuid(), "", "IP", origin, JsonConvert.SerializeObject(ipInfo), hashedIp, true);
+        }
+
+        public async Task<GeoIPResponse> GetIpData(string ip)
+        {
             using (var reader = new DatabaseReader("../external_path/GeoIP2-City.mmdb"))
             {
                 var response = reader.City(ip);
@@ -247,8 +263,7 @@ namespace CommonLibrary.Integrations
                 settings.Converters.Add(new MaxMindNetworkConverter());
 
                 var dbResponseFromat = JsonConvert.DeserializeObject<GeoIPResponse>(JsonConvert.SerializeObject(response, settings));
-                var hashedIp = _venueGenerationService.GenerateHmac(ip, "");
-                await SaveDeviceIntelRecord(Guid.NewGuid(), "", "IP", origin, JsonConvert.SerializeObject(dbResponseFromat), hashedIp, true);
+                return dbResponseFromat;
             }
         }
 

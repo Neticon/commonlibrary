@@ -1,4 +1,5 @@
 ﻿using CommonLibrary.Integrations.Model;
+using CommonLibrary.Models;
 
 namespace CommonLibrary.Integrations
 {
@@ -7,5 +8,6 @@ namespace CommonLibrary.Integrations
         Task<ValueTuple<int, string>> ValidateRequest(ValidateRequest data, bool apiCall = false);
         Task<RedisDeviceIntel> GetRedisDeviceIntel(string email, string phone, string ip);
         Task ValidateIp(string ip, int origin);
+        Task<GeoIPResponse> GetIpData(string ip);
     }
 }

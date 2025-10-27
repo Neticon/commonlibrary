@@ -11,9 +11,9 @@ namespace CommonLibrary.Repository.Interfaces
 {
     public interface IBookingRepository
     {
-        Task<DoOperationResponse<Booking>> SaveBooking(Booking data);
+        Task<GraphAPIResponse<Booking>> SaveBooking(Booking data);
         Task<BookingViewModel> GetBooking(Guid id);
-        Task<DoOperationResponse<Booking>> UpdateBooking(Object model);
+        Task<GraphAPIResponse<Booking>> UpdateBooking(Object model);
         Task<string> GetBookingReason(Guid id);
     }
 }

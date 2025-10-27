@@ -10,7 +10,11 @@ namespace CommonLibrary.Models
     public class ServiceResponse
     {
         public object Result { get; set; }
-        public int StatusCode { get; set; }
-        public string ResultJson => JsonConvert.SerializeObject(Result);
+        public int StatusCode { get; set; } = 200;
+        public string ResultJson => JsonConvert.SerializeObject(Result, Newtonsoft.Json.Formatting.None,
+                                                                        new JsonSerializerSettings
+                                                                        {
+                                                                            NullValueHandling = NullValueHandling.Ignore
+                                                                        });
     }
 }
