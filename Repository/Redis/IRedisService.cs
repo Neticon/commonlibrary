@@ -11,5 +11,6 @@ namespace CommonLibrary.Repository.Redis
         Task<RedisResult> ExecuteCommand(string command);
         Task<long> ExecuteHashIncrement(string key, string field, long inc = 1);
         Task<List<string>> MGet(List<string> keys);
+        Task<Dictionary<string, HashEntry[]>> GetHashValuesByPattern(string pattern);
     }
 }

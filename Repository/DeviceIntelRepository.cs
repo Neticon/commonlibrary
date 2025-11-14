@@ -33,7 +33,7 @@ namespace CommonLibrary.Repository
             var filter = new Dictionary<string, string>() { { "id", $"\"{id}\"" }, { "type", $"\"{type}\"" } };
             var fileds = new Dictionary<string, string>() { { "intel", $"{intel}" }, { "create_dt", $"\"{DateTime.UtcNow.ToString("yyyy-MM-dd HH:mm:ss.ffffff")}\"" } };
             var query = GenerateDoOperationsQuery(fileds, filter, meta._schema, meta._table, Helpers.DoOperationQueryType.update);
-            var queryResult = await ExecuteStandardCommand(query);
+            //var queryResult = await ExecuteStandardCommand(query);
             return queryResult.success;
         }
 

@@ -1,16 +1,15 @@
 ﻿using CommonLibrary.Domain.Entities;
 using CommonLibrary.Helpers;
 using CommonLibrary.Integrations.Model;
+using CommonLibrary.Models;
 using CommonLibrary.Repository.Interfaces;
 using Microsoft.Extensions.Configuration;
 using Newtonsoft.Json;
-using ServicePortal.API.Infrastructure.Repository;
 using ServicePortal.Domain.PSQL;
-using System.Text.Json.Nodes;
 
 namespace CommonLibrary.Repository
 {
-    public class BookingRepository : GenericRepository<Booking>, IBookingRepository 
+    public class BookingRepository : GenericEntityRepository<Booking>, IBookingRepository
     {
         private static (string _table, string _schema) meta = BaseEntity.GetMeta<Booking>();
 
@@ -21,7 +20,8 @@ namespace CommonLibrary.Repository
         public async Task<GraphAPIResponse<Booking>> SaveBooking(Booking data)
         {
             var fieldsDictionary = ObjectConverters.ToPropertyDictionary(data, true);
-            var query = GenerateDoOperationsQuery(fieldsDictionary, new Dictionary<string, string>(), meta._schema, meta._table, DoOperationQueryType.insert);
+            var payload = new GraphApiPayload { data = data };
+            var query = GenerateDoOperationsQuery(data, meta._schema, meta._table, DoOperationQueryType.insert);
             var queryResult = await ExecuteStandardCommand(query);
             return queryResult;
         }
@@ -35,13 +35,17 @@ namespace CommonLibrary.Repository
 
         public async Task<BookingViewModel> GetBooking(Guid id)
         {
-            var fieldsDictionary = ObjectConverters.ToPropertyDictionary(new BookingViewModel(), false);
+            var fieldsDictionary = ObjectConverters.ToPropertyDictionary(new BookingViewModel(), true);
             var filters = new Dictionary<string, string> { { "booking_id", $"\"{id}\"" }, { "block_status", "{\"values\": [\"SCHEDULED\",\"RESCHEDULED\"], \"operator\": \"IN\"}" } };
             var query = GenerateDoSelectQuery(fieldsDictionary, filters, meta._schema, meta._table);
             var queryResult = await ExecuteDoSelectCommand(query);
-            if(queryResult.success && queryResult.rows != null && queryResult.rows.Count > 0)
+            if (queryResult.success && queryResult.rows != null && queryResult.rows.Count > 0)
             {
-                return JsonConvert.DeserializeObject<BookingViewModel>(JsonConvert.SerializeObject(queryResult.rows[0]));
+                var result = JsonConvert.DeserializeObject<BookingViewModel>(JsonConvert.SerializeObject(queryResult.rows[0]));
+                if (!string.IsNullOrEmpty(result.u_reason) && result.u_reason.StartsWith("SRV"))
+                    result.service_id = result.u_reason;
+                result.u_reason = null;
+                return result;
             }
             return null;
         }

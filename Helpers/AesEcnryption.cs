@@ -17,7 +17,7 @@ namespace CommonLibrary.Helpers
         public static string Encrypt(string plainText, string key)
         {
             if (string.IsNullOrEmpty(plainText))
-                throw new ArgumentNullException(nameof(plainText));
+                return plainText;
             if (string.IsNullOrEmpty(key))
                 throw new ArgumentNullException(nameof(key));
 

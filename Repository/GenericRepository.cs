@@ -20,13 +20,13 @@ namespace ServicePortal.API.Infrastructure.Repository
            // Console.WriteLine("TEST CONSTRUCTOR=" + Environment.GetEnvironmentVariable("PSQLDB_CONNECTION_STRING"));
             _connectionString = Environment.GetEnvironmentVariable("PSQLDB_CONNECTION_STRING");
         }
-
-        public async Task<GraphAPIResponse<T>> ExecuteStandardCommand(string query)
+        
+        public async Task<GraphAPIResponse<T>> ExecuteStandardCommand(NpgsqlCommand query)
         {
             using (var conn = new NpgsqlConnection(_connectionString))
             {
                 conn.Open();
-                using (var command = new NpgsqlCommand(query, conn))
+                using (var command = query)
                 {
                     try
                     {
@@ -35,7 +35,12 @@ namespace ServicePortal.API.Infrastructure.Repository
                         {
                             var psqlResult = JsonConvert.DeserializeObject<GraphAPIResponse<T>>(commandResult.GetValue(0).ToString());
                             if (!psqlResult.success)
-                                throw new PsqlResponseFailException(JsonConvert.SerializeObject(psqlResult));
+                            {
+                                if (psqlResult.stage == "validation" || psqlResult.stage == "operation")
+                                    throw new PsqlResponseFailException(JsonConvert.SerializeObject(psqlResult));
+                                else
+                                    throw new Exception("PSQL Error");
+                            }
                             return psqlResult;
                         }
                     }
@@ -138,6 +143,31 @@ namespace ServicePortal.API.Infrastructure.Repository
             return default;
         }
 
+        public async Task<string> ExecuteCommandString(NpgsqlCommand query)
+        {
+            using (var conn = new NpgsqlConnection(_connectionString))
+            {
+                conn.Open();
+                using (var command = query)
+                {
+                    query.Connection = conn;
+                    try
+                    {
+                        var commandResult = await command.ExecuteReaderAsync();
+                        while (commandResult.Read())
+                        {
+                            return commandResult.GetValue(0).ToString();
+                        }
+                    }
+                    catch (Exception ex)
+                    {
+                        throw ex;
+                    }
+                }
+            }
+            return default;
+        }
+
         public async Task<T> ExecuteCommandTyped(string query)
         {
             using (var conn = new NpgsqlConnection(_connectionString))
@@ -193,12 +223,14 @@ namespace ServicePortal.API.Infrastructure.Repository
             return query;
         }
 
-        public string GenerateDoOperationsQuery(Object queryObject, string schema, string table, DoOperationQueryType type)
+        public NpgsqlCommand GenerateDoOperationsQuery(Object queryObject, string schema, string table, DoOperationQueryType type)
         {
-            var query = PredefinedQueryPatterns.DO_OPERATION_QUERY_PATTERN.Replace("{-QUERY-}", JsonConvert.SerializeObject(queryObject, new JsonSerializerSettings { NullValueHandling = NullValueHandling.Ignore }));
-            query = query.Replace("-SCHEMA-", schema);
-            query = query.Replace("-TABLE-", table);
-            query = query.Replace("-QUERYTYPE-", type.ToString());
+            var query = new NpgsqlCommand(PredefinedQueryPatterns.DO_OPERATION_QUERY_PATTERN);
+
+            query.Parameters.AddWithValue("@query", NpgsqlTypes.NpgsqlDbType.Jsonb, JsonConvert.SerializeObject(queryObject, new JsonSerializerSettings { NullValueHandling = NullValueHandling.Ignore }));
+            query.Parameters.AddWithValue("@schema", schema);
+            query.Parameters.AddWithValue("@table", table);
+            query.Parameters.AddWithValue("@querytype", type.ToString());
             return query;
         }
 

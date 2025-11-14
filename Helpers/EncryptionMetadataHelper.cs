@@ -18,7 +18,7 @@ namespace CommonLibrary.Helpers
                     result.Add(path);
                 }
 
-                if (!prop.PropertyType.IsPrimitive && prop.PropertyType != typeof(string) && !typeof(System.Collections.IEnumerable).IsAssignableFrom(prop.PropertyType))
+                if (!prop.PropertyType.IsPrimitive && prop.PropertyType != typeof(string) && prop.PropertyType != typeof(DateTime) && prop.PropertyType != typeof(Guid) && prop.PropertyType != typeof(TimeSpan) && !typeof(System.Collections.IEnumerable).IsAssignableFrom(prop.PropertyType))
                 {
                     // Recurse into nested classes
                     result.AddRange(GetEncryptedPropertyPaths(prop.PropertyType, path));

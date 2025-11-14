@@ -2,7 +2,9 @@
 {
     public class BaseEntity
     {
+        [IgnoreForSerialization]
         public virtual string _table { get; }
+        [IgnoreForSerialization]
         public virtual string _schema { get; }
         public virtual List<string> _encryptedFields {  get; }
 

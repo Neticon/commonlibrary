@@ -87,7 +87,7 @@ namespace CommonLibrary.Integrations
             var cacheControl = "public";
             if (expireSeconds.HasValue)
             {
-                cacheControl = cacheControl + $", max-age={expireSeconds}";
+                cacheControl = cacheControl + $"no-cache, max-age={expireSeconds}";
             }
             await InitializeClient();
             var putRequest = new PutObjectRequest

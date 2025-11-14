@@ -1,6 +1,7 @@
 ﻿using CommonLibrary.Domain.Entities;
 using CommonLibrary.Domain.PSQL;
 using CommonLibrary.Helpers;
+using CommonLibrary.Models;
 using CommonLibrary.Repository.Interfaces;
 using Microsoft.Extensions.Configuration;
 using Newtonsoft.Json;
@@ -21,9 +22,8 @@ namespace CommonLibrary.Repository
         public async Task<GraphAPIResponse<T>> SaveEntity(T data)
         {
             ObjectEncryption.EncryptObject(data, "key", EncryptionMetadataHelper.GetEncryptedPropertyPaths(typeof(T)));
-            var fieldsDictionary = ObjectConverters.ToPropertyDictionary(data, true);
-            var json = JsonConvert.SerializeObject(data);
-            var query = GenerateDoOperationsQuery(fieldsDictionary, new Dictionary<string, string>(), data._schema, data._table, DoOperationQueryType.insert);
+            var payload = new GraphApiPayload { data = data };
+            var query = GenerateDoOperationsQuery(payload, data._schema, data._table, DoOperationQueryType.insert);
             var queryResult = await ExecuteStandardCommand(query);
             return queryResult;
         }

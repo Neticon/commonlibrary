@@ -2,6 +2,7 @@
 using CommonLibrary.Integrations;
 using CommonLibrary.Repository.Interfaces;
 using Newtonsoft.Json;
+using Npgsql;
 using System.Security.Cryptography;
 using System.Text;
 using System.Text.Encodings.Web;
@@ -81,14 +82,16 @@ namespace VenueGenerationService
 
         private async Task<List<object>> GetVenueData(string tenantId)
         {
-            var query = PredefinedQueryPatterns.GET_VENUE_DATA_REPLACEMENT_JS_QUERY.Replace(PredefinedQueryPatternsReplacements.GET_VENUE_DATA_REPLACEMENT_JS_TENANT, tenantId);
+            var query = new NpgsqlCommand(PredefinedQueryPatterns.GET_VENUE_DATA_REPLACEMENT_JS_QUERY);
+            query.Parameters.AddWithValue("@tenantID", tenantId);
             var results = await _repository.ExecuteStandardCommand(query);
             return results.rows;
         }
 
         private async Task<TenantData> GetTenantData(string tenantId)
         {
-            var query = PredefinedQueryPatterns.GET_TENANT_REPLACEMENT_JS_QUERY.Replace(PredefinedQueryPatternsReplacements.GET_VENUE_DATA_REPLACEMENT_JS_TENANT, tenantId);
+            var query = new NpgsqlCommand(PredefinedQueryPatterns.GET_TENANT_REPLACEMENT_JS_QUERY);
+            query.Parameters.AddWithValue("@tenantID", tenantId);
             var results = await _repository.ExecuteStandardCommand(query);
             var tenantData = results.rows.Select(q => JsonConvert.DeserializeObject<TenantData>(q.ToString()));
             if (tenantData.Count() == 0)

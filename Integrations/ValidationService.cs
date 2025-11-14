@@ -210,7 +210,7 @@ namespace CommonLibrary.Integrations
                 EmailValidation = redisResult[0],
                 PhoneValidation = phoneValidation.DeviceIntelId,
                 LocalPhone = phoneValidation.LocalPhone,
-                IPValidation = redisResult[2]
+                IPValidation = redisResult[2].Split(',')[0]
             };
         }
 
@@ -243,14 +243,40 @@ namespace CommonLibrary.Integrations
             }
         }
 
-        public async Task ValidateIp(string ip, int origin)
+        public async Task<GeoIPResponse> ValidateIp(string ip, int origin)
         {
             //localhost
             if (ip == "::1")
-                return;
-            var ipInfo = GetIpData(ip);
+                return null;
             var hashedIp = _venueGenerationService.GenerateHmac(ip, "");
-            await SaveDeviceIntelRecord(Guid.NewGuid(), "", "IP", origin, JsonConvert.SerializeObject(ipInfo), hashedIp, true);
+            var redisValue = await _redisService.GetString(GetRedisKey(hashedIp));
+            if (redisValue != null)
+            {
+                return new GeoIPResponse { country = new Country { isoCode = redisValue.Split(',')[1] } };
+            }
+            if (redisValue == null)
+            {
+                var deviceIntel = await _deviceIntelRepository.GetDeviceIntel(hashedIp);
+                if (deviceIntel != null)
+                {
+                    var intel = JsonConvert.DeserializeObject<GeoIPResponse>(deviceIntel.intel.ToString());
+                    _redisService.SetString(GetRedisKey(hashedIp), $"{deviceIntel.id},{intel.country.isoCode}");
+                    return intel;
+                }
+
+            }
+            using (var reader = new DatabaseReader("../external_path/GeoIP2-City.mmdb"))
+            {
+                var response = reader.City(ip);
+                var settings = new JsonSerializerSettings();
+                settings.Converters.Add(new IPAddressConverter());
+                settings.Converters.Add(new MaxMindNetworkConverter());
+
+                var dbResponseFromat = JsonConvert.DeserializeObject<GeoIPResponse>(JsonConvert.SerializeObject(response, settings));
+                var id = Guid.NewGuid();
+                SaveDeviceIntelRecord(id, $"{id},{dbResponseFromat.country.isoCode}", "IP", origin, JsonConvert.SerializeObject(dbResponseFromat), hashedIp, true);
+                return dbResponseFromat;
+            }
         }
 
         public async Task<GeoIPResponse> GetIpData(string ip)

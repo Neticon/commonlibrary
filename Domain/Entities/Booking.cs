@@ -21,13 +21,19 @@
         public string end_ts { get; set; }
         public int block_start { get; set; }
         public int block_end { get; set; }
+        [Encrypt]
         public string? u_salutation { get; set; }
+        [Encrypt]
         public string u_first { get; set; }
+        [Encrypt]
         public string u_last { get; set; }
+        [Encrypt]
         public string? u_phone { get; set; }
+        [Encrypt]
         public string? u_phone_local { get; set; }
+        [Encrypt]
         public string u_email { get; set; }
-        public string? u_message { get; set; }
+        [Encrypt]
         public string? u_reason { get; set; }
         public string review_result { get; set; }
         public string? review_description { get; set; }

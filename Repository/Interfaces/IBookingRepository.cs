@@ -1,15 +1,10 @@
 ﻿using CommonLibrary.Domain.Entities;
 using CommonLibrary.Integrations.Model;
 using ServicePortal.Domain.PSQL;
-using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
 
 namespace CommonLibrary.Repository.Interfaces
 {
-    public interface IBookingRepository
+    public interface IBookingRepository : IGenericEntityRepository<Booking>
     {
         Task<GraphAPIResponse<Booking>> SaveBooking(Booking data);
         Task<BookingViewModel> GetBooking(Guid id);
