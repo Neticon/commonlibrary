@@ -53,6 +53,38 @@ namespace ServicePortal.API.Infrastructure.Repository
             return default;
         }
 
+        public async Task<GraphAPIResponse<T>> ExecuteStandardCommand(string query)
+        {
+            using (var conn = new NpgsqlConnection(_connectionString))
+            {
+                conn.Open();
+                using (var command = new NpgsqlCommand (query))
+                {
+                    try
+                    {
+                        var commandResult = await command.ExecuteReaderAsync();
+                        while (await commandResult.ReadAsync())
+                        {
+                            var psqlResult = JsonConvert.DeserializeObject<GraphAPIResponse<T>>(commandResult.GetValue(0).ToString());
+                            if (!psqlResult.success)
+                            {
+                                if (psqlResult.stage == "validation" || psqlResult.stage == "operation")
+                                    throw new PsqlResponseFailException(JsonConvert.SerializeObject(psqlResult));
+                                else
+                                    throw new Exception("PSQL Error");
+                            }
+                            return psqlResult;
+                        }
+                    }
+                    catch (Exception ex)
+                    {
+                        throw ex;
+                    }
+                }
+            }
+            return default;
+        }
+
         public async Task<DoSelectOperationResponse<T>> ExecuteDoSelectCommand(string query)
         {
             using (var conn = new NpgsqlConnection(_connectionString))
