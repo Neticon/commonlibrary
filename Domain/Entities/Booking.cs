@@ -34,6 +34,7 @@
         [Encrypt]
         public string u_email { get; set; }
         [Encrypt]
+        public string? u_message { get; set; }
         public string? u_reason { get; set; }
         public string review_result { get; set; }
         public string? review_description { get; set; }
