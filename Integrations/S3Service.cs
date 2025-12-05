@@ -1,4 +1,5 @@
 ﻿using Amazon;
+using Amazon.Runtime;
 using Amazon.S3;
 using Amazon.S3.Model;
 using Amazon.SecurityToken;
@@ -45,8 +46,8 @@ namespace CommonLibrary.Integrations
             {
                 try
                 {
-                    //var credentials = new InstanceProfileAWSCredentials();
-                    var stsClient = new AmazonSecurityTokenServiceClient(RegionEndpoint.EUCentral1);
+                    var credentials = new InstanceProfileAWSCredentials();
+                    var stsClient = new AmazonSecurityTokenServiceClient(credentials, RegionEndpoint.EUCentral1);
                     var resp = await stsClient.AssumeRoleAsync(new AssumeRoleRequest
                     {
                         RoleArn = _roleArn,
