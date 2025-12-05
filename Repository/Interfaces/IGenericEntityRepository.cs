@@ -7,8 +7,8 @@ namespace CommonLibrary.Repository.Interfaces
 {
     public interface IGenericEntityRepository<T> where T : BaseEntity
     {
-        Task<GraphAPIResponse<T>> SaveEntity(T data);
-        Task<GraphAPIResponse<T>> UpdateEntity(Object model);
+        Task<GraphAPIResponse<T>> SaveEntity(T data, bool returnError = false);
+        Task<GraphAPIResponse<T>> UpdateEntity(Object model, bool returnError = false);
         Task<DoSelectOperationResponse<JObject>> GetData(Object model);
     }
 }

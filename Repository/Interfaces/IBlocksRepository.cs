@@ -1,5 +1,4 @@
 ﻿using CommonLibrary.Domain.PSQL;
-using WebApp.API.Models;
 
 namespace CommonLibrary.Repository.Interfaces
 {

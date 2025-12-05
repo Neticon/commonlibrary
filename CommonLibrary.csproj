@@ -6,7 +6,7 @@
     <Nullable>enable</Nullable>
 
     <!-- NuGet metadata -->
-    <Version>1.0.6</Version>
+    <Version>1.0.7</Version>
     <Authors>Djordje Stojakovic</Authors>
     <Company>Neticon</Company>
     <PackageId>CommonLibrary</PackageId>
@@ -21,11 +21,15 @@
     <PackageReference Include="AWSSDK.CognitoIdentityProvider" Version="4.0.3.2" />
     <PackageReference Include="AWSSDK.S3" Version="4.0.7.3" />
     <PackageReference Include="AWSSDK.SecurityToken" Version="4.0.2.3" />
+    <PackageReference Include="Mapster" Version="9.0.0-pre01" />
     <PackageReference Include="MaxMind.GeoIP2" Version="5.3.0" />
     <PackageReference Include="Microsoft.Extensions.Configuration.Abstractions" Version="9.0.7" />
     <PackageReference Include="Microsoft.Extensions.Options" Version="9.0.7" />
+    <PackageReference Include="Mime" Version="3.8.0" />
+    <PackageReference Include="Mime-Detective" Version="25.8.1" />
     <PackageReference Include="Newtonsoft.Json" Version="13.0.3" />
     <PackageReference Include="Npgsql" Version="9.0.3" />
+    <PackageReference Include="SixLabors.ImageSharp" Version="3.1.12" />
     <PackageReference Include="StackExchange.Redis" Version="2.8.41" />
   </ItemGroup>
 
@@ -34,6 +38,9 @@
     <None Include="bin\Release\net8.0\*.dll" Pack="true" PackagePath="lib\net8.0" />
     <None Include="bin\Release\net8.0\*.xml" Pack="true" PackagePath="lib\net8.0" />
     <None Include="bin\Release\net8.0\*.pdb" Pack="true" PackagePath="lib\net8.0" />
+  </ItemGroup>
+  <ItemGroup>
+    <Folder Include="SharedServices\Interfaces\" />
   </ItemGroup>
 
 </Project>

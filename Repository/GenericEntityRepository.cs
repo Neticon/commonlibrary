@@ -4,7 +4,6 @@ using CommonLibrary.Helpers;
 using CommonLibrary.Models;
 using CommonLibrary.Repository.Interfaces;
 using Microsoft.Extensions.Configuration;
-using Newtonsoft.Json;
 using Newtonsoft.Json.Linq;
 using ServicePortal.API.Infrastructure.Repository;
 using ServicePortal.Domain.PSQL;
@@ -19,20 +18,20 @@ namespace CommonLibrary.Repository
         {
         }
 
-        public async Task<GraphAPIResponse<T>> SaveEntity(T data)
+        public async Task<GraphAPIResponse<T>> SaveEntity(T data, bool returnError = false)
         {
             ObjectEncryption.EncryptObject(data, "key", EncryptionMetadataHelper.GetEncryptedPropertyPaths(typeof(T)));
             var payload = new GraphApiPayload { data = data };
             var query = GenerateDoOperationsQuery(payload, data._schema, data._table, DoOperationQueryType.insert);
-            var queryResult = await ExecuteStandardCommand(query);
+            var queryResult = await ExecuteStandardCommand(query, returnError);
             return queryResult;
         }
 
-        public async Task<GraphAPIResponse<T>> UpdateEntity(Object model)
+        public async Task<GraphAPIResponse<T>> UpdateEntity(Object model, bool returnError = false)
         {
             ObjectEncryption.EncryptObject(model, "key", EncryptionMetadataHelper.GetEncryptedPropertyPaths(typeof(T)));
             var query = GenerateDoOperationsQuery(model, meta._schema, meta._table, DoOperationQueryType.update);
-            var queryResult = await ExecuteStandardCommand(query);
+            var queryResult = await ExecuteStandardCommand(query, returnError);
             return queryResult;
         }
 

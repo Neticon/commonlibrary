@@ -77,7 +77,7 @@ namespace VenueGenerationService
         private async Task WriteJsFileToS3(string orgCode, string jsContent)
         {
 
-            var resp = await _s3Servce.UploadStreamAsync(S3Bucket, $"r/{orgCode}/{JSFilename}", new MemoryStream(Encoding.UTF8.GetBytes(jsContent)),"web-api", null, "application/javascript");
+            var resp = await _s3Servce.UploadStreamAsync(S3Bucket, $"r/{orgCode}/{JSFilename}", new MemoryStream(Encoding.UTF8.GetBytes(jsContent)), "web-api", null, "application/javascript");
         }
 
         private async Task<List<object>> GetVenueData(string tenantId)
@@ -217,7 +217,7 @@ namespace VenueGenerationService
         {
             public List<string> web_pages { get; set; }
             public string org_code { get; set; }
-            public object library { get; set; } 
+            public object library { get; set; }
         }
     }
 }

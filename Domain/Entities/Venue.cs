@@ -1,6 +1,4 @@
-﻿using Newtonsoft.Json.Linq;
-
-namespace CommonLibrary.Domain.Entities
+﻿namespace CommonLibrary.Domain.Entities
 {
     public class Venue : BaseEntity
     {
@@ -38,7 +36,7 @@ namespace CommonLibrary.Domain.Entities
         public bool? service_halt { get; set; }
         public object? work_hours { get; set; }
         public object? notifications { get; set; }
-        public object?  users { get; set; }
+        public object? users { get; set; }
         public object? exceptions { get; set; }
         public object? reasons { get; set; }
         public object? links { get; set; }

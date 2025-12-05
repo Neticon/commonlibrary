@@ -19,7 +19,7 @@
         public int block_end { get; set; }
         public string u_message { get; set; }
         public string u_reason { get; set; }
-        public string service_id { get; set; }  
-        public List<string>? val_fail {  get; set; }
+        public string service_id { get; set; }
+        public List<string>? val_fail { get; set; }
     }
 }

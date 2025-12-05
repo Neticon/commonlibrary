@@ -7,7 +7,8 @@ namespace CommonLibrary.Repository.Interfaces
 {
     public interface IGenericRepository<T>
     {
-        Task<GraphAPIResponse<T>> ExecuteStandardCommand(NpgsqlCommand query);
+        Task<GraphAPIResponse<T>> ExecuteStandardCommand(NpgsqlCommand query, bool returnError = false);
+        Task<GraphAPIResponse<T>> ExecuteStandardCommand(string query);
         Task<string> ExecuteCommandString(string query);
         Task ExecuteCommandVoid(string query);
         Task<DoSelectOperationResponse<T>> ExecuteDoSelectCommand(string query);

@@ -184,7 +184,7 @@ namespace CommonLibrary.Integrations
             return files;
         }
 
-        public async Task DeleteFileAsync(string bucket,string key)
+        public async Task DeleteFileAsync(string bucket, string key)
         {
             await InitializeClient();
             var request = new DeleteObjectRequest

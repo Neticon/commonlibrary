@@ -183,7 +183,7 @@ namespace CommonLibrary.Integrations
             }
         }
 
-        public async Task<RedisDeviceIntel> GetRedisDeviceIntel (string email, string phone, string ip)
+        public async Task<RedisDeviceIntel> GetRedisDeviceIntel(string email, string phone, string ip)
         {
             Console.WriteLine("VALUES=>" + email + "," + phone + "," + ip);
             var keys = new List<string>();
@@ -203,7 +203,7 @@ namespace CommonLibrary.Integrations
                     return null;
             }
             var phoneValidation = new PhoneValidationRedisModel();
-            if(!string.IsNullOrEmpty(phone))
+            if (!string.IsNullOrEmpty(phone))
                 phoneValidation = JsonConvert.DeserializeObject<PhoneValidationRedisModel>(redisResult[1]);
             return new RedisDeviceIntel
             {

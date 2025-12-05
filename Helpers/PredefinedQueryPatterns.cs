@@ -9,6 +9,13 @@
         public static string GET_EXPIRY_TENANT_REPLACEMENT_JS_QUERY = "select utility.do_operations('{ \"data\": { \"domains\": {} }, \"filters\": { \"tenant_id\": \"-TENANT_ID-\", \"is_deleted\": false, \"status\": {\"values\": [\"ACTIVE\",\"ACTIVE_GRPR\"], \"operator\": \"IN\"} } }'::jsonb, 'help_desk','tenant','select') as x;";
         public static string GET_AVAILABILITY_PATTERN = "SELECT utility.get_availability('-VENUE_ID-'::uuid,'-SERVICE-','[-DATE_YYYY_MM_DD-]');";
         public static string BULK_INSERT_OBF_INDEX = "select utility.bulk_insert_obf_index_entries(@payload) as x";
+        public static string USERS_TENANT_VIEW_MODEL = "select utility.get_user_view(p_org_code := @org_code) as result;";
+        public static string VENUES_TENANT_VIEW_MODEL = "select utility.get_venue_view(p_tenant_id := @tenant_id) as result;";
+        public static string BOOKING_VENUES_STATISTICS = "select* from utility.get_venue_booking_statistics(@payload) as result";
+        public static string BOOKING_LIST = "select* from utility.get_booking_list(@payload) as result";
+        public static string BOOKING_DETAIL = "select utility.get_booking_venue_intel(@booking_id) as result;";
+        public static string WRITE_ERROR_LOG = "SELECT utility.write_error_log(@payload) as result;";
+        public static string RATE_BOOKING = "select utility.rate_booking(@id, @date, @value) as x";
     }
 
     public class PredefinedQueryPatternsReplacements

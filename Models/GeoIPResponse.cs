@@ -1,10 +1,4 @@
-﻿using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
-
-namespace CommonLibrary.Models
+﻿namespace CommonLibrary.Models
 {
 
     public class GeoIPResponse
@@ -12,13 +6,13 @@ namespace CommonLibrary.Models
         public Continent continent { get; set; }
         public Country country { get; set; }
         public RegisteredCountry registeredCountry { get; set; }
-      //  public RepresentedCountry representedCountry { get; set; }
+        //  public RepresentedCountry representedCountry { get; set; }
         public Traits traits { get; set; }
         public City city { get; set; }
         public Location location { get; set; }
         public Postal postal { get; set; }
         public List<Subdivision> subdivisions { get; set; }
-    } 
+    }
 
     public class City
     {

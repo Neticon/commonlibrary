@@ -6,10 +6,10 @@
         public override string _schema => "service_portal";
         public override List<string> _encryptedFields => [""];
         public TimeSpan? create_dt { get; set; }
-       // [Encrypt]
+        // [Encrypt]
         public string create_bu { get; set; }
         public TimeSpan? modify_dt { get; set; }
-    //    [Encrypt]
+        //    [Encrypt]
         public string? modify_bu { get; set; }
         public TimeSpan? delete_dt { get; set; }
         [Encrypt]

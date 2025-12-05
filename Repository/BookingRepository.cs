@@ -5,6 +5,8 @@ using CommonLibrary.Models;
 using CommonLibrary.Repository.Interfaces;
 using Microsoft.Extensions.Configuration;
 using Newtonsoft.Json;
+using Npgsql;
+using NpgsqlTypes;
 using ServicePortal.Domain.PSQL;
 
 namespace CommonLibrary.Repository
@@ -43,8 +45,10 @@ namespace CommonLibrary.Repository
             {
                 var result = JsonConvert.DeserializeObject<BookingViewModel>(JsonConvert.SerializeObject(queryResult.rows[0]));
                 if (!string.IsNullOrEmpty(result.u_reason) && result.u_reason.StartsWith("SRV"))
+                {
                     result.service_id = result.u_reason;
-                result.u_reason = null;
+                    result.u_reason = null;
+                }
                 return result;
             }
             return null;
@@ -65,7 +69,16 @@ namespace CommonLibrary.Repository
             return null;
         }
 
+        public async Task<object> RateBooking(Guid id, string date, int value)
+        {
+            var query = new NpgsqlCommand(PredefinedQueryPatterns.RATE_BOOKING);
+            query.Parameters.AddWithValue("id", NpgsqlTypes.NpgsqlDbType.Uuid, id);
+            query.Parameters.AddWithValue("date", NpgsqlDbType.Date, DateTime.Parse(date));
+            query.Parameters.AddWithValue("value", NpgsqlDbType.Integer, value);
 
+            var result = await ExecuteStandardCommand(query);
+            return result;
 
+        }
     }
 }

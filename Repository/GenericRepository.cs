@@ -17,11 +17,11 @@ namespace ServicePortal.API.Infrastructure.Repository
 
         public GenericRepository(IConfiguration config)
         {
-           // Console.WriteLine("TEST CONSTRUCTOR=" + Environment.GetEnvironmentVariable("PSQLDB_CONNECTION_STRING"));
+            // Console.WriteLine("TEST CONSTRUCTOR=" + Environment.GetEnvironmentVariable("PSQLDB_CONNECTION_STRING"));
             _connectionString = Environment.GetEnvironmentVariable("PSQLDB_CONNECTION_STRING");
         }
-        
-        public async Task<GraphAPIResponse<T>> ExecuteStandardCommand(NpgsqlCommand query)
+
+        public async Task<GraphAPIResponse<T>> ExecuteStandardCommand(NpgsqlCommand query, bool returnError = false)
         {
             using (var conn = new NpgsqlConnection(_connectionString))
             {
@@ -30,11 +30,12 @@ namespace ServicePortal.API.Infrastructure.Repository
                 {
                     try
                     {
+                        query.Connection = conn;
                         var commandResult = await command.ExecuteReaderAsync();
                         while (await commandResult.ReadAsync())
                         {
                             var psqlResult = JsonConvert.DeserializeObject<GraphAPIResponse<T>>(commandResult.GetValue(0).ToString());
-                            if (!psqlResult.success)
+                            if (!psqlResult.success && !returnError)
                             {
                                 if (psqlResult.stage == "validation" || psqlResult.stage == "operation")
                                     throw new PsqlResponseFailException(JsonConvert.SerializeObject(psqlResult));
@@ -58,7 +59,7 @@ namespace ServicePortal.API.Infrastructure.Repository
             using (var conn = new NpgsqlConnection(_connectionString))
             {
                 conn.Open();
-                using (var command = new NpgsqlCommand (query))
+                using (var command = new NpgsqlCommand(query))
                 {
                     try
                     {

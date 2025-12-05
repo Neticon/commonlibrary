@@ -1,12 +1,10 @@
-﻿using System.Net;
-
-namespace CommonLibrary.Exceptions
+﻿namespace CommonLibrary.Exceptions
 {
     public class PsqlResponseFailException : Exception
     {
         public int StatusCode = 204;
 
-        public PsqlResponseFailException(string message): base(message)
+        public PsqlResponseFailException(string message) : base(message)
         {
         }
     }

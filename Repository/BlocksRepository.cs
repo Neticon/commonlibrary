@@ -5,7 +5,6 @@ using Npgsql;
 using NpgsqlTypes;
 using ServicePortal.API.Infrastructure.Repository;
 using System.Text.Json;
-using WebApp.API.Models;
 
 namespace CommonLibrary.Repository
 {
@@ -23,7 +22,7 @@ namespace CommonLibrary.Repository
                 using (var command = new NpgsqlCommand("SELECT utility.assert_blockAvailability(@venue_id, @block_range, @type, @date, @service)", conn))
                 {
                     var blockRange = new NpgsqlRange<int>(block_start, true, block_end, true);
-                    command.Parameters.AddWithValue("venue_id", NpgsqlDbType.Uuid, venueId );
+                    command.Parameters.AddWithValue("venue_id", NpgsqlDbType.Uuid, venueId);
                     command.Parameters.AddWithValue("block_range", blockRange);
                     command.Parameters.AddWithValue("type", NpgsqlDbType.Char, type);
                     command.Parameters.AddWithValue("date", NpgsqlDbType.Date, DateTime.Parse(date));

@@ -10,5 +10,6 @@ namespace CommonLibrary.Repository.Interfaces
         Task<BookingViewModel> GetBooking(Guid id);
         Task<GraphAPIResponse<Booking>> UpdateBooking(Object model);
         Task<string> GetBookingReason(Guid id);
+        Task<object> RateBooking(Guid id, string date, int value);
     }
 }

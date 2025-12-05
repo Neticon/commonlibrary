@@ -5,7 +5,7 @@ using ServicePortal.API.Infrastructure.Repository;
 
 namespace CommonLibrary.Repository
 {
-    public class DeviceIntelRepository<T> :  GenericRepository<T> , IDeviceIntelRepository where T : DeviceIntel
+    public class DeviceIntelRepository<T> : GenericRepository<T>, IDeviceIntelRepository where T : DeviceIntel
     {
         private static (string _table, string _schema) meta = BaseEntity.GetMeta<DeviceIntel>();
         public DeviceIntelRepository(IConfiguration config) : base(config)
