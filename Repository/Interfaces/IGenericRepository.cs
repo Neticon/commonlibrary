@@ -9,6 +9,7 @@ namespace CommonLibrary.Repository.Interfaces
     {
         Task<GraphAPIResponse<T>> ExecuteStandardCommand(NpgsqlCommand query, bool returnError = false);
         Task<GraphAPIResponse<T>> ExecuteStandardCommand(string query);
+        Task<GraphAPIResponse<JObject>> ExecuteNotTypedStandardCommand(NpgsqlCommand query, bool returnError = false);
         Task<string> ExecuteCommandString(string query);
         Task ExecuteCommandVoid(string query);
         Task<DoSelectOperationResponse<T>> ExecuteDoSelectCommand(string query);

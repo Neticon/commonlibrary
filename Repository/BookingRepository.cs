@@ -76,7 +76,7 @@ namespace CommonLibrary.Repository
             query.Parameters.AddWithValue("date", NpgsqlDbType.Date, DateTime.Parse(date));
             query.Parameters.AddWithValue("value", NpgsqlDbType.Integer, value);
 
-            var result = await ExecuteStandardCommand(query);
+            var result = await ExecuteNotTypedStandardCommand(query);
             return result;
 
         }
