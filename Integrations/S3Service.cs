@@ -46,8 +46,8 @@ namespace CommonLibrary.Integrations
             {
                 try
                 {
-                    var credentials = new InstanceProfileAWSCredentials();
-                    var stsClient = new AmazonSecurityTokenServiceClient(credentials, RegionEndpoint.EUCentral1);
+                    //var credentials = new InstanceProfileAWSCredentials();
+                    var stsClient = new AmazonSecurityTokenServiceClient(RegionEndpoint.EUCentral1);
                     var resp = await stsClient.AssumeRoleAsync(new AssumeRoleRequest
                     {
                         RoleArn = _roleArn,
@@ -55,8 +55,9 @@ namespace CommonLibrary.Integrations
                         DurationSeconds = 3600
                     });
 
+                    //var creds = new Credentials("")
                     _s3Client = new AmazonS3Client(resp.Credentials, RegionEndpoint.EUCentral1);
-                    //_s3Client = new AmazonS3Client(creds, RegionEndpoint.EUCentral1);
+                    _s3Client = new AmazonS3Client(RegionEndpoint.EUCentral1);
                     _expiry = DateTime.UtcNow.AddDays(1);
                 }
                 catch (Exception ex)

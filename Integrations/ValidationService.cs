@@ -190,12 +190,10 @@ namespace CommonLibrary.Integrations
             if (!string.IsNullOrEmpty(email))
                 keys.Add(GetRedisKey(_venueGenerationService.GenerateHmac(email, "")));
             if (!string.IsNullOrEmpty(phone))
-                GetRedisKey(_venueGenerationService.GenerateHmac(phone, ""));
+                keys.Add(GetRedisKey(_venueGenerationService.GenerateHmac(phone, "")));
             if (!string.IsNullOrEmpty(ip))
-                GetRedisKey(_venueGenerationService.GenerateHmac(ip, ""));
-            Console.WriteLine("KEYS=>" + string.Join(",", keys));
+                keys.Add(GetRedisKey(_venueGenerationService.GenerateHmac(ip, "")));
             var redisResult = await _redisService.MGet(keys);
-            Console.WriteLine("REDIS=>" + string.Join(",", redisResult));
             //some key not found - not valid
             foreach (var result in redisResult)
             {
