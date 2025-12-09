@@ -83,12 +83,16 @@ namespace CommonLibrary.Integrations
             return GetPublicUrl(bucketName, key);
         }
 
-        public async Task<string> UploadStreamAsync(string bucketName, string key, Stream stream, string uploadedBy, double? expireSeconds, string contentType = "application/octet-stream", CancellationToken cancellationToken = default)
+        public async Task<string> UploadStreamAsync(string bucketName, string key, Stream stream, string uploadedBy, double? expireSeconds, bool noCache = true, bool cachePublic = false, string contentType = "application/octet-stream", CancellationToken cancellationToken = default)
         {
-            var cacheControl = "public";
+            var cacheControl = "";
+            if (cachePublic)
+                cacheControl = cacheControl + "public,";
+            if (noCache)
+                cacheControl = cacheControl + "no-cache,";
             if (expireSeconds.HasValue)
             {
-                cacheControl = cacheControl + $"no-cache, max-age={expireSeconds}";
+                cacheControl = cacheControl + $"max-age={expireSeconds}";
             }
             await InitializeClient();
             var putRequest = new PutObjectRequest
@@ -105,7 +109,7 @@ namespace CommonLibrary.Integrations
                 {
                     ContentType = contentType,
                     Expires = expireSeconds != null ? DateTime.UtcNow.AddSeconds(expireSeconds.Value) : null,
-                    CacheControl = cacheControl
+                    CacheControl = cacheControl.TrimEnd(',')
                 }
             };
 
