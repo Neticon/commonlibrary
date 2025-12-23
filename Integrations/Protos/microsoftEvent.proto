@@ -1,0 +1,20 @@
+﻿syntax = "proto3";
+
+option csharp_namespace = "Integration.Grpc";
+
+package microsoftEvents;
+
+service MicrosoftEvents{
+	rpc CreateEvent(MicrosoftEventRequest) returns (MicrosoftEventResponse);
+}
+
+message MicrosoftEventRequest{
+	string attende = 1;
+	string subject = 2;
+	string startUtc = 3;
+	string endUtc = 4;
+}
+
+message MicrosoftEventResponse{
+	string meeting_url = 1;
+}

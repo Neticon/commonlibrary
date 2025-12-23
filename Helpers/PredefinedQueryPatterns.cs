@@ -16,6 +16,8 @@
         public static string BOOKING_DETAIL = "select utility.get_booking_venue_intel(@booking_id) as result;";
         public static string WRITE_ERROR_LOG = "SELECT utility.write_error_log(@payload) as result;";
         public static string RATE_BOOKING = "select utility.rate_booking(@id, @date, @value) as x";
+        public static string APPEND_EVENT_BODY = "select utility.append_event_body(@id, @origin, @new_body) as x";
+        public static string INSERT_EVENT = "select utility.insert_event(@id, @origin, @message_type, @body, @reference_entity, @reference_id, @tenant_id) as x";
     }
 
     public class PredefinedQueryPatternsReplacements

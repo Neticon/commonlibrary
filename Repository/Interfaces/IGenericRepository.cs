@@ -12,6 +12,7 @@ namespace CommonLibrary.Repository.Interfaces
         Task<GraphAPIResponse<JObject>> ExecuteNotTypedStandardCommand(NpgsqlCommand query, bool returnError = false);
         Task<string> ExecuteCommandString(string query);
         Task ExecuteCommandVoid(string query);
+        Task ExecuteCommandVoid(NpgsqlCommand query);
         Task<DoSelectOperationResponse<T>> ExecuteDoSelectCommand(string query);
         Task<DoSelectOperationResponse<JObject>> ExecuteDoSelectCommandObject(string query);
         Task<T> ExecuteCommandTyped(string query);

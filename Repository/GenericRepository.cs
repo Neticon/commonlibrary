@@ -185,6 +185,25 @@ namespace ServicePortal.API.Infrastructure.Repository
             }
         }
 
+        public async Task ExecuteCommandVoid(NpgsqlCommand query)
+        {
+            using (var conn = new NpgsqlConnection(_connectionString))
+            {
+                try
+                {
+                    conn.Open();
+                    using (var command = query)
+                    {
+                        command.Connection = conn;
+                        var commandResult = await command.ExecuteReaderAsync();
+                    }
+                }catch (Exception ex)
+                {
+                    var a = ex.Message;
+                }
+            }
+        }
+
         public async Task<string> ExecuteCommandString(string query)
         {
             using (var conn = new NpgsqlConnection(_connectionString))

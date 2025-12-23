@@ -1,0 +1,24 @@
+syntax = "proto3";
+
+option csharp_namespace = "Integration.Grpc";
+
+package email;
+
+service Email{
+	rpc SendEmail(SendEmailRequest) returns (SendEmailResponse);
+}
+
+message SendEmailRequest{
+	repeated string emailTo = 1;
+	string templateId = 2;
+	map<string, string> substitutions = 3;
+	string subject = 4;
+	string message_type = 5;
+	string reference_entity = 6;
+	string reference_id = 7;
+	string tenant_id = 8;
+}
+
+message SendEmailResponse{
+	string response = 1;
+}
