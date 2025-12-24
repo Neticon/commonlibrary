@@ -6,7 +6,7 @@
     <Nullable>enable</Nullable>
 
     <!-- NuGet metadata -->
-    <Version>1.0.15</Version>
+    <Version>1.0.16</Version>
     <Authors>Djordje Stojakovic</Authors>
     <Company>Neticon</Company>
     <PackageId>CommonLibrary</PackageId>
@@ -42,5 +42,14 @@
   <ItemGroup>
     <Folder Include="SharedServices\Interfaces\" />
   </ItemGroup>
+	<ItemGroup>
+		<None Include="buildTransitive\CommonLibrary.props"
+			  Pack="true"
+			  PackagePath="buildTransitive" />
+
+		<None Include="Integrations\Protos\email.proto"
+			  Pack="true"
+			  PackagePath="buildTransitive\protos" />
+	</ItemGroup>
 
 </Project>

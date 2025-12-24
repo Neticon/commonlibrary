@@ -1,0 +1,6 @@
+﻿<Project>
+  <ItemGroup>
+    <IntegrationContractsProtos
+      Include="$(MSBuildThisFileDirectory)protos/email.proto" />
+  </ItemGroup>
+</Project>
