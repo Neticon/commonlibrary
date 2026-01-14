@@ -6,7 +6,7 @@
     <Nullable>enable</Nullable>
 
     <!-- NuGet metadata -->
-    <Version>1.0.17</Version>
+    <Version>1.0.18</Version>
     <Authors>Djordje Stojakovic</Authors>
     <Company>Neticon</Company>
     <PackageId>CommonLibrary</PackageId>
@@ -47,5 +47,4 @@
 			  Pack="true"
 			  PackagePath="protos" />
 	</ItemGroup>
-
 </Project>

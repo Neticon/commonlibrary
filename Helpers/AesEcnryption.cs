@@ -76,5 +76,17 @@ namespace CommonLibrary.Helpers
 
             return sr.ReadToEnd();
         }
+
+        public static string GenerateSecureString(int length = 32)
+        {
+            const string chars = "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789!@#$%^&*()-_=+";
+            byte[] data = RandomNumberGenerator.GetBytes(length);
+
+            var sb = new StringBuilder(length);
+            foreach (var b in data)
+                sb.Append(chars[b % chars.Length]);
+
+            return sb.ToString();
+        }
     }
 }
