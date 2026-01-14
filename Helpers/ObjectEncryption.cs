@@ -170,7 +170,7 @@ public static class ObjectEncryption
         }
     }
 
-    private static void ProcessObject(object obj, string key, List<string> fieldsToEncrypt, bool encrypt)
+    private static void ProcessObject(object obj, string key, List<string> fieldsToEncrypt, bool encrypt, string parentPath = "")
     {
         if (obj == null) return;
 
@@ -183,9 +183,12 @@ public static class ObjectEncryption
                 continue;
 
             var value = prop.GetValue(obj);
+            var currentPath = string.IsNullOrEmpty(parentPath)
+            ? prop.Name
+            : $"{parentPath}.{prop.Name}";
 
             // Handle string properties with [Encrypted]
-            if (fieldsToEncrypt.Contains(prop.Name, StringComparer.OrdinalIgnoreCase) && value is string strVal)
+            if (fieldsToEncrypt.Contains(currentPath, StringComparer.OrdinalIgnoreCase) && value is string strVal)
             {
                 prop.SetValue(obj, encrypt ? AesEncryption.Encrypt(strVal, key) : AesEncryption.Decrypt(strVal, key));
             }
@@ -196,12 +199,12 @@ public static class ObjectEncryption
                 {
                     foreach (var item in (IEnumerable)value)
                     {
-                        ProcessObject(item, key, fieldsToEncrypt, encrypt);
+                        ProcessObject(item, key, fieldsToEncrypt, encrypt, currentPath);
                     }
                 }
                 else
                 {
-                    ProcessObject(value, key, fieldsToEncrypt, encrypt);
+                    ProcessObject(value, key, fieldsToEncrypt, encrypt, currentPath);
                 }
             }
         }
