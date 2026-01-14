@@ -30,7 +30,7 @@ namespace ServicePortal.API.Infrastructure.Repository
                 {
                     try
                     {
-                        query.Connection = conn;
+                        command.Connection = conn;
                         var commandResult = await command.ExecuteReaderAsync();
                         while (await commandResult.ReadAsync())
                         {
@@ -63,7 +63,7 @@ namespace ServicePortal.API.Infrastructure.Repository
                 {
                     try
                     {
-                        query.Connection = conn;
+                        command.Connection = conn;
                         var commandResult = await command.ExecuteReaderAsync();
                         while (await commandResult.ReadAsync())
                         {
@@ -92,7 +92,7 @@ namespace ServicePortal.API.Infrastructure.Repository
             using (var conn = new NpgsqlConnection(_connectionString))
             {
                 conn.Open();
-                using (var command = new NpgsqlCommand(query))
+                using (var command = new NpgsqlCommand(query, conn))
                 {
                     try
                     {
