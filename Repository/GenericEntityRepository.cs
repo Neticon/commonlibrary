@@ -15,12 +15,8 @@ namespace CommonLibrary.Repository
     public class GenericEntityRepository<T> : GenericRepository<T>, IGenericEntityRepository<T> where T : BaseEntity, new()
     {
         private static (string _table, string _schema) meta = BaseEntity.GetMeta<T>();
-        private readonly ISecretService _secretServise;
 
-        public GenericEntityRepository(IConfiguration config, ISecretService secretService) : base(config)
-        {
-            _secretServise = secretService;
-        }
+        public GenericEntityRepository(IConfiguration config) : base(config) { }
 
         public async Task<GraphAPIResponse<T>> SaveEntity(T data, string secret = "", bool returnError = false)
         {
