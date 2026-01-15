@@ -9,6 +9,6 @@ namespace CommonLibrary.Repository.Interfaces
     {
         Task<GraphAPIResponse<T>> SaveEntity(T data, string secret = "", bool returnError = false);
         Task<GraphAPIResponse<T>> UpdateEntity(Object model, string secret = "", bool returnError = false);
-        Task<DoSelectOperationResponse<JObject>> GetData(Object model);
+        Task<DoSelectOperationResponse<JObject>> GetData(Object model, string secret = "");
     }
 }
