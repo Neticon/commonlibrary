@@ -6,7 +6,7 @@
     <Nullable>enable</Nullable>
 
     <!-- NuGet metadata -->
-    <Version>1.0.20</Version>
+    <Version>1.0.21</Version>
     <Authors>Djordje Stojakovic</Authors>
     <Company>Neticon</Company>
     <PackageId>CommonLibrary</PackageId>
