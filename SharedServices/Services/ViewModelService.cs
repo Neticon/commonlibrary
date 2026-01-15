@@ -34,7 +34,6 @@ namespace CommonLibrary.SharedServices.Services
             var fieldsForDecrypt = new List<string> { "first_name", "last_name", "phone_number", "create_bu", "modify_bu" };
             var query = new NpgsqlCommand(PredefinedQueryPatterns.USERS_TENANT_VIEW_MODEL);
             query.Parameters.AddWithValue("org_code", tenantId);
-            var a = AesEncryption.Encrypt("frances.allen@bailey.com", "key");
 
             var resp = await _repository.ExecuteStandardCommand(query);
             foreach (var row in resp.rows)

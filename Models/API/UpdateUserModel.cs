@@ -12,6 +12,7 @@
         public string last_name { get; set; }
         public string role { get; set; }
         public string phone_number { get; set; }
+        public string modify_bu {  get; set; }
     }
 
     public class UpdateUserFilters

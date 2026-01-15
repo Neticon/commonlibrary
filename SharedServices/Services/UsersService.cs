@@ -9,6 +9,8 @@ using CommonLibrary.Integrations.Model;
 using CommonLibrary.Models.API;
 using CommonLibrary.Repository.Interfaces;
 using CommonLibrary.SharedServices.Interfaces;
+using Newtonsoft.Json;
+using Newtonsoft.Json.Linq;
 
 namespace CommonLibrary.SharedServices.Services
 {
@@ -18,12 +20,14 @@ namespace CommonLibrary.SharedServices.Services
         private readonly IValidationService _validationService;
         private readonly IGenericEntityRepository<User> _genericEntityRepo;
         private readonly ITenantRepository _tenantRepository;
+        private readonly ISecretService _secretService;
 
-        public UsersService(IValidationService validationService, IGenericEntityRepository<User> genericEntityRepository, ITenantRepository tenantRepository)
+        public UsersService(IValidationService validationService, IGenericEntityRepository<User> genericEntityRepository, ITenantRepository tenantRepository, ISecretService secretService)
         {
             _validationService = validationService;
             _genericEntityRepo = genericEntityRepository;
             _tenantRepository = tenantRepository;
+            _secretService = secretService;
         }
         //todo- get from config
         public static string UserPoolId = Environment.GetEnvironmentVariable("AWS_COGNITO_POOL_ID");
@@ -44,6 +48,8 @@ namespace CommonLibrary.SharedServices.Services
                 if (string.IsNullOrEmpty(idpCode))
                     throw new Exception("Failed to get idp_group from tenant");
             }
+            var secret = await _secretService.GetSecret(idpCode);
+            var hashedMail = AesEncryption.Encrypt(model.data.email, secret);
             var request = new AdminCreateUserRequest
             {
                 UserPoolId = UserPoolId,
@@ -52,7 +58,9 @@ namespace CommonLibrary.SharedServices.Services
                 {
                     new AttributeType { Name = "email", Value = model.data.email },
                     new AttributeType { Name = "custom:role", Value = model.data.role },
-                    new AttributeType { Name = "custom:group", Value = idpCode  } // Tenant - fixed for testing
+                    new AttributeType { Name = "custom:group", Value = idpCode  },
+                    new AttributeType { Name = "custom:postal_code", Value = hashedMail  },
+                    new AttributeType { Name = "custom:organizationCode", Value = idpCode },
                 },
                 TemporaryPassword = "tempPass", // sendNotification with temp Passwod
                 MessageAction = "SUPPRESS" // Suppress email invitation (change to get invitation)
@@ -78,7 +86,7 @@ namespace CommonLibrary.SharedServices.Services
 
             var user = new User
             {
-                create_bu = "test",
+                create_bu = model.data.create_bu,
                 email = model.data.email,
                 first_name = model.data.first_name,
                 last_name = model.data.last_name,
@@ -89,7 +97,7 @@ namespace CommonLibrary.SharedServices.Services
                 idp_attribute = createUserResponse.User.Username
             };
 
-            await _genericEntityRepo.SaveEntity(user);
+            await _genericEntityRepo.SaveEntity(user, secret);
         }
 
         public async Task UpdateUser(UpdateUserModel model)
@@ -97,15 +105,24 @@ namespace CommonLibrary.SharedServices.Services
             var validation = await _validationService.ValidateRequest(new ValidateRequest { p = model.data.phone_number });
             if (validation.Item1 != 200)
                 throw new Exception("Phone is not valid");
-            var resp = await _genericEntityRepo.UpdateEntity(model);
+            model.data.role = model.data.role.ToUpper();
+            if (!ValidRoles.Contains(model.data.role))
+                throw new Exception("Invalid role");
+            var secret = await _secretService.GetSecret(model.filters.idp_group);
+            var resp = await _genericEntityRepo.UpdateEntity(model, secret);
         }
 
         public async Task<object> GetUsers(string model)
         {
+            var jObject = JsonConvert.DeserializeObject<JObject>(model);
+            var orgCode = jObject["idp_group"].ToString();
+            if (string.IsNullOrEmpty(orgCode))
+                throw new Exception("idp_group is empty!");
+            var secret = await _secretService.GetSecret(orgCode);
             var resp = await _genericEntityRepo.GetData(model);
             foreach (var row in resp.rows)
             {
-                ObjectEncryption.DecryptObject(row, "key", EncryptionMetadataHelper.GetEncryptedPropertyPaths(typeof(User)));
+                ObjectEncryption.DecryptObject(row, orgCode, EncryptionMetadataHelper.GetEncryptedPropertyPaths(typeof(User)));
             }
             return resp.rows;
         }
@@ -114,10 +131,9 @@ namespace CommonLibrary.SharedServices.Services
         {
             var prefix = "DELETED|";
             model.data.email = $"{prefix}{model.filters.email}";
-            model.data.delete_bu = "test";
             model.data.delete_dt = DateTime.UtcNow.ToString("yyyy-MM-dd HH:mm:ss.ffffff+00");
-            ObjectEncryption.EncryptObject(model, "key");
-            var resp = await _genericEntityRepo.UpdateEntity(model);
+            var secret = await _secretService.GetSecret(model.filters.idp_group);
+            var resp = await _genericEntityRepo.UpdateEntity(model, secret);
             //todo updateMods
         }
 
