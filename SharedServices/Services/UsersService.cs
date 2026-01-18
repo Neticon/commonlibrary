@@ -11,6 +11,7 @@ using CommonLibrary.Repository.Interfaces;
 using CommonLibrary.SharedServices.Interfaces;
 using Newtonsoft.Json;
 using Newtonsoft.Json.Linq;
+using WebApp.API.Controllers.Helper;
 
 namespace CommonLibrary.SharedServices.Services
 {
@@ -50,6 +51,7 @@ namespace CommonLibrary.SharedServices.Services
             }
             var secret = await _secretService.GetSecret(idpCode);
             var hashedMail = AesEncryption.Encrypt(model.data.email, secret);
+            var tempPassword = CommonHelperFunctions.GeneratePassword();
             var request = new AdminCreateUserRequest
             {
                 UserPoolId = UserPoolId,
@@ -60,9 +62,9 @@ namespace CommonLibrary.SharedServices.Services
                     new AttributeType { Name = "custom:role", Value = model.data.role },
                     new AttributeType { Name = "custom:group", Value = idpCode  },
                     new AttributeType { Name = "custom:postal_code", Value = hashedMail  },
-                    new AttributeType { Name = "custom:organizationCode", Value = idpCode },
+                    new AttributeType { Name = "custom:organization_code", Value = idpCode },
                 },
-                TemporaryPassword = "tempPass", // sendNotification with temp Passwod
+                TemporaryPassword = tempPassword, // sendNotification with temp Passwod
                 MessageAction = "SUPPRESS" // Suppress email invitation (change to get invitation)
             };
             var provider = GetCognitoProvider();
@@ -87,7 +89,7 @@ namespace CommonLibrary.SharedServices.Services
             var user = new User
             {
                 create_bu = model.data.create_bu,
-                email = model.data.email,
+                email = hashedMail,
                 first_name = model.data.first_name,
                 last_name = model.data.last_name,
                 phone_number = model.data.phone_number,
@@ -105,9 +107,12 @@ namespace CommonLibrary.SharedServices.Services
             var validation = await _validationService.ValidateRequest(new ValidateRequest { p = model.data.phone_number });
             if (validation.Item1 != 200)
                 throw new Exception("Phone is not valid");
-            model.data.role = model.data.role.ToUpper();
-            if (!ValidRoles.Contains(model.data.role))
-                throw new Exception("Invalid role");
+            if (!string.IsNullOrEmpty(model.data.role))
+            {
+                model.data.role = model.data.role.ToUpper();
+                if (!ValidRoles.Contains(model.data.role))
+                    throw new Exception("Invalid role");
+            }
             var secret = await _secretService.GetSecret(model.filters.idp_group);
             var resp = await _genericEntityRepo.UpdateEntity(model, secret);
         }
@@ -115,14 +120,14 @@ namespace CommonLibrary.SharedServices.Services
         public async Task<object> GetUsers(string model)
         {
             var jObject = JsonConvert.DeserializeObject<JObject>(model);
-            var orgCode = jObject["idp_group"].ToString();
+            var orgCode = jObject["filters"]["idp_group"].ToString();
             if (string.IsNullOrEmpty(orgCode))
                 throw new Exception("idp_group is empty!");
             var secret = await _secretService.GetSecret(orgCode);
-            var resp = await _genericEntityRepo.GetData(model);
+            var resp = await _genericEntityRepo.GetData(model, secret);
             foreach (var row in resp.rows)
             {
-                ObjectEncryption.DecryptObject(row, orgCode, EncryptionMetadataHelper.GetEncryptedPropertyPaths(typeof(User)));
+                ObjectEncryption.DecryptObject(row, secret, EncryptionMetadataHelper.GetEncryptedPropertyPaths(typeof(User)));
             }
             return resp.rows;
         }
@@ -130,9 +135,11 @@ namespace CommonLibrary.SharedServices.Services
         public async Task DeleteUser(DeleteUserModel model)
         {
             var prefix = "DELETED|";
+            var secret = await _secretService.GetSecret(model.filters.idp_group);
+
             model.data.email = $"{prefix}{model.filters.email}";
             model.data.delete_dt = DateTime.UtcNow.ToString("yyyy-MM-dd HH:mm:ss.ffffff+00");
-            var secret = await _secretService.GetSecret(model.filters.idp_group);
+
             var resp = await _genericEntityRepo.UpdateEntity(model, secret);
             //todo updateMods
         }

@@ -16,12 +16,12 @@ public static class ObjectEncryption
         ProcessObject(obj, key, encrypt: false);
     }
 
-    public static void EncryptObject(object obj, string key, List<string> fieldsToEncrypt)
+    public static void EncryptObject(object obj, string key, List<string> fieldsToEncrypt, bool ignoreParentPath = false)
     {
         if (obj.GetType() == typeof(JObject))
             ProcessJObject(obj as JObject, key, fieldsToEncrypt, encrypt: true);
         else
-            ProcessObject(obj, key, fieldsToEncrypt, encrypt: true);
+            ProcessObject(obj, key, fieldsToEncrypt, encrypt: true, ignoreParentPath: ignoreParentPath);
     }
 
     public static void DecryptObject(object obj, string key, List<string> fieldsToEncrypt)
@@ -170,7 +170,7 @@ public static class ObjectEncryption
         }
     }
 
-    private static void ProcessObject(object obj, string key, List<string> fieldsToEncrypt, bool encrypt, string parentPath = "")
+    private static void ProcessObject(object obj, string key, List<string> fieldsToEncrypt, bool encrypt, string parentPath = "", bool ignoreParentPath = false)
     {
         if (obj == null) return;
 
@@ -183,7 +183,7 @@ public static class ObjectEncryption
                 continue;
 
             var value = prop.GetValue(obj);
-            var currentPath = string.IsNullOrEmpty(parentPath)
+            var currentPath = string.IsNullOrEmpty(parentPath) || ignoreParentPath
             ? prop.Name
             : $"{parentPath}.{prop.Name}";
 
@@ -204,7 +204,7 @@ public static class ObjectEncryption
                 }
                 else
                 {
-                    ProcessObject(value, key, fieldsToEncrypt, encrypt, currentPath);
+                    ProcessObject(value, key, fieldsToEncrypt, encrypt, currentPath, ignoreParentPath);
                 }
             }
         }

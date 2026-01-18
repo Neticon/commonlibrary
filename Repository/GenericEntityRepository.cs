@@ -23,7 +23,7 @@ namespace CommonLibrary.Repository
             var encryptPaths = EncryptionMetadataHelper.GetEncryptedPropertyPaths(typeof(T));
             if (encryptPaths.Count > 0 && string.IsNullOrEmpty(secret))
                 ThrowEncryptionException(encryptPaths);
-            ObjectEncryption.EncryptObject(data, "key", EncryptionMetadataHelper.GetEncryptedPropertyPaths(typeof(T)));
+            ObjectEncryption.EncryptObject(data, secret, EncryptionMetadataHelper.GetEncryptedPropertyPaths(typeof(T)));
             var payload = new GraphApiPayload { data = data };
             var query = GenerateDoOperationsQuery(payload, data._schema, data._table, DoOperationQueryType.insert);
             var queryResult = await ExecuteStandardCommand(query, returnError);
@@ -35,7 +35,7 @@ namespace CommonLibrary.Repository
             var encryptPaths = EncryptionMetadataHelper.GetEncryptedPropertyPaths(typeof(T));
             if (encryptPaths.Count > 0 && string.IsNullOrEmpty(secret))
                 ThrowEncryptionException(encryptPaths);
-            ObjectEncryption.EncryptObject(model, secret, encryptPaths);
+            ObjectEncryption.EncryptObject(model, secret, encryptPaths, true);
             var query = GenerateDoOperationsQuery(model, meta._schema, meta._table, DoOperationQueryType.update);
             var queryResult = await ExecuteStandardCommand(query, returnError);
             return queryResult;

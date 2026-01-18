@@ -13,6 +13,6 @@
         public string role { get; set; }
         public string phone_number { get; set; }
         public Guid? tenant_id { get; set; }
-        public string create_bu {  get; set; }
+        public string? create_bu {  get; set; }
     }
 }
