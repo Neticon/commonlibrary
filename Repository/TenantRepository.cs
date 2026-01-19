@@ -25,5 +25,18 @@ namespace CommonLibrary.Repository
             }
             return "";
         }
+
+        public async Task<Guid?> GetTenantId(string orgCode)
+        {
+            var fields = new Dictionary<string, string>() { { "tenant_id", "\"\"" } };
+            var filters = new Dictionary<string, string>() { { "org_code", $"\"{orgCode}\"" } };
+            var query = GenerateDoSelectQuery(fields, filters, meta._schema, meta._table);
+            var result = await ExecuteDoSelectCommand(query);
+            if (result.success && result.rows.Count > 0)
+            {
+                return result.rows.First().tenant_id;
+            }
+            return null;
+        }
     }
 }

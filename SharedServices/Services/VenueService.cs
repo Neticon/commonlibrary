@@ -5,15 +5,16 @@ using CommonLibrary.Models.API;
 using CommonLibrary.Repository.Interfaces;
 using CommonLibrary.SharedServices.Interfaces;
 using Mapster;
+using ServicePortal.Application.Interfaces;
 
 namespace CommonLibrary.SharedServices.Services
 {
-    public class VenueService : IVenueService
+    public class VenueService : AppServiceBase, IVenueService
     {
-        public IGenericEntityRepository<Venue> _genericRepository;
-        public IValidationService _validationService;
+        private readonly IGenericEntityRepository<Venue> _genericRepository;
+        private readonly IValidationService _validationService;
 
-        public VenueService(IGenericEntityRepository<Venue> genericRepository, IValidationService validationService)
+        public VenueService(IGenericEntityRepository<Venue> genericRepository, IValidationService validationService, ICurrentUserService currentUserService) : base(currentUserService)
         {
             _genericRepository = genericRepository;
             _validationService = validationService;
@@ -22,32 +23,34 @@ namespace CommonLibrary.SharedServices.Services
         public async Task<ServiceResponse> CreateVenue(VenueModelData data)
         {
             var validationResult = await _validationService.GetRedisDeviceIntel(data.email, data.phone, "");
-            //if (validationResult == null)
-            //  throw new Exception("Invalid email or phone");
+            if (validationResult == null)
+                throw new Exception("Invalid email or phone");
 
             var venue = data.Adapt<Venue>();
             venue.venue_id = Guid.NewGuid();
-            venue.tenant_id = new Guid("0197163f-9148-7aa7-8c55-c2790fdfa478"); //GetFromUserContext
-            venue.create_bu = "test";//same
-                                     //       venue.evs_id = new Guid(validationResult.EmailValidation);
-                                     //     venue.pnvs_id = new Guid(validationResult.PhoneValidation);
+            venue.tenant_id = CurrentUser.TenantId; //GetFromUserContext
+            venue.create_bu = CurrentUser.Email;
+            venue.evs_id = new Guid(validationResult.EmailValidation);
+            venue.pnvs_id = new Guid(validationResult.PhoneValidation);
 
-            var resp = await _genericRepository.SaveEntity(venue);
+            var resp = await _genericRepository.SaveEntity(venue, CurrentUser.OrgSecret);
             return new ServiceResponse { Result = resp };
         }
 
         public async Task<ServiceResponse> DeleteVenue(DeleteVenueModel data)
         {
             //check is tenant same as in context
+            if (!CurrentUser.TenantId.ToString().Equals(data.filters.tenant_id))
+                throw new Exception($"Cross tenant deletion!");
             data.filters.tenant_id = null;
             data.data.is_deleted = true;
-            var resp = await _genericRepository.UpdateEntity(data);
+            var resp = await _genericRepository.UpdateEntity(data, CurrentUser.OrgSecret);
             return new ServiceResponse { Result = resp };
         }
 
         public async Task<ServiceResponse> GetVenues(object data)
         {
-            var resp = await _genericRepository.GetData(data);
+            var resp = await _genericRepository.GetData(data, CurrentUser.OrgSecret);
             return new ServiceResponse { Result = resp };
         }
 
@@ -63,7 +66,7 @@ namespace CommonLibrary.SharedServices.Services
             }
 
             var venue = data.data.Adapt<Venue>();
-            venue.modify_bu = "test";// GET FROM CONTEXT 
+            venue.modify_bu = CurrentUser.Email;
             venue.modify_dt = DateTime.UtcNow;
             if (emailUpdate || phoneUpdate)
             {
@@ -78,7 +81,7 @@ namespace CommonLibrary.SharedServices.Services
 
             var payload = new GraphApiPayload { data = venue, filters = data.filters };
 
-            var resp = await _genericRepository.UpdateEntity(payload);
+            var resp = await _genericRepository.UpdateEntity(payload, CurrentUser.OrgSecret);
             return new ServiceResponse { Result = resp };
         }
     }

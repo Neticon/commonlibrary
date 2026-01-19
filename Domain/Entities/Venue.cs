@@ -9,10 +9,13 @@
         public Guid? venue_id { get; set; }
         public Guid? tenant_id { get; set; }
         public TimeSpan? create_dt { get; set; }
+        [Encrypt]
         public string? create_bu { get; set; }
         public DateTime? modify_dt { get; set; }
+        [Encrypt]
         public string? modify_bu { get; set; }
         public TimeSpan? delete_dt { get; set; }
+        [Encrypt]
         public string? delete_bu { get; set; }
         public string? mods { get; set; }
         public string? name { get; set; }
