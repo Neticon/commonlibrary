@@ -4,44 +4,39 @@ using CommonLibrary.Repository.Interfaces;
 using CommonLibrary.SharedServices.Interfaces;
 using Newtonsoft.Json;
 using Newtonsoft.Json.Linq;
+using ServicePortal.Application.Interfaces;
 using ServicePortal.Domain.PSQL;
 using System.Text.Json;
 
 namespace CommonLibrary.SharedServices.Services
 {
-    public class BlockService : IBlockService
+    public class BlockService : AppServiceBase, IBlockService
     {
         private readonly IGenericEntityRepository<Block> _entityRepository;
 
-        public BlockService(IGenericEntityRepository<Block> entityRepository) { _entityRepository = entityRepository; }
+        public BlockService(IGenericEntityRepository<Block> entityRepository, ICurrentUserService currentUserService) : base(currentUserService) { _entityRepository = entityRepository; }
 
         public async Task<ServiceResponse> GetBlocks(Object payload)
         {
             var json = JsonConvert.DeserializeObject<JObject>(payload.ToString());
-            var resp = await _entityRepository.GetData(json);
+            var resp = await _entityRepository.GetData(json, CurrentUser.OrgSecret);
             return new ServiceResponse { Result = resp };
         }
 
         public async Task<ServiceResponse> DeleteBlocks(Object payload)
         {
-            var email = "d.stojakovic@neticon.it";//get from context of FE??
-
-            return await CheckIsBulkAndCallFunction(payload, DeleteBlock, email);
+            return await CheckIsBulkAndCallFunction(payload, DeleteBlock, CurrentUser.Email);
         }
 
         public async Task<ServiceResponse> CreateBlocks(Object payload)
         {
-            var email = "d.stojakovic@neticon.it";//get from context of FE??
-
-            return await CheckIsBulkAndCallFunction(payload, SaveBlock, email);
+            return await CheckIsBulkAndCallFunction(payload, SaveBlock, CurrentUser.Email);
         }
 
 
         public async Task<ServiceResponse> UpdateBlocks(Object payload)
         {
-            var email = "d.stojakovic@neticon.it";//get from context of FE??
-
-            return await CheckIsBulkAndCallFunction(payload, UpdateBlock, email);
+            return await CheckIsBulkAndCallFunction(payload, UpdateBlock, CurrentUser.Email);
         }
 
         private async Task<GraphAPIResponse<Block>> SaveBlock(JObject data, string email)

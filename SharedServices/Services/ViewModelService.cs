@@ -77,8 +77,9 @@ namespace CommonLibrary.SharedServices.Services
             return new ServiceResponse { Result = resp };
         }
 
-        public async Task<ServiceResponse> GetBookingDetail(Guid bookingId) //done
+        public async Task<ServiceResponse> GetBookingDetail(Guid bookingId)
         {
+            //ADD ENCRYPTION FOR BOOKING
             var query = new NpgsqlCommand(PredefinedQueryPatterns.BOOKING_DETAIL);
             query.Parameters.AddWithValue("booking_id", NpgsqlDbType.Uuid, bookingId);
 
