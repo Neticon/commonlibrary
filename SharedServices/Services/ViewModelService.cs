@@ -7,14 +7,15 @@ using Newtonsoft.Json;
 using Newtonsoft.Json.Linq;
 using Npgsql;
 using NpgsqlTypes;
+using ServicePortal.Application.Interfaces;
 
 namespace CommonLibrary.SharedServices.Services
 {
-    public class ViewModelService : IViewModelService
+    public class ViewModelService : AppServiceBase, IViewModelService
     {
         private readonly IGenericRepository<JObject> _repository;
 
-        public ViewModelService(IGenericRepository<JObject> repository)
+        public ViewModelService(IGenericRepository<JObject> repository, ICurrentUserService currentUserService) : base(currentUserService)
         {
             _repository = repository;
         }
@@ -42,10 +43,10 @@ namespace CommonLibrary.SharedServices.Services
                 var users = row["users"];
                 foreach (var user in users)
                 {
-                    ObjectEncryption.DecryptObject(user, "key", fieldsForDecrypt);
+                    ObjectEncryption.DecryptObject(user, CurrentUser.OrgSecret, fieldsForDecrypt);
                     try
                     {
-                        user["decr_email"] = AesEncryption.Decrypt(user["email"].ToString(), "key");
+                        user["decr_email"] = AesEncryption.Decrypt(user["email"].ToString(), CurrentUser.OrgSecret);
                     }
                     catch (Exception ex)
                     {
