@@ -9,26 +9,29 @@ using CommonLibrary.Integrations.Model;
 using CommonLibrary.Models.API;
 using CommonLibrary.Repository.Interfaces;
 using CommonLibrary.SharedServices.Interfaces;
+using Integration.Grpc;
 using Newtonsoft.Json;
 using Newtonsoft.Json.Linq;
+using System.Globalization;
 using WebApp.API.Controllers.Helper;
 
 namespace CommonLibrary.SharedServices.Services
 {
     public class UsersService : IUserService
     {
-
         private readonly IValidationService _validationService;
         private readonly IGenericEntityRepository<User> _genericEntityRepo;
         private readonly ITenantRepository _tenantRepository;
         private readonly ISecretService _secretService;
+        private readonly IEmailClient _emailClient;
 
-        public UsersService(IValidationService validationService, IGenericEntityRepository<User> genericEntityRepository, ITenantRepository tenantRepository, ISecretService secretService)
+        public UsersService(IValidationService validationService, IGenericEntityRepository<User> genericEntityRepository, ITenantRepository tenantRepository, ISecretService secretService, IEmailClient emailClient)
         {
             _validationService = validationService;
             _genericEntityRepo = genericEntityRepository;
             _tenantRepository = tenantRepository;
             _secretService = secretService;
+            _emailClient = emailClient;
         }
         //todo- get from config
         public static string UserPoolId = Environment.GetEnvironmentVariable("AWS_COGNITO_POOL_ID");
@@ -100,6 +103,7 @@ namespace CommonLibrary.SharedServices.Services
             };
 
             await _genericEntityRepo.SaveEntity(user, secret);
+            SendEmail(model.data.email, user, tempPassword);
         }
 
         public async Task UpdateUser(UpdateUserModel model)
@@ -117,18 +121,10 @@ namespace CommonLibrary.SharedServices.Services
             var resp = await _genericEntityRepo.UpdateEntity(model, secret);
         }
 
-        public async Task<object> GetUsers(string model)
+        public async Task<object> GetUsers(string model, string orgSecret)
         {
             var jObject = JsonConvert.DeserializeObject<JObject>(model);
-            var orgCode = jObject["filters"]["idp_group"].ToString();
-            if (string.IsNullOrEmpty(orgCode))
-                throw new Exception("idp_group is empty!");
-            var secret = await _secretService.GetSecret(orgCode);
-            var resp = await _genericEntityRepo.GetData(model, secret);
-            foreach (var row in resp.rows)
-            {
-                ObjectEncryption.DecryptObject(row, secret, EncryptionMetadataHelper.GetEncryptedPropertyPaths(typeof(User)));
-            }
+            var resp = await _genericEntityRepo.GetData(model, orgSecret);
             return resp.rows;
         }
 
@@ -151,6 +147,25 @@ namespace CommonLibrary.SharedServices.Services
             //todo - get config from secrets
             var awsCredentials = new BasicAWSCredentials(accessKey, accessSecret);
             return new AmazonCognitoIdentityProviderClient(awsCredentials, RegionEndpoint.EUCentral1);
+        }
+
+        private async Task<string> SendEmail(string email, User user, string tempPass)
+        {
+            var request = new SendEmailRequest
+            {
+                TemplateId = "user_create",
+                ReferenceEntity = $"{user._schema}.{user._table}",
+                ReferenceId = Guid.NewGuid().ToString(),
+                Subject = "User created",
+                MessageType = "CreateUser",
+                TenantId = user.tenant_id.ToString()
+            };
+            request.EmailTo.Add(email);
+            request.Substitutions.Add("{{full_name}}", $"{user.first_name} {user.last_name}");
+            request.Substitutions.Add("{{org_code}}", $"{user.idp_group}");
+            request.Substitutions.Add("{{temp_pass}}", tempPass);
+            var response = await _emailClient.SendEmailAsync(request);
+            return response;
         }
 
     }

@@ -8,6 +8,6 @@ namespace CommonLibrary.SharedServices.Interfaces
         Task CreateNewUser(CreateUserModel model);
         Task UpdateUser(UpdateUserModel model);
         Task DeleteUser(DeleteUserModel model);
-        Task<object> GetUsers(string model);
+        Task<object> GetUsers(string model, string orgSecret);
     }
 }
