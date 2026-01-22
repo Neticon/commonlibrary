@@ -61,7 +61,7 @@ namespace CommonLibrary.SharedServices.Services
         public async Task<ServiceResponse> GetVenuesTenantViewModel(string tenantId)
         {
             var query = new NpgsqlCommand(PredefinedQueryPatterns.VENUES_TENANT_VIEW_MODEL);
-            query.Parameters.AddWithValue("tenant_id", NpgsqlDbType.Uuid, tenantId);
+            query.Parameters.AddWithValue("tenant_id", NpgsqlDbType.Uuid, new Guid(tenantId));
 
             var resp = await _repository.ExecuteStandardCommand(query);
 
