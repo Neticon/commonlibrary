@@ -12,12 +12,13 @@ using CommonLibrary.SharedServices.Interfaces;
 using Integration.Grpc;
 using Newtonsoft.Json;
 using Newtonsoft.Json.Linq;
+using ServicePortal.Application.Interfaces;
 using System.Globalization;
 using WebApp.API.Controllers.Helper;
 
 namespace CommonLibrary.SharedServices.Services
 {
-    public class UsersService : IUserService
+    public class UsersService : AppServiceBase, IUserService
     {
         private readonly IValidationService _validationService;
         private readonly IGenericEntityRepository<User> _genericEntityRepo;
@@ -25,7 +26,7 @@ namespace CommonLibrary.SharedServices.Services
         private readonly ISecretService _secretService;
         private readonly IEmailClient _emailClient;
 
-        public UsersService(IValidationService validationService, IGenericEntityRepository<User> genericEntityRepository, ITenantRepository tenantRepository, ISecretService secretService, IEmailClient emailClient)
+        public UsersService(IValidationService validationService, IGenericEntityRepository<User> genericEntityRepository, ITenantRepository tenantRepository, ISecretService secretService, IEmailClient emailClient, ICurrentUserService currentUserService) : base(currentUserService)
         {
             _validationService = validationService;
             _genericEntityRepo = genericEntityRepository;
@@ -108,7 +109,7 @@ namespace CommonLibrary.SharedServices.Services
 
         public async Task UpdateUser(UpdateUserModel model)
         {
-            var validation = await _validationService.ValidateRequest(new ValidateRequest { p = model.data.phone_number });
+            var validation = await _validationService.ValidateRequest(new ValidateRequest { p = model.data.phone_number ?? "" });
             if (validation.Item1 != 200)
                 throw new Exception("Phone is not valid");
             if (!string.IsNullOrEmpty(model.data.role))
@@ -117,27 +118,23 @@ namespace CommonLibrary.SharedServices.Services
                 if (!ValidRoles.Contains(model.data.role))
                     throw new Exception("Invalid role");
             }
-            var secret = await _secretService.GetSecret(model.filters.idp_group);
-            var resp = await _genericEntityRepo.UpdateEntity(model, secret);
+            var resp = await _genericEntityRepo.UpdateEntity(model, CurrentUser.OrgSecret);
         }
 
         public async Task<object> GetUsers(string model, string orgSecret)
         {
-            var jObject = JsonConvert.DeserializeObject<JObject>(model);
             var resp = await _genericEntityRepo.GetData(model, orgSecret);
-            return resp.rows;
+            return resp;
         }
 
         public async Task DeleteUser(DeleteUserModel model)
         {
             var prefix = "DELETED|";
-            var secret = await _secretService.GetSecret(model.filters.idp_group);
 
             model.data.email = $"{prefix}{model.filters.email}";
             model.data.delete_dt = DateTime.UtcNow.ToString("yyyy-MM-dd HH:mm:ss.ffffff+00");
 
-            var resp = await _genericEntityRepo.UpdateEntity(model, secret);
-            //todo updateMods
+            var resp = await _genericEntityRepo.UpdateEntity(model, CurrentUser.OrgSecret);
         }
 
         private AmazonCognitoIdentityProviderClient GetCognitoProvider()
