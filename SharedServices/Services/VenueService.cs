@@ -6,6 +6,7 @@ using CommonLibrary.Repository.Interfaces;
 using CommonLibrary.SharedServices.Interfaces;
 using Mapster;
 using ServicePortal.Application.Interfaces;
+using VenueGenerationService;
 
 namespace CommonLibrary.SharedServices.Services
 {
@@ -13,11 +14,13 @@ namespace CommonLibrary.SharedServices.Services
     {
         private readonly IGenericEntityRepository<Venue> _genericRepository;
         private readonly IValidationService _validationService;
+        private readonly IVenueGenerationService _venueGenerationService;
 
-        public VenueService(IGenericEntityRepository<Venue> genericRepository, IValidationService validationService, ICurrentUserService currentUserService) : base(currentUserService)
+        public VenueService(IGenericEntityRepository<Venue> genericRepository, IValidationService validationService, ICurrentUserService currentUserService, IVenueGenerationService venueGenerationService) : base(currentUserService)
         {
             _genericRepository = genericRepository;
             _validationService = validationService;
+            _venueGenerationService = venueGenerationService;
         }
 
         public async Task<ServiceResponse> CreateVenue(VenueModelData data)
@@ -34,6 +37,7 @@ namespace CommonLibrary.SharedServices.Services
             venue.pnvs_id = new Guid(validationResult.PhoneValidation);
 
             var resp = await _genericRepository.SaveEntity(venue, CurrentUser.OrgSecret);
+            _venueGenerationService.ReplaceJs(CurrentUser.TenantId.ToString());
             return new ServiceResponse { Result = resp };
         }
 
@@ -82,6 +86,7 @@ namespace CommonLibrary.SharedServices.Services
             var payload = new GraphApiPayload { data = venue, filters = data.filters };
 
             var resp = await _genericRepository.UpdateEntity(payload, CurrentUser.OrgSecret);
+            _venueGenerationService.ReplaceJs(CurrentUser.TenantId.ToString());
             return new ServiceResponse { Result = resp };
         }
     }
