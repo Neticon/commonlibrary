@@ -15,11 +15,11 @@ namespace VenueGenerationService
     {
         private readonly IS3Service _s3Servce;
         private const string ObfuscationPlaceholder = "__OBF_HASH__";
-        private const string VenueDataPlaceholder = "\"__VENUE_DATA__\"";
-        private const string DomHashPlaceholder = "\"__DOM_HASH__\"";
-        private const string CustomerIdPlaceholder = "\"__CUSTOMER_ID__\"";
-        private const string TimestampPlaceholder = "\"__TIMESTAMP__\"";
-        private const string UISettingsPlaceholder = "\"__UI_SETTINGS__\"";
+        private const string VenueDataPlaceholder = "__VENUE_DATA__";
+        private const string DomHashPlaceholder = "__DOM_HASH__";
+        private const string CustomerIdPlaceholder = "__CUSTOMER_ID__";
+        private const string TimestampPlaceholder = "__TIMESTAMP__";
+        private const string UISettingsPlaceholder = "__UI_SETTINGS__";
         private const string S3Bucket = "venues-cloudfront-nonprod";
         private const string JsTemplateFile = "source/base.js";
         private const string JSFilename = "wb.js";
@@ -53,13 +53,13 @@ namespace VenueGenerationService
             var tenantData = await GetTenantData(tenantId);
             if (tenantData == null)
                 throw new Exception("Failed to get domains hash and org_code");
-            templateJs = templateJs.Replace(DomHashPlaceholder, JsonConvert.SerializeObject(tenantData.web_pages));
+            templateJs = templateJs.Replace(DomHashPlaceholder, JsonConvert.SerializeObject(tenantData.web_pages, Formatting.None));
 
             var org_code = tenantData.org_code;
 
-            templateJs = templateJs.Replace(CustomerIdPlaceholder, $"\"{tenantId}\"");
+            templateJs = templateJs.Replace(CustomerIdPlaceholder, $"{tenantId}");
             templateJs = templateJs.Replace(TimestampPlaceholder, new DateTimeOffset(DateTime.UtcNow).ToUnixTimeSeconds().ToString());
-            templateJs = templateJs.Replace(UISettingsPlaceholder, JsonConvert.SerializeObject(tenantData.library));
+            templateJs = templateJs.Replace(UISettingsPlaceholder, JsonConvert.SerializeObject(tenantData.library, Formatting.None));
 
             templateJs = ProcessLibrary(templateJs);
 
@@ -172,13 +172,13 @@ namespace VenueGenerationService
             }
             var templateJs = CommonHelperFunctions.ReplaceWhitespace(jsFile, "");
             var domains = new List<string>();
-            var domainsHash = GetValueFromFile("dHS:[", "],oHS", templateJs);
+            var domainsHash = GetValueFromFile("'dHS':JSON['parse']('[", "]'),'oHS'", templateJs);
             if (domainsHash.Contains(','))
                 domains.AddRange(domainsHash.Split(",").Select(q => q.Trim('"')));
             else
                 domains.Add(domainsHash.Trim('"'));
 
-            var oHS = GetValueFromFile("oHS:", ",", templateJs).Trim('\'').Trim('"');
+            var oHS = GetValueFromFile("'oHS':", "',", templateJs).Trim('\'').Trim('"');
 
             //var oHS = GetObfuscationValue(templateJs, SecretKey);
             return new Tuple<List<string>, string>(domains, oHS);
