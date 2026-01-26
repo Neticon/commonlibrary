@@ -99,7 +99,7 @@ namespace VenueGenerationService
             var domainsHash = new List<string>();
             foreach (var domain in tenant.web_pages)
             {
-                domainsHash.Add(CreateDomainHash(domain));
+                domainsHash.Add(CreateHashWithReverseAlgorythm(domain));
             }
 
             tenant.web_pages = domainsHash;
@@ -193,10 +193,10 @@ namespace VenueGenerationService
             return input.Substring(startIndex, endIndex - startIndex);
         }
 
-        private string CreateDomainHash(string domain)
+        public string CreateHashWithReverseAlgorythm(string input)
         {
-            var domainSecret = Convert.ToBase64String(Encoding.UTF8.GetBytes(domain)).Reverse();
-            return GenerateHmac(domain, new string(domainSecret.ToArray()));
+            var secret = Convert.ToBase64String(Encoding.UTF8.GetBytes(input)).Reverse();
+            return GenerateHmac(input, new string(secret.ToArray()));
         }
 
         public async Task<DateTime> GetExpiry(string tenantId)
