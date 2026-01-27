@@ -4,12 +4,12 @@ using CommonLibrary.SharedServices.Interfaces;
 
 namespace CommonLibrary.SharedServices.Services
 {
-    public class SecretServise : ISecretService //NOT FINISHED ADD SECRET MANAGER IMPLEMENTATION WHEN IT IS READY
+    public class SecretService : ISecretService //NOT FINISHED ADD SECRET MANAGER IMPLEMENTATION WHEN IT IS READY
     {
         private readonly IRedisService _redisService;
         private readonly string REDIS_PREFIX = "tenantSecret_";
 
-        public SecretServise(IRedisService redisService)
+        public SecretService(IRedisService redisService)
         {
             _redisService = redisService;
         }
