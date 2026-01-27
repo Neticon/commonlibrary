@@ -30,10 +30,10 @@ namespace CommonLibrary.Repository
             return queryResult;
         }
 
-        public async Task<GraphAPIResponse<T>> UpdateEntity(Object model, string secret = "", bool returnError = false)
+        public async Task<GraphAPIResponse<T>> UpdateEntity(Object model, string secret = "", bool returnError = false, bool ignoreEncryption = false)
         {
             var encryptPaths = EncryptionMetadataHelper.GetEncryptedPropertyPaths(typeof(T));
-            if (encryptPaths.Count > 0 && string.IsNullOrEmpty(secret))
+            if (!ignoreEncryption && encryptPaths.Count > 0 && string.IsNullOrEmpty(secret))
                 ThrowEncryptionException(encryptPaths);
             ObjectEncryption.EncryptObject(model, secret, encryptPaths, true);
             var query = GenerateDoOperationsQuery(model, meta._schema, meta._table, DoOperationQueryType.update);
