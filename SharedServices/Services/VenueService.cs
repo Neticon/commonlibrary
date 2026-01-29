@@ -32,7 +32,7 @@ namespace CommonLibrary.SharedServices.Services
             var venue = data.Adapt<Venue>();
             venue.venue_id = Guid.NewGuid();
             venue.tenant_id = CurrentUser.TenantId; //GetFromUserContext
-            venue.create_bu = CurrentUser.Email;
+            venue.create_bu = CurrentUser.Decr_Email;
             venue.evs_id = new Guid(validationResult.EmailValidation);
             venue.pnvs_id = new Guid(validationResult.PhoneValidation);
 
@@ -70,7 +70,7 @@ namespace CommonLibrary.SharedServices.Services
             }
 
             var venue = data.data.Adapt<Venue>();
-            venue.modify_bu = CurrentUser.Email;
+            venue.modify_bu = CurrentUser.Decr_Email;
             venue.modify_dt = DateTime.UtcNow;
             if (emailUpdate || phoneUpdate)
             {

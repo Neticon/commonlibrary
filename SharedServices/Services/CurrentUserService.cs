@@ -7,24 +7,32 @@ namespace ServicePortal.Application.Services
 {
     public class CurrentUserService : ICurrentUserService
     {
-        public ITenantContextSerivice _tenantContextService;
+        public IContextSerivice _contextService;
         private CurrentUser? _cachedUser;
 
         public CurrentUser? CurrentUser => _cachedUser;
 
         //add secretaManagerService 
-        public CurrentUserService(ITenantContextSerivice tenantContextService)
+        public CurrentUserService(IContextSerivice tenantContextService)
         {
-            _tenantContextService = tenantContextService;
+            _contextService = tenantContextService;
         }
         public async Task<CurrentUser> GetAsync(string hashedMail, string orgCode)
         {
             if (_cachedUser != null)
                 return _cachedUser;
 
-            var tenantContext = await _tenantContextService.GetTenantContext(orgCode);
-            var email = AesEncryption.Decrypt(hashedMail, tenantContext.TenantSecret);
-            _cachedUser = new CurrentUser { OrgCode = orgCode, Email = email, HashedEmail = hashedMail, OrgSecret = tenantContext.TenantSecret, TenantId = tenantContext.TenantId };
+            var cacheContextUser = await _contextService.GetCurrentUserContext(hashedMail);
+            if (cacheContextUser == null) //no context, fallback to create context
+            { 
+                var tenantContext = await _contextService.GetTenantContext(orgCode);
+                if(tenantContext == null)
+                    throw new Exception("Failed to get context for user!");
+                var email = AesEncryption.Decrypt(hashedMail, tenantContext.TenantSecret);
+                cacheContextUser = new CurrentUser { OrgCode = orgCode, Email = hashedMail, Decr_Email = email, OrgSecret = tenantContext.TenantSecret, TenantId = tenantContext.TenantId };
+            }
+
+            _cachedUser = cacheContextUser;
             return _cachedUser;
         }
     }

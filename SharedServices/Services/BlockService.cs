@@ -25,18 +25,18 @@ namespace CommonLibrary.SharedServices.Services
 
         public async Task<ServiceResponse> DeleteBlocks(Object payload)
         {
-            return await CheckIsBulkAndCallFunction(payload, DeleteBlock, CurrentUser.Email);
+            return await CheckIsBulkAndCallFunction(payload, DeleteBlock, CurrentUser.Decr_Email);
         }
 
         public async Task<ServiceResponse> CreateBlocks(Object payload)
         {
-            return await CheckIsBulkAndCallFunction(payload, SaveBlock, CurrentUser.Email);
+            return await CheckIsBulkAndCallFunction(payload, SaveBlock, CurrentUser.Decr_Email);
         }
 
 
         public async Task<ServiceResponse> UpdateBlocks(Object payload)
         {
-            return await CheckIsBulkAndCallFunction(payload, UpdateBlock, CurrentUser.Email);
+            return await CheckIsBulkAndCallFunction(payload, UpdateBlock, CurrentUser.Decr_Email);
         }
 
         private async Task<GraphAPIResponse<Block>> SaveBlock(JObject data, string email)

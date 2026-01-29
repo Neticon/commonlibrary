@@ -3,25 +3,36 @@ using CommonLibrary.Repository.Interfaces;
 using CommonLibrary.Repository.Redis;
 using CommonLibrary.SharedServices.Interfaces;
 using Newtonsoft.Json;
+using ServicePortal.Application.Models;
 
 namespace CommonLibrary.SharedServices.Services
 {
-    public class TenantContextService : ITenantContextSerivice
+    public class ContextService : IContextSerivice
     {
         private readonly ITenantRepository _tenantRepo;
         private readonly ISecretService _secretService;
         private readonly IRedisService _redisService;
-        private readonly string REDIS_KEY_PREFIX = "tenant_context:";
+        private readonly string REDIS_KEY_PREFIX_TENANT = "tenant_context:";
+        private readonly string REDIS_KEY_PREFIX_USER = "user_context:";
 
-        public TenantContextService(ITenantRepository tenantRepo, ISecretService secretService, IRedisService redisService)
+        public ContextService(ITenantRepository tenantRepo, ISecretService secretService, IRedisService redisService)
         {
             _tenantRepo = tenantRepo;
             _secretService = secretService;
             _redisService = redisService;
         }
+
+        public async Task<CurrentUser?> GetCurrentUserContext(string email)
+        {
+            var result = await _redisService.GetString($"{REDIS_KEY_PREFIX_USER}{email}");
+            if (result == null)
+                return null;
+            return JsonConvert.DeserializeObject<CurrentUser>(result);
+        }
+
         public async Task<TenantContextModel> GetTenantContext(string orgCode)
         {
-            var key = $"{REDIS_KEY_PREFIX}{orgCode}";
+            var key = $"{REDIS_KEY_PREFIX_TENANT}{orgCode}";
             var redisContext = await _redisService.GetString(key);
             if (redisContext != null)
                 return JsonConvert.DeserializeObject<TenantContextModel>(redisContext);
@@ -32,6 +43,11 @@ namespace CommonLibrary.SharedServices.Services
             var tenantContext = new TenantContextModel { TenantId = tenantId.Value, TenantSecret = secret };
             _redisService.SetString(key, JsonConvert.SerializeObject(tenantContext));
             return tenantContext;
+        }
+
+        public async Task SetCurrentUserContext(string email, CurrentUser user)
+        {
+            await _redisService.SetString($"{REDIS_KEY_PREFIX_USER}{email}", JsonConvert.SerializeObject(user));
         }
     }
 }
