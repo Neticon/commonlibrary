@@ -26,7 +26,7 @@ namespace CommonLibrary.Integrations
             _deviceIntelRepository = deviceIntelRepository;
             _venueGenerationService = venueGenerationService;
             _redisService = redisService;
-            _configuration.PhoneKey = Environment.GetEnvironmentVariable("BYTEPLAN_PHONE_KEY");
+            _configuration.PhoneKey = _configuration.PhoneKey ?? Environment.GetEnvironmentVariable("BYTEPLAN_PHONE_KEY");
         }
 
         public async Task<ValueTuple<int, string>> ValidateRequest(ValidateRequest data, bool apiCall = false)
