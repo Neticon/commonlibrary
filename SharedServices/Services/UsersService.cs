@@ -104,7 +104,7 @@ namespace CommonLibrary.SharedServices.Services
             };
 
             await _genericEntityRepo.SaveEntity(user, secret);
-            SendEmail(model.data.email, user, tempPassword);
+            SendEmail(model.data.email, user, tempPassword, model.data.first_name, model.data.last_name);
         }
 
         public async Task UpdateUser(UpdateUserModel model)
@@ -196,7 +196,7 @@ namespace CommonLibrary.SharedServices.Services
             return new AmazonCognitoIdentityProviderClient(awsCredentials, RegionEndpoint.EUCentral1);
         }
 
-        private async Task<string> SendEmail(string email, User user, string tempPass)
+        private async Task<string> SendEmail(string email, User user, string tempPass, string firstName, string lastName)
         {
             var request = new SendEmailRequest
             {
@@ -208,7 +208,7 @@ namespace CommonLibrary.SharedServices.Services
                 TenantId = user.tenant_id.ToString()
             };
             request.EmailTo.Add(email);
-            request.Substitutions.Add("{{full_name}}", $"{user.first_name} {user.last_name}");
+            request.Substitutions.Add("{{full_name}}", $"{firstName} {lastName}");
             request.Substitutions.Add("{{org_code}}", $"{user.idp_group}");
             request.Substitutions.Add("{{temp_pass}}", tempPass);
             try
