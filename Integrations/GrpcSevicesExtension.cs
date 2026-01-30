@@ -7,6 +7,7 @@ namespace CommonLibrary.Integrations
     {
         public static IServiceCollection AddGrpcClient(this IServiceCollection services, string baseUrl, string internalKey)
         {
+            Console.WriteLine("===================ADDING GRPC " + baseUrl);
             if (!string.IsNullOrEmpty(baseUrl))
             {
                 services.AddSingleton(sp =>

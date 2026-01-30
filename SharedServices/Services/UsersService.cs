@@ -11,9 +11,7 @@ using CommonLibrary.Repository.Interfaces;
 using CommonLibrary.SharedServices.Interfaces;
 using Integration.Grpc;
 using Newtonsoft.Json;
-using Newtonsoft.Json.Linq;
 using ServicePortal.Application.Interfaces;
-using System.Globalization;
 using WebApp.API.Controllers.Helper;
 
 namespace CommonLibrary.SharedServices.Services
@@ -63,8 +61,10 @@ namespace CommonLibrary.SharedServices.Services
                 UserAttributes = new List<AttributeType>
                 {
                     new AttributeType { Name = "email", Value = model.data.email },
-                    new AttributeType { Name = "custom:role", Value = model.data.role },
                     new AttributeType { Name = "custom:group", Value = idpCode  },
+                    new AttributeType { Name = "phone_number", Value = model.data.phone_number },
+                    new AttributeType { Name = "given_name", Value = model.data.first_name },
+                    new AttributeType { Name = "family_name", Value = model.data.last_name },
                     new AttributeType { Name = "custom:postal_code", Value = hashedMail  },
                     new AttributeType { Name = "custom:organization_code", Value = idpCode },
                 },
@@ -109,9 +109,12 @@ namespace CommonLibrary.SharedServices.Services
 
         public async Task UpdateUser(UpdateUserModel model)
         {
-            var validation = await _validationService.ValidateRequest(new ValidateRequest { p = model.data.phone_number ?? "" });
-            if (validation.Item1 != 200)
-                throw new Exception("Phone is not valid");
+            if (!string.IsNullOrEmpty(model.data.phone_number))
+            {
+                var validation = await _validationService.ValidateRequest(new ValidateRequest { p = model.data.phone_number });
+                if (validation.Item1 != 200)
+                    throw new Exception("Phone is not valid");
+            }
             if (!string.IsNullOrEmpty(model.data.role))
             {
                 model.data.role = model.data.role.ToUpper();
@@ -119,6 +122,37 @@ namespace CommonLibrary.SharedServices.Services
                     throw new Exception("Invalid role");
             }
             var resp = await _genericEntityRepo.UpdateEntity(model, CurrentUser.OrgSecret);
+
+
+            var updateUserAttributes = new List<AttributeType>();
+            if (!string.IsNullOrEmpty(model.data.phone_number))
+                updateUserAttributes.Add(new AttributeType { Name = "phone_number", Value = model.data.phone_number });
+
+            if (!string.IsNullOrEmpty(model.data.first_name))
+                updateUserAttributes.Add(new AttributeType { Name = "given_name", Value = model.data.first_name });
+
+            if (!string.IsNullOrEmpty(model.data.first_name))
+                updateUserAttributes.Add(new AttributeType { Name = "family_name", Value = model.data.last_name });
+
+            if (updateUserAttributes.Count > 0)
+            {
+                var emailDecr = AesEncryption.Decrypt(model.filters.email, CurrentUser.OrgSecret);
+                var request = new AdminUpdateUserAttributesRequest
+                {
+                    UserPoolId = UserPoolId,
+                    Username = emailDecr,
+                    UserAttributes = updateUserAttributes
+                };
+                var provider = GetCognitoProvider();
+                try
+                {
+                    provider.AdminUpdateUserAttributesAsync(request);
+                }
+                catch (Exception ex)
+                {
+                    throw new Exception("Failed to delete cognito user." + ex.Message);
+                }
+            }
         }
 
         public async Task<object> GetUsers(string model, string orgSecret)
@@ -135,6 +169,22 @@ namespace CommonLibrary.SharedServices.Services
             model.data.delete_dt = DateTime.UtcNow.ToString("yyyy-MM-dd HH:mm:ss.ffffff+00");
 
             var resp = await _genericEntityRepo.UpdateEntity(model, CurrentUser.OrgSecret);
+
+            var emailDecr = AesEncryption.Decrypt(model.filters.email, CurrentUser.OrgSecret);
+            var request = new AdminDeleteUserRequest
+            {
+                UserPoolId = UserPoolId,
+                Username = emailDecr
+            };
+            var provider = GetCognitoProvider();
+            try
+            {
+                provider.AdminDeleteUserAsync(request);
+            }
+            catch (Exception ex)
+            {
+                throw new Exception("Failed to delete cognito user." + ex.Message);
+            }
         }
 
         private AmazonCognitoIdentityProviderClient GetCognitoProvider()
@@ -161,9 +211,14 @@ namespace CommonLibrary.SharedServices.Services
             request.Substitutions.Add("{{full_name}}", $"{user.first_name} {user.last_name}");
             request.Substitutions.Add("{{org_code}}", $"{user.idp_group}");
             request.Substitutions.Add("{{temp_pass}}", tempPass);
-            var response = await _emailClient.SendEmailAsync(request);
-            return response;
+            try
+            {
+                Console.WriteLine("Sending EMAIL_REQUEST=>" + JsonConvert.SerializeObject(request));
+                var response = await _emailClient.SendEmailAsync(request);
+                return response;
+            }
+            catch (Exception ex) { Console.WriteLine(ex); }
+            return null;
         }
-
     }
 }
