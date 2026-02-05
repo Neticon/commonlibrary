@@ -35,6 +35,8 @@ namespace CommonLibrary.SharedServices.Services
         //todo- get from config
         public static string UserPoolId = Environment.GetEnvironmentVariable("AWS_COGNITO_POOL_ID");
         public static string[] ValidRoles = { "ASSISTANT", "VENUE_MANAGER" };
+        public static string EMAIL_FROM_HD = Environment.GetEnvironmentVariable("EMAIL_FROM_HD");
+        public static string EMAIL_FROM_NAME_HD = Environment.GetEnvironmentVariable("EMAIL_FROM_NAME_HD");
 
         public async Task CreateNewUser(CreateUserModel model)
         {
@@ -45,11 +47,14 @@ namespace CommonLibrary.SharedServices.Services
             if (!ValidRoles.Contains(model.data.role))
                 throw new Exception("Invalid role");
             var idpCode = "";
+            var orgName = "";
             if (model.data.tenant_id != null)
             {
-                idpCode = await _tenantRepository.GetOrgCode(model.data.tenant_id.Value);
-                if (string.IsNullOrEmpty(idpCode))
+                var tenantData = await _tenantRepository.GetOrgCodeAndName(model.data.tenant_id.Value); 
+                if (tenantData == null)
                     throw new Exception("Failed to get idp_group from tenant");
+                idpCode = tenantData.Item1;
+                orgName = tenantData.Item2;
             }
             var secret = await _secretService.GetSecret(idpCode);
             var hashedMail = AesEncryption.Encrypt(model.data.email, secret);
@@ -104,7 +109,7 @@ namespace CommonLibrary.SharedServices.Services
             };
 
             await _genericEntityRepo.SaveEntity(user, secret);
-            SendEmail(model.data.email, user, tempPassword, model.data.first_name, model.data.last_name);
+            _ = SendEmail(model.data.email, user, tempPassword, model.data.first_name, orgName);
         }
 
         public async Task UpdateUser(UpdateUserModel model)
@@ -146,7 +151,7 @@ namespace CommonLibrary.SharedServices.Services
                 var provider = GetCognitoProvider();
                 try
                 {
-                    provider.AdminUpdateUserAttributesAsync(request);
+                    _ = provider.AdminUpdateUserAttributesAsync(request);
                 }
                 catch (Exception ex)
                 {
@@ -179,7 +184,7 @@ namespace CommonLibrary.SharedServices.Services
             var provider = GetCognitoProvider();
             try
             {
-                provider.AdminDeleteUserAsync(request);
+                _ = provider.AdminDeleteUserAsync(request);
             }
             catch (Exception ex)
             {
@@ -196,21 +201,25 @@ namespace CommonLibrary.SharedServices.Services
             return new AmazonCognitoIdentityProviderClient(awsCredentials, RegionEndpoint.EUCentral1);
         }
 
-        private async Task<string> SendEmail(string email, User user, string tempPass, string firstName, string lastName)
+        private async Task<string> SendEmail(string email, User user, string tempPass, string firstName, string tenantName)
         {
             var request = new SendEmailRequest
             {
                 TemplateId = "user_create",
                 ReferenceEntity = $"{user._schema}.{user._table}",
                 ReferenceId = Guid.NewGuid().ToString(),
-                Subject = "User created",
+                Subject = "Il tuo Conventus account è stato creato – Attivazione richiesta",
                 MessageType = "CreateUser",
-                TenantId = user.tenant_id.ToString()
+                TenantId = user.tenant_id.ToString(),
+                FromEmail = EMAIL_FROM_HD,
+                FromName = EMAIL_FROM_NAME_HD
             };
             request.EmailTo.Add(email);
-            request.Substitutions.Add("{{full_name}}", $"{firstName} {lastName}");
-            request.Substitutions.Add("{{org_code}}", $"{user.idp_group}");
-            request.Substitutions.Add("{{temp_pass}}", tempPass);
+            request.Substitutions.Add("{{first_name}}", firstName);
+            request.Substitutions.Add("{{tenant.org_name}}", tenantName);
+            request.Substitutions.Add("{{temp_pw}}", tempPass);
+            request.Substitutions.Add("{{email}}", email);
+            request.Substitutions.Add("{{conventus_user_email}}", email);
             try
             {
                 Console.WriteLine("Sending EMAIL_REQUEST=>" + JsonConvert.SerializeObject(request));

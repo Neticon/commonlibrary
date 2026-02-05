@@ -79,7 +79,7 @@ namespace CommonLibrary.Helpers
                 return sr.ReadToEnd();
             }catch (Exception ex)
             {
-                Console.WriteLine("Error trying to encrypt=>" +ex.ToString());
+               // Console.WriteLine("Error trying to encrypt=>" +ex.ToString());
                 return cipherTextBase64;
             }
         }

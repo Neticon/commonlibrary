@@ -2,7 +2,7 @@
 {
     public interface ITenantRepository
     {
-        Task<string> GetOrgCode(Guid id);
+        Task<Tuple<string, string>> GetOrgCodeAndName(Guid id);
         Task<Guid?> GetTenantId(string orgCode);
     }
 }

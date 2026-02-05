@@ -13,17 +13,18 @@ namespace CommonLibrary.Repository
         {
         }
 
-        public async Task<string> GetOrgCode(Guid id)
+        public async Task<Tuple<string,string>> GetOrgCodeAndName(Guid id)
         {
-            var fields = new Dictionary<string, string>() { { "org_code", "\"\"" } };
+            var fields = new Dictionary<string, string>() { { "org_code", "\"\"" }, { "org_name", "\"\"" } };
             var filters = new Dictionary<string, string>() { { "tenant_id", $"\"{id}\"" } };
             var query = GenerateDoSelectQuery(fields, filters, meta._schema, meta._table);
             var result = await ExecuteDoSelectCommand(query);
-            if (result.success && result.rows.Count > 0)
+            if (result.success && result.rows.Count > 0 && result.rows.First() != null)
             {
-                return result.rows.First().org_code;
+                var tenant = result.rows.First();
+                return new Tuple<string, string>(tenant.org_code, tenant.org_name);
             }
-            return "";
+            return null;
         }
 
         public async Task<Guid?> GetTenantId(string orgCode)

@@ -17,6 +17,8 @@ message SendEmailRequest{
 	string reference_entity = 6;
 	string reference_id = 7;
 	string tenant_id = 8;
+	string from_email = 9;
+	string from_name = 10;
 }
 
 message SendEmailResponse{

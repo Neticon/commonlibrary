@@ -158,7 +158,7 @@ namespace VenueGenerationService
 
         public async Task<Tuple<List<string>, string>> GetVerifyData(string tenantId)
         {
-            var org_code = await _tenantRepository.GetOrgCode(new Guid(tenantId));
+            var org_code = (await _tenantRepository.GetOrgCodeAndName(new Guid(tenantId)))?.Item1;
             if (string.IsNullOrEmpty(org_code))
                 throw new Exception("Invalid tenant id");
             var jsFile = "";
