@@ -6,8 +6,8 @@ namespace CommonLibrary.SharedServices.Interfaces
 {
     public interface IViewModelService
     {
-        Task<ServiceResponse> GetUsersTenantViewModel(string tenantId);
-        Task<ServiceResponse> GetVenuesTenantViewModel(string tenantId);
+        Task<ServiceResponse> GetUsersTenantViewModel(Guid tenantId);
+        Task<ServiceResponse> GetVenuesTenantViewModel(Guid tenantId);
         Task<ServiceResponse> GetBookVenueStatsViewModel(BookingStatisticsPayload payload);
         Task<ServiceResponse> GetBookList(JObject payload);
         Task<ServiceResponse> GetBookingDetail(Guid bookingId);

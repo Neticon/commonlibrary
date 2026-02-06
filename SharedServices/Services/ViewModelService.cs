@@ -30,11 +30,11 @@ namespace CommonLibrary.SharedServices.Services
             return new ServiceResponse { Result = resp };
         }
 
-        public async Task<ServiceResponse> GetUsersTenantViewModel(string tenantId)
+        public async Task<ServiceResponse> GetUsersTenantViewModel(Guid tenantId)
         {
             var fieldsForDecrypt = new List<string> { "first_name", "last_name", "phone_number", "create_bu", "modify_bu" };
             var query = new NpgsqlCommand(PredefinedQueryPatterns.USERS_TENANT_VIEW_MODEL);
-            query.Parameters.AddWithValue("org_code", tenantId);
+            query.Parameters.AddWithValue("tenant_id", NpgsqlDbType.Uuid, tenantId);
 
             var resp = await _repository.ExecuteStandardCommand(query);
             foreach (var row in resp.rows)
@@ -58,10 +58,10 @@ namespace CommonLibrary.SharedServices.Services
             return new ServiceResponse { Result = resp };
         }
 
-        public async Task<ServiceResponse> GetVenuesTenantViewModel(string tenantId)
+        public async Task<ServiceResponse> GetVenuesTenantViewModel(Guid tenantId)
         {
             var query = new NpgsqlCommand(PredefinedQueryPatterns.VENUES_TENANT_VIEW_MODEL);
-            query.Parameters.AddWithValue("tenant_id", NpgsqlDbType.Uuid, new Guid(tenantId));
+            query.Parameters.AddWithValue("tenant_id", NpgsqlDbType.Uuid, tenantId);
 
             var resp = await _repository.ExecuteStandardCommand(query);
 
@@ -70,21 +70,30 @@ namespace CommonLibrary.SharedServices.Services
 
         public async Task<ServiceResponse> GetBookList(JObject payload)
         {
+            var fieldsForDecrypt = new List<string> { "u_last", "u_first", "u_phone", "u_email" };
             var query = new NpgsqlCommand(PredefinedQueryPatterns.BOOKING_LIST);
             query.Parameters.AddWithValue("@payload", NpgsqlDbType.Jsonb, JsonConvert.SerializeObject(payload));
 
             var resp = await _repository.ExecuteStandardCommand(query);
+            foreach (var row in resp.rows)
+            {
+                ObjectEncryption.DecryptObject(row, CurrentUser.OrgSecret, fieldsForDecrypt);
+            }
 
             return new ServiceResponse { Result = resp };
         }
 
         public async Task<ServiceResponse> GetBookingDetail(Guid bookingId)
         {
-            //ADD ENCRYPTION FOR BOOKING
+            var fieldsForDecrypt = new List<string> { "u_last", "u_first", "u_phone", "u_email" };
             var query = new NpgsqlCommand(PredefinedQueryPatterns.BOOKING_DETAIL);
             query.Parameters.AddWithValue("booking_id", NpgsqlDbType.Uuid, bookingId);
 
             var resp = await _repository.ExecuteStandardCommand(query);
+            foreach (var row in resp.rows)
+            {
+                ObjectEncryption.DecryptObject(row["booking"], CurrentUser.OrgSecret, fieldsForDecrypt);
+            }
 
             return new ServiceResponse { Result = resp };
         }
