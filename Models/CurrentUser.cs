@@ -7,6 +7,7 @@
         public string OrgCode { get; set; }
         public string OrgSecret { get; set; }
         public Guid TenantId { get; set; }
-        public string Role {  get; set; }   
+        public string Role {  get; set; }
+        public string CSRF { get; set; }
     }
 }
