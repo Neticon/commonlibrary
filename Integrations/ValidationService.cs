@@ -185,7 +185,6 @@ namespace CommonLibrary.Integrations
 
         public async Task<RedisDeviceIntel> GetRedisDeviceIntel(string email, string phone, string ip)
         {
-            Console.WriteLine("VALUES=>" + email + "," + phone + "," + ip);
             var keys = new List<string>();
             if (!string.IsNullOrEmpty(email))
                 keys.Add(GetRedisKey(_venueGenerationService.GenerateHmac(email, "")));
@@ -193,6 +192,7 @@ namespace CommonLibrary.Integrations
                 keys.Add(GetRedisKey(_venueGenerationService.GenerateHmac(phone, "")));
             if (!string.IsNullOrEmpty(ip))
                 keys.Add(GetRedisKey(_venueGenerationService.GenerateHmac(ip, "")));
+
             var redisResult = await _redisService.MGet(keys);
             //some key not found - not valid
             foreach (var result in redisResult)

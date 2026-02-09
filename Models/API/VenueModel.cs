@@ -1,4 +1,7 @@
-﻿namespace CommonLibrary.Models.API
+﻿using CommonLibrary.Domain.Entities;
+using Newtonsoft.Json.Linq;
+
+namespace CommonLibrary.Models.API
 {
     public class VenueModel
     {
@@ -30,12 +33,12 @@
         public int? max_adv_days { get; set; }
         public int? min_lead_mins { get; set; }
         public bool? enabled { get; set; }
-        public List<object>? work_hours { get; set; }
-        public object? notifications { get; set; }
-        public List<object>? users { get; set; }
-        public object? exceptions { get; set; }
-        public List<string>? reasons { get; set; }
-        public object? links { get; set; }
+        public List<WorkHour>? work_hours { get; set; }
+        public VenueNotifications? notifications { get; set; }
+        public List<JObject>? users { get; set; } //to:do - check for specific structure
+        public List<VenueExceptions>? exceptions { get; set; }
+        public List<JObject>? reasons { get; set; } //to:do - check for specific structure
+        public Links? links { get; set; }
         public string? description { get; set; }
     }
 }

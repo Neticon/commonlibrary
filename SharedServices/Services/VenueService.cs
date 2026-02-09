@@ -60,21 +60,14 @@ namespace CommonLibrary.SharedServices.Services
 
         public async Task<ServiceResponse> UpdateVenue(VenueModel data)
         {
-
-            //check flags for phone and email update? // it should come from FE??
-            var emailUpdate = false;
-            var phoneUpdate = false;
-            if (emailUpdate || phoneUpdate)
-            {
-                var validationResult = await _validationService.GetRedisDeviceIntel(emailUpdate ? data.data.email : "", phoneUpdate ? data.data.phone : "", "");
-            }
-
             var venue = data.data.Adapt<Venue>();
             venue.modify_bu = CurrentUser.Decr_Email;
             venue.modify_dt = DateTime.UtcNow;
+            var emailUpdate = !string.IsNullOrEmpty(data.data.email);
+            var phoneUpdate = !string.IsNullOrEmpty(data.data.phone);
             if (emailUpdate || phoneUpdate)
             {
-                var validationResult = await _validationService.GetRedisDeviceIntel(emailUpdate ? data.data.email : "", phoneUpdate ? data.data.phone : "", "");
+                var validationResult = await _validationService.GetRedisDeviceIntel(data.data.email, data.data.phone, "");
                 if (validationResult == null)
                     throw new Exception("Invalid email or phone");
                 if (emailUpdate)

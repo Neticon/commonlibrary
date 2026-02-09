@@ -37,16 +37,16 @@
         public int? min_lead_mins { get; set; }
         public bool? enabled { get; set; }
         public bool? service_halt { get; set; }
-        public object? work_hours { get; set; }
-        public object? notifications { get; set; }
+        public List<WorkHour>? work_hours { get; set; }
+        public VenueNotifications? notifications { get; set; }
         public object? users { get; set; }
-        public object? exceptions { get; set; }
+        public List<VenueExceptions>? exceptions { get; set; }
         public object? reasons { get; set; }
-        public object? links { get; set; }
+        public Links? links { get; set; }
         public Guid? evs_id { get; set; }
         public Guid? pnvs_id { get; set; }
         public bool? is_deleted { get; set; }
-        public object? description { get; set; }
+        public string? description { get; set; }
         public object? conifguration { get; set; }
     }
 
@@ -71,4 +71,22 @@
         public bool warn { get; set; }
         public string cover { get; set; }
     }
+
+    public class VenueNotifications { 
+        public int notify { get; set; }
+        public int rescedule { get; set; }
+        public int cancel { get; set; }
+        public int thank { get; set; }
+        public int qr { get; set; }
+        public int ical { get; set; }
+    }
+
+    public class VenueExceptions
+    {
+        public List<int> d { get; set; }
+        public List<List<int>>? c { get; set; } //composite-both
+        public List<List<int>>? p { get; set; } //in person
+        public List<List<int>>? v { get; set; } //virtual
+    }
+
 }
