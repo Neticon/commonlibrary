@@ -32,7 +32,8 @@ namespace CommonLibrary.SharedServices.Services
 
         public async Task<ServiceResponse> GetUsersTenantViewModel(Guid tenantId)
         {
-            var fieldsForDecrypt = new List<string> { "first_name", "last_name", "phone_number", "create_bu", "modify_bu" };
+            var fieldsForDecrypt = new List<string> { "first_name", "last_name", "phone_number" };
+            var fieldsForDecryptECB = new List<string> { "create_bu", "modify_bu" };
             var query = new NpgsqlCommand(PredefinedQueryPatterns.USERS_TENANT_VIEW_MODEL);
             query.Parameters.AddWithValue("tenant_id", NpgsqlDbType.Uuid, tenantId);
 
@@ -43,10 +44,10 @@ namespace CommonLibrary.SharedServices.Services
                 var users = row["users"];
                 foreach (var user in users)
                 {
-                    ObjectEncryption.DecryptObject(user, CurrentUser.OrgSecret, fieldsForDecrypt);
+                    ObjectEncryption.DecryptObject(user, CurrentUser.OrgSecret, fieldsForDecrypt, fieldsForDecryptECB);
                     try
                     {
-                        user["decr_email"] = AesEncryption.Decrypt(user["email"].ToString(), CurrentUser.OrgSecret);
+                        user["decr_email"] = AesEncryption.DecryptEcb(user["email"].ToString(), CurrentUser.OrgSecret);
                     }
                     catch (Exception ex)
                     {
@@ -70,14 +71,16 @@ namespace CommonLibrary.SharedServices.Services
 
         public async Task<ServiceResponse> GetBookList(JObject payload)
         {
-            var fieldsForDecrypt = new List<string> { "u_last", "u_first", "u_phone", "u_email" };
+            var fieldsForDecrypt = new List<string> { "u_last", "u_first", "u_phone" };
+            var fieldsForDecryptECB = new List<string> { "u_email" };
+
             var query = new NpgsqlCommand(PredefinedQueryPatterns.BOOKING_LIST);
             query.Parameters.AddWithValue("@payload", NpgsqlDbType.Jsonb, JsonConvert.SerializeObject(payload));
 
             var resp = await _repository.ExecuteStandardCommand(query);
             foreach (var row in resp.rows)
             {
-                ObjectEncryption.DecryptObject(row, CurrentUser.OrgSecret, fieldsForDecrypt);
+                ObjectEncryption.DecryptObject(row, CurrentUser.OrgSecret, fieldsForDecrypt, fieldsForDecryptECB);
             }
 
             return new ServiceResponse { Result = resp };
@@ -85,14 +88,15 @@ namespace CommonLibrary.SharedServices.Services
 
         public async Task<ServiceResponse> GetBookingDetail(Guid bookingId)
         {
-            var fieldsForDecrypt = new List<string> { "u_last", "u_first", "u_phone", "u_email" };
+            var fieldsForDecrypt = new List<string> { "u_last", "u_first", "u_phone" };
+            var fieldsForDecryptECB = new List<string> { "u_email" };
             var query = new NpgsqlCommand(PredefinedQueryPatterns.BOOKING_DETAIL);
             query.Parameters.AddWithValue("booking_id", NpgsqlDbType.Uuid, bookingId);
 
             var resp = await _repository.ExecuteStandardCommand(query);
             foreach (var row in resp.rows)
             {
-                ObjectEncryption.DecryptObject(row["booking"], CurrentUser.OrgSecret, fieldsForDecrypt);
+                ObjectEncryption.DecryptObject(row["booking"], CurrentUser.OrgSecret, fieldsForDecrypt, fieldsForDecryptECB);
             }
 
             return new ServiceResponse { Result = resp };

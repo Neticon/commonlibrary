@@ -1,4 +1,6 @@
-﻿namespace ServicePortal.Application.Models
+﻿using Google.Protobuf.WellKnownTypes;
+
+namespace ServicePortal.Application.Models
 {
     public class CurrentUser
     {
@@ -9,5 +11,6 @@
         public Guid TenantId { get; set; }
         public string Role {  get; set; }
         public string CSRF { get; set; }
+        public long CSRF_Expiry { get; set; }
     }
 }

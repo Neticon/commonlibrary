@@ -28,7 +28,7 @@ namespace ServicePortal.Application.Services
                 var tenantContext = await _contextService.GetTenantContext(orgCode);
                 if(tenantContext == null)
                     throw new Exception("Failed to get context for user!");
-                var email = AesEncryption.Decrypt(hashedMail, tenantContext.TenantSecret);
+                var email = AesEncryption.DecryptEcb(hashedMail, tenantContext.TenantSecret);
                 cacheContextUser = new CurrentUser { OrgCode = orgCode, Email = hashedMail, Decr_Email = email, OrgSecret = tenantContext.TenantSecret, TenantId = tenantContext.TenantId };
             }
 

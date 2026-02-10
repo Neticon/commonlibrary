@@ -16,20 +16,20 @@ public static class ObjectEncryption
         ProcessObject(obj, key, encrypt: false);
     }
 
-    public static void EncryptObject(object obj, string key, List<string> fieldsToEncrypt, bool ignoreParentPath = false)
+    public static void EncryptObject(object obj, string key, List<string> fieldsToEncrypt, List<string> fieldsToEncryptECB,  bool ignoreParentPath = false)
     {
         if (obj.GetType() == typeof(JObject))
-            ProcessJObject(obj as JObject, key, fieldsToEncrypt, encrypt: true);
+            ProcessJObject(obj as JObject, key, fieldsToEncrypt, fieldsToEncryptECB, encrypt: true);
         else
-            ProcessObject(obj, key, fieldsToEncrypt, encrypt: true, ignoreParentPath: ignoreParentPath);
+            ProcessObject(obj, key, fieldsToEncrypt, fieldsToEncryptECB, encrypt: true, ignoreParentPath: ignoreParentPath);
     }
 
-    public static void DecryptObject(object obj, string key, List<string> fieldsToEncrypt)
+    public static void DecryptObject(object obj, string key, List<string> fieldsToEncrypt, List<string> fieldsToEncryptECB)
     {
         if (obj.GetType() == typeof(JObject))
-            ProcessJObject(obj as JObject, key, fieldsToEncrypt, encrypt: false);
+            ProcessJObject(obj as JObject, key, fieldsToEncrypt, fieldsToEncryptECB, encrypt: false);
         else
-            ProcessObject(obj, key, fieldsToEncrypt, encrypt: false);
+            ProcessObject(obj, key, fieldsToEncrypt, fieldsToEncryptECB, encrypt: false);
     }
 
     public static void DecryptObjectPaths(JObject jObject, string key, List<string> paths)
@@ -115,6 +115,10 @@ public static class ObjectEncryption
             {
                 prop.SetValue(obj, encrypt ? AesEncryption.Encrypt(strVal, key) : AesEncryption.Decrypt(strVal, key));
             }
+            else if (prop.GetCustomAttribute<EncryptECBAttribute>() != null && value is string strValEcb)
+            {
+                prop.SetValue(obj, encrypt ? AesEncryption.EncryptEcb(strValEcb, key) : AesEncryption.DecryptEcb(strValEcb, key));
+            }
             // Handle nested objects
             else if (value != null && !prop.PropertyType.IsPrimitive && prop.PropertyType != typeof(string))
             {
@@ -133,7 +137,7 @@ public static class ObjectEncryption
         }
     }
 
-    private static void ProcessJObject(JObject jObject, string key, List<string> fieldsToEncrypt, bool encrypt)
+    private static void ProcessJObject(JObject jObject, string key, List<string> fieldsToEncrypt, List<string> fieldsToEncryptECB, bool encrypt)
     {
         foreach (var property in jObject.Properties())
         {
@@ -150,12 +154,25 @@ public static class ObjectEncryption
                 }
                 catch
                 {
-                    Console.WriteLine($"Error trying to {(encrypt ? "encrypt" : "decrypt")} value => {value}");
+                    // Console.WriteLine($"Error trying to {(encrypt ? "encrypt" : "decrypt")} value => {value}");
+                }
+            }
+            else if (fieldsToEncryptECB.Contains(property.Name, StringComparer.OrdinalIgnoreCase) &&
+                value.Type == JTokenType.String)
+            {
+                var strVal = value.ToString();
+                try
+                {
+                    property.Value = encrypt ? AesEncryption.EncryptEcb(strVal, key) : AesEncryption.DecryptEcb(strVal, key);
+                }
+                catch
+                {
+                    // Console.WriteLine($"Error trying to {(encrypt ? "encrypt" : "decrypt")} value => {value}");
                 }
             }
             else if (value.Type == JTokenType.Object)
             {
-                ProcessJObject((JObject)value, key, fieldsToEncrypt, encrypt);
+                ProcessJObject((JObject)value, key, fieldsToEncrypt, fieldsToEncryptECB, encrypt);
             }
             else if (value.Type == JTokenType.Array)
             {
@@ -163,14 +180,14 @@ public static class ObjectEncryption
                 {
                     if (item.Type == JTokenType.Object)
                     {
-                        ProcessJObject((JObject)item, key, fieldsToEncrypt, encrypt);
+                        ProcessJObject((JObject)item, key, fieldsToEncrypt, fieldsToEncryptECB, encrypt);
                     }
                 }
             }
         }
     }
 
-    private static void ProcessObject(object obj, string key, List<string> fieldsToEncrypt, bool encrypt, string parentPath = "", bool ignoreParentPath = false)
+    private static void ProcessObject(object obj, string key, List<string> fieldsToEncrypt, List<string> fieldsToEncryptECB, bool encrypt, string parentPath = "", bool ignoreParentPath = false)
     {
         if (obj == null) return;
 
@@ -192,6 +209,10 @@ public static class ObjectEncryption
             {
                 prop.SetValue(obj, encrypt ? AesEncryption.Encrypt(strVal, key) : AesEncryption.Decrypt(strVal, key));
             }
+            else if (fieldsToEncryptECB.Contains(currentPath, StringComparer.OrdinalIgnoreCase) && value is string strValEcb)
+            {
+                prop.SetValue(obj, encrypt ? AesEncryption.EncryptEcb(strValEcb, key) : AesEncryption.DecryptEcb(strValEcb, key));
+            }
             // Handle nested objects
             else if (value != null && !prop.PropertyType.IsPrimitive && prop.PropertyType != typeof(string))
             {
@@ -199,12 +220,12 @@ public static class ObjectEncryption
                 {
                     foreach (var item in (IEnumerable)value)
                     {
-                        ProcessObject(item, key, fieldsToEncrypt, encrypt, currentPath);
+                        ProcessObject(item, key, fieldsToEncrypt, fieldsToEncryptECB, encrypt, currentPath);
                     }
                 }
                 else
                 {
-                    ProcessObject(value, key, fieldsToEncrypt, encrypt, currentPath, ignoreParentPath);
+                    ProcessObject(value, key, fieldsToEncrypt, fieldsToEncryptECB, encrypt, currentPath, ignoreParentPath);
                 }
             }
         }

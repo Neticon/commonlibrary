@@ -47,7 +47,9 @@ namespace CommonLibrary.SharedServices.Services
 
         public async Task SetCurrentUserContext(string email, CurrentUser user)
         {
-            await _redisService.SetString($"{REDIS_KEY_PREFIX_USER}{email}", JsonConvert.SerializeObject(user));
+            long now = DateTimeOffset.UtcNow.ToUnixTimeSeconds();
+            TimeSpan expiry = TimeSpan.FromSeconds(user.CSRF_Expiry - now);
+            await _redisService.SetString($"{REDIS_KEY_PREFIX_USER}{email}", JsonConvert.SerializeObject(user), expiry);
         }
     }
 }

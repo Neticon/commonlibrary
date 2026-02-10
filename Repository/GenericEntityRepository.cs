@@ -21,9 +21,9 @@ namespace CommonLibrary.Repository
         public async Task<GraphAPIResponse<T>> SaveEntity(T data, string secret = "", bool returnError = false)
         {
             var encryptPaths = EncryptionMetadataHelper.GetEncryptedPropertyPaths(typeof(T));
-            if (encryptPaths.Count > 0 && string.IsNullOrEmpty(secret))
-                ThrowEncryptionException(encryptPaths);
-            ObjectEncryption.EncryptObject(data, secret, EncryptionMetadataHelper.GetEncryptedPropertyPaths(typeof(T)));
+            if ((encryptPaths.Item1.Count > 0 || encryptPaths.Item2.Count > 0) && string.IsNullOrEmpty(secret))
+                ThrowEncryptionException(encryptPaths.Item1.Concat(encryptPaths.Item2).ToList());
+            ObjectEncryption.EncryptObject(data, secret, encryptPaths.Item1, encryptPaths.Item2);
             var payload = new GraphApiPayload { data = data };
             var query = GenerateDoOperationsQuery(payload, data._schema, data._table, DoOperationQueryType.insert);
             var queryResult = await ExecuteStandardCommand(query, returnError);
@@ -33,9 +33,9 @@ namespace CommonLibrary.Repository
         public async Task<GraphAPIResponse<T>> UpdateEntity(Object model, string secret = "", bool returnError = false, bool ignoreEncryption = false)
         {
             var encryptPaths = EncryptionMetadataHelper.GetEncryptedPropertyPaths(typeof(T));
-            if (!ignoreEncryption && encryptPaths.Count > 0 && string.IsNullOrEmpty(secret))
-                ThrowEncryptionException(encryptPaths);
-            ObjectEncryption.EncryptObject(model, secret, encryptPaths, true);
+            if (!ignoreEncryption && (encryptPaths.Item1.Count > 0 || encryptPaths.Item2.Count > 0) && string.IsNullOrEmpty(secret))
+                ThrowEncryptionException(encryptPaths.Item1.Concat(encryptPaths.Item2).ToList());
+            ObjectEncryption.EncryptObject(model, secret, encryptPaths.Item1, encryptPaths.Item2, true);
             var query = GenerateDoOperationsQuery(model, meta._schema, meta._table, DoOperationQueryType.update);
             var queryResult = await ExecuteStandardCommand(query, returnError);
             return queryResult;
@@ -48,11 +48,11 @@ namespace CommonLibrary.Repository
             if (queryResult.rows != null && queryResult.rows.Count > 0)
             {
                 var encryptPaths = EncryptionMetadataHelper.GetEncryptedPropertyPaths(typeof(T));
-                if (encryptPaths.Count > 0 && string.IsNullOrEmpty(secret))
-                    ThrowEncryptionException(encryptPaths);
+                if ((encryptPaths.Item1.Count > 0 || encryptPaths.Item2.Count > 0) && string.IsNullOrEmpty(secret))
+                    ThrowEncryptionException(encryptPaths.Item1.Concat(encryptPaths.Item2).ToList());
                 foreach (var row in queryResult.rows)
                 {
-                    ObjectEncryption.DecryptObject(row, secret, encryptPaths);
+                    ObjectEncryption.DecryptObject(row, secret, encryptPaths.Item1, encryptPaths.Item2);
                 }
             }
             return queryResult;

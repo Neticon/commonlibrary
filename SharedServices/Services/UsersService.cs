@@ -57,7 +57,7 @@ namespace CommonLibrary.SharedServices.Services
                 orgName = tenantData.Item2;
             }
             var secret = await _secretService.GetSecret(idpCode);
-            var hashedMail = AesEncryption.Encrypt(model.data.email, secret);
+            var hashedMail = AesEncryption.EncryptEcb(model.data.email, secret);
             var tempPassword = CommonHelperFunctions.GeneratePassword();
             var request = new AdminCreateUserRequest
             {
@@ -141,7 +141,7 @@ namespace CommonLibrary.SharedServices.Services
 
             if (updateUserAttributes.Count > 0)
             {
-                var emailDecr = AesEncryption.Decrypt(model.filters.email, CurrentUser.OrgSecret);
+                var emailDecr = AesEncryption.DecryptEcb(model.filters.email, CurrentUser.OrgSecret);
                 var request = new AdminUpdateUserAttributesRequest
                 {
                     UserPoolId = UserPoolId,
@@ -175,7 +175,7 @@ namespace CommonLibrary.SharedServices.Services
 
             var resp = await _genericEntityRepo.UpdateEntity(model, CurrentUser.OrgSecret);
 
-            var emailDecr = AesEncryption.Decrypt(model.filters.email, CurrentUser.OrgSecret);
+            var emailDecr = AesEncryption.DecryptEcb(model.filters.email, CurrentUser.OrgSecret);
             var request = new AdminDeleteUserRequest
             {
                 UserPoolId = UserPoolId,

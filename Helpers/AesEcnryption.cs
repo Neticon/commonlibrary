@@ -84,6 +84,37 @@ namespace CommonLibrary.Helpers
             }
         }
 
+        public static string EncryptEcb(string value, string key)
+        {
+            using var aes = Aes.Create();
+            aes.Mode = CipherMode.ECB;
+            aes.Padding = PaddingMode.PKCS7;
+
+            // Key must be 16 / 24 / 32 bytes
+            aes.Key = Encoding.UTF8.GetBytes(key);
+
+            using var encryptor = aes.CreateEncryptor();
+            var plainBytes = Encoding.UTF8.GetBytes(value);
+            var cipherBytes = encryptor.TransformFinalBlock(plainBytes, 0, plainBytes.Length);
+
+            return Convert.ToBase64String(cipherBytes);
+        }
+
+        public static string DecryptEcb(string encryptedValue, string key)
+        {
+            using var aes = Aes.Create();
+            aes.Mode = CipherMode.ECB;
+            aes.Padding = PaddingMode.PKCS7;
+
+            aes.Key = Encoding.UTF8.GetBytes(key);
+
+            using var decryptor = aes.CreateDecryptor();
+            var cipherBytes = Convert.FromBase64String(encryptedValue);
+            var plainBytes = decryptor.TransformFinalBlock(cipherBytes, 0, cipherBytes.Length);
+
+            return Encoding.UTF8.GetString(plainBytes);
+        }
+
         public static string GenerateSecureString(int length = 32)
         {
             const string chars = "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789!@#$%^&*()-_=+";
