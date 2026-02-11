@@ -1,6 +1,7 @@
 ﻿using CommonLibrary.Integrations;
 using CommonLibrary.Models;
 using CommonLibrary.SharedServices.Interfaces;
+using ServicePortal.Application.Interfaces;
 using ServicePortal.Application.Models;
 using ServicePortal.Domain.PSQL;
 using SixLabors.ImageSharp;
@@ -10,39 +11,67 @@ using SixLabors.ImageSharp.Processing;
 
 namespace CommonLibrary.SharedServices.Services
 {
-    public class ImageUploadService : IImageUploadService
+    public class ImageUploadService : AppServiceBase, IImageUploadService
     {
         private List<string> validTypes = ["image/jpeg", "image/png", "image/webp"];
         private readonly string _bucket = "venues-cloudfront-nonprod";
         private readonly IS3Service _s3Service;
         private readonly string CDN_URL = Environment.GetEnvironmentVariable("CDN_URL");
-        private readonly string KEY_PATTERN = "{0}/{1}/{2}_{3}.webp";
+        private readonly string KEY_PATTERN = "r/{0}/{1}/{2}_{3}.webp";
+        private readonly string KEY_PATTERN_ARRAY = "r/{0}/{1}/{2}_{3}_{4}.webp";
 
-        public ImageUploadService(IS3Service s3Service)
+        public ImageUploadService(IS3Service s3Service, ICurrentUserService currentUserService) : base(currentUserService)
         {
             _s3Service = s3Service;
         }
 
         public async Task<ServiceResponse> UploadImages(Dictionary<string, Stream> files, string venueId)
         {
-            //get org_code and make right key
-            //determine how to get type from front - is it separate api call or should we use separate key for files
-            var key = string.Format(KEY_PATTERN, "org_code", venueId, "type", DateTime.UtcNow.ToString("yyyyMMdd_HHmm"));
             var validationResponse = await ValidateImages(files);
             if (!validationResponse.success)
                 return new ServiceResponse { StatusCode = 415, Result = validationResponse };
+            var response = new UploadResponse();
             foreach (var image in files)
             {
-                await _s3Service.UploadStreamAsync(_bucket, "r/test/test.webp", image.Value, "test", 500000);
+                var type = image.Key.Split('_')[0];
+                var index = image.Key.Split('_')[1];
+                var key = "";
+                var width = 0;
+                var height = 0;
+                if(files.Count > 1)
+                {
+                     key = string.Format(KEY_PATTERN_ARRAY, CurrentUser.OrgCode, venueId, type, DateTime.UtcNow.ToString("yyyyMMdd_HHmm"), index); 
+                }
+                else
+                {
+                     key = string.Format(KEY_PATTERN, CurrentUser.OrgCode, venueId, type, DateTime.UtcNow.ToString("yyyyMMdd_HHmm"));
+                }
+                
+                if(type == "logo")
+                {
+                    if (response.logo == null)
+                        response.logo = new List<string>();
+                    response.logo.Add($"{CDN_URL}{key}");
+                    width = 60;
+                    height = 60;
+                }else if (type == "cover")
+                {
+                    if (response.cover == null)
+                        response.cover = new List<string>();
+                    response.cover.Add($"{CDN_URL}{key}");
+                    width = 400;
+                    height = 300;
+                }
+                var resizedStream = ConvertToWebPWithCropAndResize(image.Value, width, height);
+                await _s3Service.UploadStreamAsync(_bucket, key, resizedStream, "Service_Portal", null);
             }
-            return new ServiceResponse();
-
-
+            var graphApiResponse = new GraphAPIResponse<UploadResponse> { rows = new List<UploadResponse> { response }, success = true, request_id = Guid.NewGuid() };
+            return new ServiceResponse { Result = graphApiResponse};
         }
 
-        public async Task<ServiceResponse> GetImages(string type)
+        public async Task<ServiceResponse> GetImages(string type, string venueId)
         {
-            var images = await _s3Service.ListFilesAsync(_bucket, "r/test");
+            var images = await _s3Service.ListFilesAsync(_bucket, $"r/{CurrentUser.OrgCode}/{venueId}");
             images.ForEach(image => { image.Key = $"{CDN_URL}{image.Key}"; });
             var response = new GraphAPIResponse<S3FileMetadata>()
             {
@@ -89,6 +118,7 @@ namespace CommonLibrary.SharedServices.Services
                 message = "Unsupported image type, only 'image/jpeg', 'image/png', and 'image/webp' are supported.";
                 foreach (var img in images)
                 {
+                    img.Value.Position = 0; 
                     var mimeType = HeyRed.Mime.MimeGuesser.GuessMimeType(img.Value);
                     if (!validTypes.Contains(mimeType))
                     {
@@ -104,40 +134,65 @@ namespace CommonLibrary.SharedServices.Services
 
         }
 
-        public static void ConvertToWebPWithCropAndResize(string inputPath, string outputPath, int targetWidth, int targetHeight)
+        public static MemoryStream ConvertToWebPWithCropAndResize(
+            Stream inputStream,
+            int targetWidth,
+            int targetHeight)
         {
+            inputStream.Position = 0;
+
             double targetAspectRatio = (double)targetWidth / targetHeight;
-            using var image = Image.Load<Rgba32>(inputPath);
+
+            using var image = Image.Load<Rgba32>(inputStream);
+
             int originalWidth = image.Width;
             int originalHeight = image.Height;
+
             double originalAspectRatio = (double)originalWidth / originalHeight;
+
             Rectangle cropRectangle;
+
             if (originalAspectRatio > targetAspectRatio)
             {
-                // Crop width
                 int newWidth = (int)(originalHeight * targetAspectRatio);
                 int xOffset = (originalWidth - newWidth) / 2;
                 cropRectangle = new Rectangle(xOffset, 0, newWidth, originalHeight);
             }
             else
             {
-                // Crop height
                 int newHeight = (int)(originalWidth / targetAspectRatio);
                 int yOffset = (originalHeight - newHeight) / 2;
                 cropRectangle = new Rectangle(0, yOffset, originalWidth, newHeight);
             }
+
             image.Mutate(x => x
                 .Crop(cropRectangle)
                 .Resize(targetWidth, targetHeight)
             );
+
             image.Metadata.HorizontalResolution = 72;
             image.Metadata.VerticalResolution = 72;
+
             var encoder = new WebpEncoder
             {
-                Quality = 75,
-                FileFormat = WebpFileFormatType.Lossy
+                Quality = 90,
+                FileFormat = WebpFileFormatType.Lossy,
+                Method = WebpEncodingMethod.BestQuality
             };
-            image.Save(outputPath, encoder);
+
+            var outputStream = new MemoryStream();
+
+            image.Save(outputStream, encoder);
+
+            outputStream.Position = 0; // VERY IMPORTANT
+
+            return outputStream;
+        }
+
+        private class UploadResponse
+        {
+            public List<string> logo { get; set; }
+            public List<string> cover { get; set; }
         }
     }
 }
