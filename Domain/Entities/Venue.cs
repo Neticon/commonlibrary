@@ -58,18 +58,18 @@
 
     public class Links
     {
-        public string fb { get; set; }
-        public string gm { get; set; }
-        public string ig { get; set; }
-        public string li { get; set; }
-        public string pt { get; set; }
-        public string tg { get; set; }
-        public string wa { get; set; }
-        public string ws { get; set; }
-        public string yt { get; set; }
-        public string logo { get; set; }
-        public bool warn { get; set; }
-        public string cover { get; set; }
+        public string? fb { get; set; }
+        public string? gm { get; set; }
+        public string? ig { get; set; }
+        public string? li { get; set; }
+        public string? pt { get; set; }
+        public string? tg { get; set; }
+        public string? wa { get; set; }
+        public string? ws { get; set; }
+        public string? yt { get; set; }
+        public string? logo { get; set; }
+        public bool? warn { get; set; }
+        public string? cover { get; set; }
     }
 
     public class VenueNotifications { 
