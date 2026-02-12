@@ -186,29 +186,30 @@ namespace CommonLibrary.Integrations
         public async Task<RedisDeviceIntel> GetRedisDeviceIntel(string email, string phone, string ip)
         {
             var keys = new List<string>();
-            if (!string.IsNullOrEmpty(email))
-                keys.Add(GetRedisKey(_venueGenerationService.GenerateHmac(email, "")));
-            if (!string.IsNullOrEmpty(phone))
-                keys.Add(GetRedisKey(_venueGenerationService.GenerateHmac(phone, "")));
-            if (!string.IsNullOrEmpty(ip))
-                keys.Add(GetRedisKey(_venueGenerationService.GenerateHmac(ip, "")));
+            keys.Add(GetRedisKey(_venueGenerationService.GenerateHmac(email, "")));
+            keys.Add(GetRedisKey(_venueGenerationService.GenerateHmac(phone, "")));
+            keys.Add(GetRedisKey(_venueGenerationService.GenerateHmac(ip, "")));
 
+            var hasEmail = !string.IsNullOrEmpty(email);
+            var hasPhone = !string.IsNullOrEmpty(phone);
+            var hasIp = !string.IsNullOrEmpty(ip);
             var redisResult = await _redisService.MGet(keys);
             //some key not found - not valid
-            foreach (var result in redisResult)
-            {
-                if (string.IsNullOrEmpty(result))
-                    return null;
-            }
+            if (hasEmail && string.IsNullOrEmpty(redisResult[0]))
+                return null;
+            if (hasPhone && string.IsNullOrEmpty(redisResult[1]))
+                return null;
+            if (hasIp && string.IsNullOrEmpty(redisResult[2]))
+                return null;
             var phoneValidation = new PhoneValidationRedisModel();
-            if (!string.IsNullOrEmpty(phone))
+            if (hasPhone)
                 phoneValidation = JsonConvert.DeserializeObject<PhoneValidationRedisModel>(redisResult[1]);
             return new RedisDeviceIntel
             {
-                EmailValidation = redisResult[0],
-                PhoneValidation = phoneValidation.DeviceIntelId,
-                LocalPhone = phoneValidation.LocalPhone,
-                IPValidation = redisResult[2].Split(',')[0]
+                EmailValidation = hasEmail ? redisResult[0] : "",
+                PhoneValidation = hasPhone ? phoneValidation.DeviceIntelId : "",
+                LocalPhone = hasPhone ? phoneValidation.LocalPhone : "",
+                IPValidation = hasIp ? redisResult[2].Split(',')[0] : ""
             };
         }
 
