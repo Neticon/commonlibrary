@@ -71,7 +71,7 @@ namespace CommonLibrary.SharedServices.Services
 
         public async Task<ServiceResponse> GetImages(string type, string venueId)
         {
-            var images = await _s3Service.ListFilesAsync(_bucket, $"r/{CurrentUser.OrgCode}/{venueId}");
+            var images = await _s3Service.ListFilesAsync(_bucket, $"r/{CurrentUser.OrgCode}/{venueId}/{type}");
             images.ForEach(image => { image.Key = $"{CDN_URL}{image.Key}"; });
             var response = new GraphAPIResponse<S3FileMetadata>()
             {
@@ -88,6 +88,17 @@ namespace CommonLibrary.SharedServices.Services
             var key = url.Replace(CDN_URL, "");
             await _s3Service.DeleteFileAsync(_bucket, key);
             return new ServiceResponse { Result = url, StatusCode = 200 };
+        }
+
+        public async Task<ServiceResponse> DeleteImages(List<string> urls)
+        {
+            var keys = urls.Select(q => q.Replace(CDN_URL, "")).ToList();
+            var s3Result = await _s3Service.DeleteFilesAsync(_bucket, keys);
+            if(s3Result.DeleteErrors!= null && s3Result.DeleteErrors.Count > 0)
+            {
+                return new ServiceResponse { Result = s3Result.DeleteErrors, StatusCode = (int)s3Result.HttpStatusCode };
+            }
+            return new ServiceResponse { Result = urls, StatusCode = (int) s3Result.HttpStatusCode};
         }
 
 

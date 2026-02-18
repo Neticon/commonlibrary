@@ -2,6 +2,6 @@
 {
     public class DeleteImageModel
     {
-        public string key { get; set; }
+        public List<string> keys { get; set; }
     }
 }

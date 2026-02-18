@@ -172,6 +172,8 @@ namespace CommonLibrary.Integrations
                     ContinuationToken = continuationToken
                 };
                 var response = await _s3Client.ListObjectsV2Async(request);
+                if (response.S3Objects != null)
+                {
                 var filtered = response.S3Objects
                     .Where(o =>
                         o.Key.EndsWith(fileExtension, StringComparison.OrdinalIgnoreCase) &&
@@ -184,6 +186,7 @@ namespace CommonLibrary.Integrations
                         LastModified = o.LastModified
                     });
                 files.AddRange(filtered);
+                }
                 continuationToken = response.IsTruncated.Value ? response.NextContinuationToken : null;
             } while (continuationToken != null);
             return files;
@@ -202,6 +205,19 @@ namespace CommonLibrary.Integrations
             {
                 throw new Exception($"Failed to delete '{key}' from bucket '{bucket}'");
             }
+        }
+
+        public async Task<DeleteObjectsResponse> DeleteFilesAsync(string bucket, List<string> keys)
+        {
+            await InitializeClient();
+            var keysToRemove = keys.Select(q => new KeyVersion { Key = q }).ToList();
+            var request = new DeleteObjectsRequest
+            {
+                BucketName = bucket,
+                Objects = keysToRemove
+            };
+            var response = await _s3Client.DeleteObjectsAsync(request);
+            return response;
         }
 
         private static string GetContentType(string filePath)

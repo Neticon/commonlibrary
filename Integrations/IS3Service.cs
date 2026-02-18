@@ -1,4 +1,5 @@
-﻿using ServicePortal.Application.Models;
+﻿using Amazon.S3.Model;
+using ServicePortal.Application.Models;
 
 namespace CommonLibrary.Integrations
 {
@@ -9,5 +10,6 @@ namespace CommonLibrary.Integrations
         Task<string> DownloadFileStringAsync(string bucketName, string key, CancellationToken cancellationToken = default);
         Task<List<S3FileMetadata>> ListFilesAsync(string bucketName, string prefix, string fileExtension = ".webp", string? fileNameStartsWith = null);
         Task DeleteFileAsync(string bucket, string key);
+        Task<DeleteObjectsResponse> DeleteFilesAsync(string bucket, List<string> keys);
     }
 }
