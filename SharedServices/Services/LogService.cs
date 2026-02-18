@@ -20,7 +20,7 @@ namespace CommonLibrary.SharedServices.Services
         public async Task<ServiceResponse> WriteLog(LogModel payload)
         {
             var query = new NpgsqlCommand(PredefinedQueryPatterns.WRITE_ERROR_LOG);
-            query.Parameters.AddWithValue("payload", NpgsqlTypes.NpgsqlDbType.Jsonb, JsonConvert.SerializeObject(payload.data));
+            query.Parameters.AddWithValue("payload", NpgsqlTypes.NpgsqlDbType.Jsonb, JsonConvert.SerializeObject(payload));
 
             var resp = await _repository.ExecuteStandardCommand(query);
 
