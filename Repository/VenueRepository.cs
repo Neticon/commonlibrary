@@ -5,7 +5,7 @@ using ServicePortal.API.Infrastructure.Repository;
 
 namespace CommonLibrary.Repository
 {
-    public class VenueRepository : GenericRepository<Venue>, IVenueRepository
+    public class VenueRepository : GenericEntityRepository<Venue>, IVenueRepository, IGenericEntityRepository<Venue>
     {
         private static (string _table, string _schema) meta = BaseEntity.GetMeta<Venue>();
 

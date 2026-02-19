@@ -1,6 +1,8 @@
-﻿namespace CommonLibrary.Repository.Interfaces
+﻿using CommonLibrary.Domain.Entities;
+
+namespace CommonLibrary.Repository.Interfaces
 {
-    public interface IVenueRepository
+    public interface IVenueRepository : IGenericEntityRepository<Venue>
     {
         Task<string> GetVenueTimezone(Guid id);
     }
