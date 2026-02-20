@@ -44,14 +44,14 @@ namespace CommonLibrary.SharedServices.Services
             var block = JsonConvert.DeserializeObject<Block>(data["data"].ToString());
             block.block_id = Guid.NewGuid();
             block.create_bu = email;
-            return await _entityRepository.SaveEntity(block, "", true);
+            return await _entityRepository.SaveEntity(block, CurrentUser.OrgSecret, true);
         }
 
         private async Task<GraphAPIResponse<Block>> UpdateBlock(JObject payload, string email)
         {
             payload["data"]["modify_bu"] = email;
             payload["data"]["modify_dt"] = DateTime.UtcNow;
-            return await _entityRepository.UpdateEntity(payload, "", true);
+            return await _entityRepository.UpdateEntity(payload, CurrentUser.OrgSecret, true);
         }
 
         private async Task<GraphAPIResponse<Block>> DeleteBlock(JObject payload, string email)
@@ -60,12 +60,12 @@ namespace CommonLibrary.SharedServices.Services
             payload["data"]["delete_dt"] = DateTime.UtcNow;
             payload["data"]["is_deleted"] = true;
 
-            return await _entityRepository.UpdateEntity(payload, "", true);
+            return await _entityRepository.UpdateEntity(payload, CurrentUser.OrgSecret, true);
         }
 
         private async Task<ServiceResponse> CheckIsBulkAndCallFunction(object payload, Func<JObject, string, Task<GraphAPIResponse<Block>>> function, string email)
         {
-            var array = payload is JsonElement je && je.ValueKind == JsonValueKind.Array;
+            var array = payload is JToken je && je.Type == JTokenType.Array;
             if (array)
             {
                 var response = new List<GraphAPIResponse<Block>>();
