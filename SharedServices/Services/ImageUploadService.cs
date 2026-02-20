@@ -17,8 +17,8 @@ namespace CommonLibrary.SharedServices.Services
         private readonly string _bucket = "venues-cloudfront-nonprod";
         private readonly IS3Service _s3Service;
         private readonly string CDN_URL = Environment.GetEnvironmentVariable("CDN_URL");
-        private readonly string KEY_PATTERN = "r/{0}/{1}/{2}_{3}.webp";
-        private readonly string KEY_PATTERN_ARRAY = "r/{0}/{1}/{2}_{3}_{4}.webp";
+        private readonly string KEY_PATTERN = "r/{0}/{1}/{2}/{3}_{4}.webp";
+        private readonly string KEY_PATTERN_ARRAY = "r/{0}/{1}/{2}/{3}_{4}_{5}.webp";
 
         public ImageUploadService(IS3Service s3Service, ICurrentUserService currentUserService) : base(currentUserService)
         {
@@ -40,11 +40,11 @@ namespace CommonLibrary.SharedServices.Services
                 var height = 0;
                 if(files.Count > 1)
                 {
-                     key = string.Format(KEY_PATTERN_ARRAY, CurrentUser.OrgCode, venueId, type, DateTime.UtcNow.ToString("yyyyMMdd_HHmm"), index); 
+                     key = string.Format(KEY_PATTERN_ARRAY, CurrentUser.OrgCode, venueId, type, type, DateTime.UtcNow.ToString("yyyyMMdd_HHmm"), index); 
                 }
                 else
                 {
-                     key = string.Format(KEY_PATTERN, CurrentUser.OrgCode, venueId, type, DateTime.UtcNow.ToString("yyyyMMdd_HHmm"));
+                     key = string.Format(KEY_PATTERN, CurrentUser.OrgCode, venueId, type, type, DateTime.UtcNow.ToString("yyyyMMdd_HHmm"));
                 }
                 
                 if(type == "logo")
