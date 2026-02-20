@@ -25,7 +25,7 @@ namespace CommonLibrary.SharedServices.Services
             _s3Service = s3Service;
         }
 
-        public async Task<ServiceResponse> UploadImages(Dictionary<string, Stream> files, string venueId)
+        public async Task<ServiceResponse> UploadImages(Dictionary<string, MemoryStream> files, string venueId)
         {
             var validationResponse = await ValidateImages(files);
             if (!validationResponse.success)
@@ -102,7 +102,7 @@ namespace CommonLibrary.SharedServices.Services
         }
 
 
-        private async Task<GraphAPIResponse<object>> ValidateImages(Dictionary<string, Stream> images)
+        private async Task<GraphAPIResponse<object>> ValidateImages(Dictionary<string, MemoryStream> images)
         {
             var stage = "upload_validation";
             var valid = true;
