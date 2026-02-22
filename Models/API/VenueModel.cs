@@ -40,5 +40,6 @@ namespace CommonLibrary.Models.API
         public List<JObject>? reasons { get; set; } //to:do - check for specific structure
         public Links? links { get; set; }
         public string? description { get; set; }
+        public object? configuration { get; set; } 
     }
 }

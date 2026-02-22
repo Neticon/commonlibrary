@@ -199,6 +199,9 @@ public static class ObjectEncryption
             if (type.IsGenericType) // && type.GetGenericArguments()[0] != typeof(string))
                 continue;
 
+            if (prop.GetIndexParameters().Length > 0)
+                continue;
+
             var value = prop.GetValue(obj);
             var currentPath = string.IsNullOrEmpty(parentPath) || ignoreParentPath
             ? prop.Name

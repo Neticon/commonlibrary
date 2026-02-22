@@ -47,7 +47,7 @@
         public Guid? pnvs_id { get; set; }
         public bool? is_deleted { get; set; }
         public string? description { get; set; }
-        public object? conifguration { get; set; }
+        public object? configuration { get; set; }
     }
 
     public class WorkHour
