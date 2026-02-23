@@ -1,4 +1,4 @@
-﻿namespace WebApp.API.Models
+﻿namespace CommonLibrary.Models.API
 {
     public class BookingModel
     {
