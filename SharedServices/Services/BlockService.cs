@@ -6,15 +6,14 @@ using Newtonsoft.Json;
 using Newtonsoft.Json.Linq;
 using ServicePortal.Application.Interfaces;
 using ServicePortal.Domain.PSQL;
-using System.Text.Json;
 
 namespace CommonLibrary.SharedServices.Services
 {
     public class BlockService : AppServiceBase, IBlockService
     {
-        private readonly IGenericEntityRepository<Block> _entityRepository;
+        protected readonly IBlocksRepository _entityRepository;
 
-        public BlockService(IGenericEntityRepository<Block> entityRepository, ICurrentUserService currentUserService) : base(currentUserService) { _entityRepository = entityRepository; }
+        public BlockService(IBlocksRepository entityRepository, ICurrentUserService currentUserService) : base(currentUserService) { _entityRepository = entityRepository; }
 
         public async Task<ServiceResponse> GetBlocks(Object payload)
         {
@@ -37,6 +36,11 @@ namespace CommonLibrary.SharedServices.Services
         public async Task<ServiceResponse> UpdateBlocks(Object payload)
         {
             return await CheckIsBulkAndCallFunction(payload, UpdateBlock, CurrentUser.Decr_Email);
+        }
+
+        public async Task<string> GetAvaliableBlocks(string venueId, string date, string service)
+        {
+            return await _entityRepository.GetAvaliableBlocks(venueId, date, service);
         }
 
         private async Task<GraphAPIResponse<Block>> SaveBlock(JObject data, string email)

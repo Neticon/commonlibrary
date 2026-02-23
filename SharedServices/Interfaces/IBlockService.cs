@@ -8,5 +8,6 @@ namespace CommonLibrary.SharedServices.Interfaces
         Task<ServiceResponse> DeleteBlocks(object payload);
         Task<ServiceResponse> UpdateBlocks(object payload);
         Task<ServiceResponse> GetBlocks(object payload);
+        Task<string> GetAvaliableBlocks(string venueId, string date, string service);
     }
 }

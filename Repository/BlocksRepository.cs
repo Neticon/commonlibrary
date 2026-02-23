@@ -1,4 +1,6 @@
-﻿using CommonLibrary.Domain.PSQL;
+﻿using CommonLibrary.Domain.Entities;
+using CommonLibrary.Domain.PSQL;
+using CommonLibrary.Helpers;
 using CommonLibrary.Repository.Interfaces;
 using Microsoft.Extensions.Configuration;
 using Npgsql;
@@ -8,7 +10,7 @@ using System.Text.Json;
 
 namespace CommonLibrary.Repository
 {
-    public class BlocksRepository : GenericRepository<BlockAvailabilityResponse>, IBlocksRepository
+    public class BlocksRepository : GenericEntityRepository<Block>, IBlocksRepository
     {
         public BlocksRepository(IConfiguration config) : base(config)
         {
@@ -43,6 +45,14 @@ namespace CommonLibrary.Repository
                 }
             }
             return default;
+        }
+
+        public async Task<string> GetAvaliableBlocks(string venueId, string date, string service)
+        {
+            var query = PredefinedQueryPatterns.GET_AVAILABILITY_PATTERN.Replace(PredefinedQueryPatternsReplacements.VENUE_ID, venueId);
+            query = query.Replace(PredefinedQueryPatternsReplacements.DATE_YYYY_MM_DD, date);
+            query = query.Replace(PredefinedQueryPatternsReplacements.SERVICE, service);
+            return await ExecuteCommandString(query);
         }
     }
 }

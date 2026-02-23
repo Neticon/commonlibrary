@@ -1,9 +1,11 @@
-﻿using CommonLibrary.Domain.PSQL;
+﻿using CommonLibrary.Domain.Entities;
+using CommonLibrary.Domain.PSQL;
 
 namespace CommonLibrary.Repository.Interfaces
 {
-    public interface IBlocksRepository
+    public interface IBlocksRepository: IGenericEntityRepository<Block>
     {
         Task<BlockAvailabilityResponse> CheckBlocAvailability(int block_start, int block_end, string type, Guid venueId, string date, string service);
+        Task<string> GetAvaliableBlocks(string venueId, string date, string service);
     }
 }
