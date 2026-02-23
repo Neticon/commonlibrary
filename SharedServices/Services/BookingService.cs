@@ -206,8 +206,10 @@ namespace CommonLibrary.SharedServices.Services
 
         private async Task<string> SendEmail(Booking booking, BookingModelData modelData, string start, string end, string date, Venue venue)
         {
-
-            var request = new SendEmailRequest
+            Console.WriteLine("EMAIL SEND1");
+            try
+            {
+                var request = new SendEmailRequest
             {
                 TemplateId =$"booking_scheduled_{modelData.type}".ToLower(),
                 ReferenceEntity = $"{booking._schema}.{booking._table}",
@@ -236,8 +238,7 @@ namespace CommonLibrary.SharedServices.Services
             request.Substitutions.Add("{{e-mail}}", venue.email);
             request.Substitutions.Add("{{dynamic_modify_link}}", "");
             request.Substitutions.Add("{{venue_name}}", venue.name);
-            try
-            {
+          
                 Console.WriteLine("Sending EMAIL_REQUEST=>" + JsonConvert.SerializeObject(request));
                 var response = await _emailClient.SendEmailAsync(request);
                 return response;
