@@ -27,6 +27,13 @@ namespace CommonLibrary.SharedServices.Services
 
         public async Task<ServiceResponse> UploadImages(Dictionary<string, MemoryStream> files, string venueId)
         {
+            if (!CurrentUser.Role.Equals("ADMIN", StringComparison.OrdinalIgnoreCase))
+            {
+                if(CurrentUser.Venues != null && !CurrentUser.Venues.Contains(venueId))
+                {
+                    return new ServiceResponse { StatusCode = 403, Result = "Operation not authorized for this Venue" };
+                }
+            }
             var validationResponse = await ValidateImages(files);
             if (!validationResponse.success)
                 return new ServiceResponse { StatusCode = 415, Result = validationResponse };
