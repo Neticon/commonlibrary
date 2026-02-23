@@ -12,5 +12,6 @@ namespace ServicePortal.Application.Models
         public string Role {  get; set; }
         public string CSRF { get; set; }
         public long CSRF_Expiry { get; set; }
+        public List<string> Venues { get; set; }    
     }
 }
