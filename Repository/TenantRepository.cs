@@ -5,7 +5,7 @@ using ServicePortal.API.Infrastructure.Repository;
 
 namespace CommonLibrary.Repository
 {
-    public class TenantRepository : GenericRepository<Tenant>, ITenantRepository
+    public class TenantRepository : GenericEntityRepository<Tenant>, ITenantRepository
     {
         private static (string _table, string _schema) meta = BaseEntity.GetMeta<Tenant>();
 

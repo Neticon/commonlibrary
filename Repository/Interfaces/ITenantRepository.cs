@@ -1,6 +1,8 @@
-﻿namespace CommonLibrary.Repository.Interfaces
+﻿using CommonLibrary.Domain.Entities;
+
+namespace CommonLibrary.Repository.Interfaces
 {
-    public interface ITenantRepository
+    public interface ITenantRepository : IGenericEntityRepository<Tenant>
     {
         Task<Tuple<string, string>> GetOrgCodeAndName(Guid id);
         Task<Guid?> GetTenantId(string orgCode);

@@ -40,7 +40,9 @@ namespace CommonLibrary.SharedServices.Services
         public async Task<ServiceResponse> CreateBooking(BookingModelData data, string ip)
         {
             var response = new ServiceResponse { StatusCode = 200 };
-            var org_code = (await _tenantRepository.GetOrgCodeAndName(data.tenant_id))?.Item1;
+            var tenantJobject = await _venueRepository.GetData(new GraphApiPayload { data = new Tenant { org_code = "", web_pages = new List<string>() }, filters = new TenantIdModel { tenant_id = data.tenant_id } });
+            var tenant = JsonConvert.DeserializeObject<Tenant>(JsonConvert.SerializeObject(tenantJobject.rows[0]));
+            var org_code = tenant.org_code;
             if (string.IsNullOrEmpty(org_code))
                 throw new Exception("Invalid tenant id");
             if (data.val_fail != null && data.val_fail.Count > 0)
@@ -71,7 +73,7 @@ namespace CommonLibrary.SharedServices.Services
                 var venueJobject = await _venueRepository.GetData(new GraphApiPayload { data = new Venue { time_zone = "", street = "", street_number = "", street_addition = "", city = "", postal_code = "", province_name = "", country_code = "", name = "", phone = "", email = "", users = new List<VenueUser> { } }, filters = new VenueModelFilter { venue_id = data.venue_id.ToString() } }, secret);
                 var venue = JsonConvert.DeserializeObject<Venue>(JsonConvert.SerializeObject(venueJobject.rows[0]));
                 var venueTimezoneOffset = TimeZoneInfo.FindSystemTimeZoneById(venue.time_zone).GetUtcOffset(DateTime.UtcNow);
-            
+
                 var startTs = new DateTimeOffset(date.AddMinutes(data.block_start), venueTimezoneOffset);
                 var endTs = new DateTimeOffset(date.AddMinutes(data.block_end), venueTimezoneOffset);
                 var u_reasonDb = !string.IsNullOrEmpty(data.u_reason) ? data.u_reason : (data.service_id == "DEFAULT" ? null : data.service_id);
@@ -130,10 +132,14 @@ namespace CommonLibrary.SharedServices.Services
                         }
                     }
 
+                    var dateS = startTs.ToString("dd/MM/yyyy");
+                    var start = startTs.ToString("HH:mm");
+                    var end = endTs.ToString("HH:mm");
+
                     //retur response to user, indexes are inserted in background, send emails in background
-                     _obfIndexRepository.InsertBulkIndexes(obfIndexes);
-                    SendEmail(booking, data, $"{startTs.Hour}:{startTs.Minute}", $"{endTs.Hour}:{endTs.Minute}", endTs.Date.ToString(), venue);
-                    SendEmailToStaff(venue.users, data, secret);
+                    _obfIndexRepository.InsertBulkIndexes(obfIndexes);
+                    SendEmail(booking, data, start, end, dateS, venue, tenant.web_pages.Last());
+                    SendEmailToStaff(booking, venue.users, data, secret, start, end, dateS);
                 }
                 else
                 {
@@ -205,57 +211,104 @@ namespace CommonLibrary.SharedServices.Services
             return result;
         }
 
-        private async Task<string> SendEmail(Booking booking, BookingModelData modelData, string start, string end, string date, Venue venue)
+        private async Task<string> SendEmail(Booking booking, BookingModelData modelData, string start, string end, string date, Venue venue, string pageUrl)
         {
-            Console.WriteLine("EMAIL SEND1");
             try
             {
                 var request = new SendEmailRequest
-            {
-                TemplateId =$"booking_scheduled_{modelData.type}".ToLower(),
-                ReferenceEntity = $"{booking._schema}.{booking._table}",
-                ReferenceId = Guid.NewGuid().ToString(),
-                Subject = "Il tuo appuntamento è stato confermato",
-                MessageType = "BookingScheduled",
-                TenantId = modelData.tenant_id.ToString(),
-                FromEmail = EMAIL_FROM_HD,
-                FromName = EMAIL_FROM_NAME_HD
-            };
-            request.EmailTo.Add(modelData.u_email);
-            request.Substitutions.Add("{{first_name}}", modelData.u_first);
-            request.Substitutions.Add("{{last_name}}", modelData.u_last);
-            request.Substitutions.Add("{{date}}", date);
-            request.Substitutions.Add("{{start_hour}}", start);
-            request.Substitutions.Add("{{end_hour}}", end);
-            request.Substitutions.Add("{{street}}", venue.street);
-            request.Substitutions.Add("{{street_number}}", venue.street_number);
-            request.Substitutions.Add("{{street_additional}}", venue.street_addition?? "");
-            request.Substitutions.Add("{{postal_code}}", venue.postal_code);
-            request.Substitutions.Add("{{city}}", venue.city);
-            request.Substitutions.Add("{{region_code}}", venue.province_name ?? "");
-            request.Substitutions.Add("{{country_name}}", venue.country_code);
+                {
+                    TemplateId = $"booking_scheduled_{modelData.type}".ToLower(),
+                    ReferenceEntity = $"{booking._schema}.{booking._table}",
+                    ReferenceId = booking.booking_id.ToString(),
+                    Subject = "Il tuo appuntamento è stato confermato",
+                    MessageType = "BookingScheduled",
+                    TenantId = modelData.tenant_id.ToString(),
+                    FromEmail = EMAIL_FROM_HD,
+                    FromName = EMAIL_FROM_NAME_HD
+                };
+                request.EmailTo.Add(modelData.u_email);
+                request.Substitutions.Add("{{first_name}}", modelData.u_first);
+                request.Substitutions.Add("{{last_name}}", modelData.u_last);
+                request.Substitutions.Add("{{date}}", date);
+                request.Substitutions.Add("{{start_hour}}", start);
+                request.Substitutions.Add("{{end_hour}}", end);
 
-            request.Substitutions.Add("{{phone}}", venue.phone);
-            request.Substitutions.Add("{{e-mail}}", venue.email);
-            request.Substitutions.Add("{{dynamic_modify_link}}", "");
-            request.Substitutions.Add("{{venue_name}}", venue.name);
-          
+                if (modelData.type.ToString().ToLower() == "p")
+                {
+                    request.Substitutions.Add("{{street}}", venue.street);
+                    request.Substitutions.Add("{{street_number}}", venue.street_number);
+                    request.Substitutions.Add("{{street_additional}}", venue.street_addition ?? "");
+                    request.Substitutions.Add("{{postal_code}}", venue.postal_code);
+                    request.Substitutions.Add("{{city}}", venue.city);
+                    request.Substitutions.Add("{{region_code}}", venue.province_name ?? "");
+                    request.Substitutions.Add("{{country_name}}", venue.country_code);
+                }
+                request.Substitutions.Add("{{reason_service_none}}", modelData.service_id ?? modelData.u_reason ?? "none");
+                request.Substitutions.Add("{{phone}}", venue.phone);
+                request.Substitutions.Add("{{e-mail}}", venue.email);
+                request.Substitutions.Add("{{dynamic_modify_link}}", $"{pageUrl}?modify={booking.booking_id}");
+                request.Substitutions.Add("{{venue_name}}", venue.name);
+
                 Console.WriteLine("Sending EMAIL_REQUEST=>" + JsonConvert.SerializeObject(request));
                 var response = await _emailClient.SendEmailAsync(request);
                 return response;
             }
             catch (Exception ex) { Console.WriteLine(ex + ex.Message + ex.StackTrace); }
             return null;
-
         }
 
-        private async Task SendEmailToStaff(List<VenueUser> users, BookingModelData modelData, string secret)
+        private async Task SendEmailToStaff(Booking booking, List<VenueUser> users, BookingModelData modelData, string secret, string start, string end, string date)
         {
             var venueStaffEmails = users.Where(q => !q.r.Equals("ADMIN", StringComparison.OrdinalIgnoreCase)).Select(q => q.u);
+            var emailsTo = new List<string>();
             foreach (var email in venueStaffEmails)
             {
-                var dec = AesEncryption.Decrypt(email, secret);
+                var failed = false;
+                try
+                {
+                    var dec = AesEncryption.DecryptEcb(email, secret);
+                    emailsTo.Add(dec);
+                }
+                catch
+                {
+                    failed = true;
+                }
+                if (failed)
+                { //for now because we still have ECB values somewhere in DEV
+                    try
+                    {
+                        var dec = AesEncryption.DecryptEcb(email, secret);
+                        emailsTo.Add(dec);
+                    }
+                    catch { }
+                }
             }
+            try
+            {
+                var request = new SendEmailRequest
+                {
+                    TemplateId = $"booking_scheduled_venue".ToLower(),
+                    ReferenceEntity = $"{booking._schema}.{booking._table}",
+                    ReferenceId = booking.booking_id.ToString(),
+                    Subject = "Il tuo appuntamento è stato confermato",
+                    MessageType = "BookingScheduled",
+                    TenantId = modelData.tenant_id.ToString(),
+                    FromEmail = EMAIL_FROM_HD,
+                    FromName = EMAIL_FROM_NAME_HD
+                };
+                request.EmailTo.AddRange(emailsTo);
+                request.Substitutions.Add("{{appointee_first_name}}", modelData.u_first);
+                request.Substitutions.Add("{{appointee_last_name}}", modelData.u_last);
+                request.Substitutions.Add("{{date}}", date);
+                request.Substitutions.Add("{{start_hour}}", start);
+                request.Substitutions.Add("{{end_hour}}", end);
+                request.Substitutions.Add("{{venue_or_online}", modelData.type.ToString().ToLower() == "p" ? "venue" : "online" );
+                request.Substitutions.Add("{{reason_service_none}}", modelData.service_id ?? modelData.u_reason ?? "none");
+                request.Substitutions.Add("{{sp_booking_link}}", "");
+                var response = await _emailClient.SendEmailAsync(request);
+            }
+            catch (Exception ex) { Console.WriteLine(ex + ex.Message + ex.StackTrace); }
+
         }
     }
 }

@@ -21,7 +21,7 @@
         public DateTime expiry_d { get; set; }
         public string status { get; set; }
         public string domains { get; set; }
-        public string web_pages { get; set; }
+        public List<string> web_pages { get; set; }
         public string intg_venue { get; set; }
         public string intg_video { get; set; }
         public string intg_keys { get; set; }
