@@ -242,7 +242,7 @@ namespace CommonLibrary.SharedServices.Services
                     request.Substitutions.Add("{{region_code}}", venue.province_name ?? "");
                     request.Substitutions.Add("{{country_name}}", venue.country_code);
                 }
-                request.Substitutions.Add("{{reason_service_none}}", u_reason == "DEFAULT" ? "" : u_reason);
+                request.Substitutions.Add("{{reason_service_none}}", u_reason ?? "none");
                 request.Substitutions.Add("{{phone}}", venue.phone);
                 request.Substitutions.Add("{{e-mail}}", venue.email);
                 request.Substitutions.Add("{{dynamic_modify_link}}", $"{pageUrl}?modify={booking.booking_id}");
@@ -277,7 +277,7 @@ namespace CommonLibrary.SharedServices.Services
                 { //for now because we still have ECB values somewhere in DEV
                     try
                     {
-                        var dec = AesEncryption.DecryptEcb(email, secret);
+                        var dec = AesEncryption.Decrypt(email, secret);
                         emailsTo.Add(dec);
                     }
                     catch {
@@ -307,7 +307,7 @@ namespace CommonLibrary.SharedServices.Services
                 request.Substitutions.Add("{{start_hour}}", start);
                 request.Substitutions.Add("{{end_hour}}", end);
                 request.Substitutions.Add("{{venue_or_online}", modelData.type.ToString().ToLower() == "p" ? "venue" : "online" );
-                request.Substitutions.Add("{{reason_service_none}}", u_reason == "DEFAULT" ? "" : u_reason);
+                request.Substitutions.Add("{{reason_service_none}}", u_reason ?? "none");
                 request.Substitutions.Add("{{sp_booking_link}}", "");
                 var response = await _emailClient.SendEmailAsync(request);
             }
