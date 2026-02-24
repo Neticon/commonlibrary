@@ -138,8 +138,8 @@ namespace CommonLibrary.SharedServices.Services
 
                     //retur response to user, indexes are inserted in background, send emails in background
                     _obfIndexRepository.InsertBulkIndexes(obfIndexes);
-                    SendEmail(booking, data, start, end, dateS, venue, tenant.web_pages.Last());
-                    SendEmailToStaff(booking, venue.users, data, secret, start, end, dateS);
+                    SendEmail(booking, data, start, end, dateS, venue, tenant.web_pages.Last(), u_reasonDb);
+                    SendEmailToStaff(booking, venue.users, data, secret, start, end, dateS, u_reasonDb);
                 }
                 else
                 {
@@ -211,7 +211,7 @@ namespace CommonLibrary.SharedServices.Services
             return result;
         }
 
-        private async Task<string> SendEmail(Booking booking, BookingModelData modelData, string start, string end, string date, Venue venue, string pageUrl)
+        private async Task<string> SendEmail(Booking booking, BookingModelData modelData, string start, string end, string date, Venue venue, string pageUrl, string u_reason)
         {
             try
             {
@@ -235,15 +235,14 @@ namespace CommonLibrary.SharedServices.Services
 
                 if (modelData.type.ToString().ToLower() == "p")
                 {
-                    request.Substitutions.Add("{{street}}", venue.street);
-                    request.Substitutions.Add("{{street_number}}", venue.street_number);
+                    request.Substitutions.Add("{{street_street_number}}", $"{venue.street} {venue.street_number}");
                     request.Substitutions.Add("{{street_additional}}", venue.street_addition ?? "");
                     request.Substitutions.Add("{{postal_code}}", venue.postal_code);
                     request.Substitutions.Add("{{city}}", venue.city);
                     request.Substitutions.Add("{{region_code}}", venue.province_name ?? "");
                     request.Substitutions.Add("{{country_name}}", venue.country_code);
                 }
-                request.Substitutions.Add("{{reason_service_none}}", modelData.service_id ?? modelData.u_reason ?? "none");
+                request.Substitutions.Add("{{reason_service_none}}", u_reason == "DEFAULT" ? "" : u_reason);
                 request.Substitutions.Add("{{phone}}", venue.phone);
                 request.Substitutions.Add("{{e-mail}}", venue.email);
                 request.Substitutions.Add("{{dynamic_modify_link}}", $"{pageUrl}?modify={booking.booking_id}");
@@ -257,8 +256,9 @@ namespace CommonLibrary.SharedServices.Services
             return null;
         }
 
-        private async Task SendEmailToStaff(Booking booking, List<VenueUser> users, BookingModelData modelData, string secret, string start, string end, string date)
+        private async Task SendEmailToStaff(Booking booking, List<VenueUser> users, BookingModelData modelData, string secret, string start, string end, string date, string u_reason)
         {
+            Console.WriteLine("SEND STAFF EMAIL");
             var venueStaffEmails = users.Where(q => !q.r.Equals("ADMIN", StringComparison.OrdinalIgnoreCase)).Select(q => q.u);
             var emailsTo = new List<string>();
             foreach (var email in venueStaffEmails)
@@ -280,11 +280,15 @@ namespace CommonLibrary.SharedServices.Services
                         var dec = AesEncryption.DecryptEcb(email, secret);
                         emailsTo.Add(dec);
                     }
-                    catch { }
+                    catch {
+                        continue;
+                    }
                 }
             }
             try
             {
+                Console.WriteLine("SEND STAFF EMAIL => "+ JsonConvert.SerializeObject(emailsTo));
+
                 var request = new SendEmailRequest
                 {
                     TemplateId = $"booking_scheduled_venue".ToLower(),
@@ -303,7 +307,7 @@ namespace CommonLibrary.SharedServices.Services
                 request.Substitutions.Add("{{start_hour}}", start);
                 request.Substitutions.Add("{{end_hour}}", end);
                 request.Substitutions.Add("{{venue_or_online}", modelData.type.ToString().ToLower() == "p" ? "venue" : "online" );
-                request.Substitutions.Add("{{reason_service_none}}", modelData.service_id ?? modelData.u_reason ?? "none");
+                request.Substitutions.Add("{{reason_service_none}}", u_reason == "DEFAULT" ? "" : u_reason);
                 request.Substitutions.Add("{{sp_booking_link}}", "");
                 var response = await _emailClient.SendEmailAsync(request);
             }
