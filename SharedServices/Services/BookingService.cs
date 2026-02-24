@@ -69,8 +69,8 @@ namespace CommonLibrary.SharedServices.Services
 
                 var date = DateTime.Parse(data.date);
                 var timeZone = await _venueRepository.GetVenueTimezone(data.venue_id);
-                var venueJobject = await _venueRepository.GetData(new VenueModel { filters = new VenueModelFilter { venue_id = data.venue_id.ToString() } }, secret);
-                var venue = JsonConvert.DeserializeObject<Venue>(JsonConvert.SerializeObject(venueJobject));
+                var venueJobject = await _venueRepository.GetData(new GraphApiPayload { data = new Venue { time_zone = "", street = "", street_number = "", street_addition = "", city = "", postal_code = "", province_name = "", country_code = "", name = "", phone = "", email = "" }, filters = new VenueModelFilter { venue_id = data.venue_id.ToString() } }, secret);
+                var venue = JsonConvert.DeserializeObject<Venue>(JsonConvert.SerializeObject(venueJobject.rows[0]));
                 var venueTimezoneOffset = TimeZoneInfo.FindSystemTimeZoneById(timeZone).GetUtcOffset(DateTime.UtcNow);
                 var startTs = new DateTimeOffset(date.AddMinutes(data.block_start), venueTimezoneOffset);
                 var endTs = new DateTimeOffset(date.AddMinutes(data.block_end), venueTimezoneOffset);
@@ -222,7 +222,7 @@ namespace CommonLibrary.SharedServices.Services
             };
             request.EmailTo.Add(modelData.u_email);
             request.Substitutions.Add("{{first_name}}", modelData.u_first);
-            request.Substitutions.Add("{{last_name}}", modelData.u_first);
+            request.Substitutions.Add("{{last_name}}", modelData.u_last);
             request.Substitutions.Add("{{date}}", date);
             request.Substitutions.Add("{{start_hour}}", start);
             request.Substitutions.Add("{{end_hour}}", end);
