@@ -243,7 +243,7 @@ namespace CommonLibrary.SharedServices.Services
                 var response = await _emailClient.SendEmailAsync(request);
                 return response;
             }
-            catch (Exception ex) { Console.WriteLine(ex); }
+            catch (Exception ex) { Console.WriteLine(ex + ex.Message + ex.StackTrace); }
             return null;
 
         }
