@@ -68,10 +68,10 @@ namespace CommonLibrary.SharedServices.Services
                 var secret = await _secretService.GetSecret(org_code);
 
                 var date = DateTime.Parse(data.date);
-                var timeZone = await _venueRepository.GetVenueTimezone(data.venue_id);
-                var venueJobject = await _venueRepository.GetData(new GraphApiPayload { data = new Venue { time_zone = "", street = "", street_number = "", street_addition = "", city = "", postal_code = "", province_name = "", country_code = "", name = "", phone = "", email = "" }, filters = new VenueModelFilter { venue_id = data.venue_id.ToString() } }, secret);
+                var venueJobject = await _venueRepository.GetData(new GraphApiPayload { data = new Venue { time_zone = "", street = "", street_number = "", street_addition = "", city = "", postal_code = "", province_name = "", country_code = "", name = "", phone = "", email = "", users = new List<VenueUser> { } }, filters = new VenueModelFilter { venue_id = data.venue_id.ToString() } }, secret);
                 var venue = JsonConvert.DeserializeObject<Venue>(JsonConvert.SerializeObject(venueJobject.rows[0]));
-                var venueTimezoneOffset = TimeZoneInfo.FindSystemTimeZoneById(timeZone).GetUtcOffset(DateTime.UtcNow);
+                var venueTimezoneOffset = TimeZoneInfo.FindSystemTimeZoneById(venue.time_zone).GetUtcOffset(DateTime.UtcNow);
+            
                 var startTs = new DateTimeOffset(date.AddMinutes(data.block_start), venueTimezoneOffset);
                 var endTs = new DateTimeOffset(date.AddMinutes(data.block_end), venueTimezoneOffset);
                 var u_reasonDb = !string.IsNullOrEmpty(data.u_reason) ? data.u_reason : (data.service_id == "DEFAULT" ? null : data.service_id);
@@ -133,6 +133,7 @@ namespace CommonLibrary.SharedServices.Services
                     //retur response to user, indexes are inserted in background, send emails in background
                      _obfIndexRepository.InsertBulkIndexes(obfIndexes);
                     SendEmail(booking, data, $"{startTs.Hour}:{startTs.Minute}", $"{endTs.Hour}:{endTs.Minute}", endTs.Date.ToString(), venue);
+                    SendEmailToStaff(venue.users, data, secret);
                 }
                 else
                 {
@@ -228,10 +229,10 @@ namespace CommonLibrary.SharedServices.Services
             request.Substitutions.Add("{{end_hour}}", end);
             request.Substitutions.Add("{{street}}", venue.street);
             request.Substitutions.Add("{{street_number}}", venue.street_number);
-            request.Substitutions.Add("{{street_additional}}", venue.street_addition);
+            request.Substitutions.Add("{{street_additional}}", venue.street_addition?? "");
             request.Substitutions.Add("{{postal_code}}", venue.postal_code);
             request.Substitutions.Add("{{city}}", venue.city);
-            request.Substitutions.Add("{{region_code}}", venue.province_name);
+            request.Substitutions.Add("{{region_code}}", venue.province_name ?? "");
             request.Substitutions.Add("{{country_name}}", venue.country_code);
 
             request.Substitutions.Add("{{phone}}", venue.phone);
@@ -246,6 +247,15 @@ namespace CommonLibrary.SharedServices.Services
             catch (Exception ex) { Console.WriteLine(ex + ex.Message + ex.StackTrace); }
             return null;
 
+        }
+
+        private async Task SendEmailToStaff(List<VenueUser> users, BookingModelData modelData, string secret)
+        {
+            var venueStaffEmails = users.Where(q => !q.r.Equals("ADMIN", StringComparison.OrdinalIgnoreCase)).Select(q => q.u);
+            foreach (var email in venueStaffEmails)
+            {
+                var dec = AesEncryption.Decrypt(email, secret);
+            }
         }
     }
 }

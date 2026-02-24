@@ -39,7 +39,7 @@
         public bool? service_halt { get; set; }
         public List<WorkHour>? work_hours { get; set; }
         public VenueNotifications? notifications { get; set; }
-        public object? users { get; set; }
+        public List<VenueUser>? users { get; set; }
         public List<VenueExceptions>? exceptions { get; set; }
         public object? reasons { get; set; }
         public Links? links { get; set; }
@@ -87,6 +87,13 @@
         public List<List<int>>? c { get; set; } //composite-both
         public List<List<int>>? p { get; set; } //in person
         public List<List<int>>? v { get; set; } //virtual
+    }
+
+    public class VenueUser
+    {
+        public int n { get; set; }
+        public string u { get; set; }
+        public string r { get; set; }
     }
 
 }
