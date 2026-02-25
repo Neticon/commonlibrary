@@ -24,6 +24,7 @@ namespace CommonLibrary.SharedServices.Services
         private readonly string[] INDEXED_FIELDS = ["u_first", "u_last", "u_email", "u_phone", "u_message", "u_reason"];
         public static string EMAIL_FROM_HD = Environment.GetEnvironmentVariable("EMAIL_FROM_HD");
         public static string EMAIL_FROM_NAME_HD = Environment.GetEnvironmentVariable("EMAIL_FROM_NAME_HD");
+        public static string SP_URL = Environment.GetEnvironmentVariable("SERVICE_PORTAL_URL");
 
         public BookingService(IBlocksRepository blocksRepository, IValidationService validationService, IBookingRepository bookingRepository, IVenueRepository venueRepository, IObfIndexRepository obfIndexRepository, ITenantRepository tenantRepository, ISecretService secretService, IEmailClient emailClient)
         {
@@ -40,7 +41,7 @@ namespace CommonLibrary.SharedServices.Services
         public async Task<ServiceResponse> CreateBooking(BookingModelData data, string ip)
         {
             var response = new ServiceResponse { StatusCode = 200 };
-            var tenantJobject = await _tenantRepository.GetData(new GraphApiPayload { data = new Tenant { org_code = "", web_pages = new List<string>() }, filters = new TenantIdModel { tenant_id = data.tenant_id } });
+            var tenantJobject = await _tenantRepository.GetData(new GraphApiPayload { data = new Tenant { org_code = "", web_pages = new List<string>(), org_name = "" }, filters = new TenantIdModel { tenant_id = data.tenant_id } });
             var tenant = JsonConvert.DeserializeObject<Tenant>(JsonConvert.SerializeObject(tenantJobject.rows[0]));
             var org_code = tenant.org_code;
             if (string.IsNullOrEmpty(org_code))
@@ -70,7 +71,7 @@ namespace CommonLibrary.SharedServices.Services
                 var secret = await _secretService.GetSecret(org_code);
 
                 var date = DateTime.Parse(data.date);
-                var venueJobject = await _venueRepository.GetData(new GraphApiPayload { data = new Venue { time_zone = "", street = "", street_number = "", street_addition = "", city = "", postal_code = "", province_name = "", country_code = "", name = "", phone = "", email = "", users = new List<VenueUser> { } }, filters = new VenueModelFilter { venue_id = data.venue_id.ToString() } }, secret);
+                var venueJobject = await _venueRepository.GetData(new GraphApiPayload { data = new Venue { time_zone = "", street = "", street_number = "", street_addition = "", city = "", postal_code = "", province_name = "", country_code = "", name = "", phone = "", email = "", users = new List<VenueUser> { }, notifications = new VenueNotifications { } }, filters = new VenueModelFilter { venue_id = data.venue_id.ToString() } }, secret);
                 var venue = JsonConvert.DeserializeObject<Venue>(JsonConvert.SerializeObject(venueJobject.rows[0]));
                 var venueTimezoneOffset = TimeZoneInfo.FindSystemTimeZoneById(venue.time_zone).GetUtcOffset(DateTime.UtcNow);
 
@@ -138,8 +139,11 @@ namespace CommonLibrary.SharedServices.Services
 
                     //retur response to user, indexes are inserted in background, send emails in background
                     _obfIndexRepository.InsertBulkIndexes(obfIndexes);
-                    SendEmail(booking, data, start, end, dateS, venue, tenant.web_pages.Last(), u_reasonDb);
-                    SendEmailToStaff(booking, venue.users, data, secret, start, end, dateS, u_reasonDb);
+                    if (venue.notifications.notify == 1)
+                    {
+                        SendEmail(booking, data, start, end, dateS, venue, tenant.web_pages.Last(), u_reasonDb, tenant.org_name);
+                        SendEmailToStaff(booking, venue.users, data, secret, start, end, dateS, u_reasonDb, venue.name, tenant.org_name, tenant.web_pages.Last());
+                    }
                 }
                 else
                 {
@@ -211,7 +215,7 @@ namespace CommonLibrary.SharedServices.Services
             return result;
         }
 
-        private async Task<string> SendEmail(Booking booking, BookingModelData modelData, string start, string end, string date, Venue venue, string pageUrl, string u_reason)
+        private async Task<string> SendEmail(Booking booking, BookingModelData modelData, string start, string end, string date, Venue venue, string pageUrl, string u_reason, string tenantName)
         {
             try
             {
@@ -247,6 +251,10 @@ namespace CommonLibrary.SharedServices.Services
                 request.Substitutions.Add("{{e-mail}}", venue.email);
                 request.Substitutions.Add("{{dynamic_modify_link}}", $"{pageUrl}?modify={booking.booking_id}");
                 request.Substitutions.Add("{{venue_name}}", venue.name);
+                request.Substitutions.Add("{{tenant.org_name}}", tenantName);
+
+                request.Substitutions.Add("{{appointee_email}}", modelData.u_email);
+                request.Substitutions.Add("{{tenant_domain}}", pageUrl);
 
                 Console.WriteLine("Sending EMAIL_REQUEST=>" + JsonConvert.SerializeObject(request));
                 var response = await _emailClient.SendEmailAsync(request);
@@ -256,10 +264,10 @@ namespace CommonLibrary.SharedServices.Services
             return null;
         }
 
-        private async Task SendEmailToStaff(Booking booking, List<VenueUser> users, BookingModelData modelData, string secret, string start, string end, string date, string u_reason)
+        private async Task SendEmailToStaff(Booking booking, List<VenueUser> users, BookingModelData modelData, string secret, string start, string end, string date, string u_reason, string venueName, string tenantName, string pageUrl)
         {
             Console.WriteLine("SEND STAFF EMAIL");
-            var venueStaffEmails = users.Where(q => !q.r.Equals("ADMIN", StringComparison.OrdinalIgnoreCase)).Select(q => q.u);
+            var venueStaffEmails = users.Where(q => !q.r.Equals("ADMIN", StringComparison.OrdinalIgnoreCase) && q.n == 1).Select(q => q.u);
             var emailsTo = new List<string>();
             foreach (var email in venueStaffEmails)
             {
@@ -306,9 +314,14 @@ namespace CommonLibrary.SharedServices.Services
                 request.Substitutions.Add("{{date}}", date);
                 request.Substitutions.Add("{{start_hour}}", start);
                 request.Substitutions.Add("{{end_hour}}", end);
-                request.Substitutions.Add("{{venue_or_online}", modelData.type.ToString().ToLower() == "p" ? "venue" : "online" );
+                request.Substitutions.Add("{{venue_or_online}}", modelData.type.ToString().ToLower() == "p" ? "venue" : "online" );
                 request.Substitutions.Add("{{reason_service_none}}", u_reason ?? "none");
-                request.Substitutions.Add("{{sp_booking_link}}", "");
+                request.Substitutions.Add("{{sp_booking_link}}", $"{SP_URL.TrimEnd('/')}/appointments/{booking.booking_id}");
+                request.Substitutions.Add("{{venue_name}}", venueName);
+                request.Substitutions.Add("{{tenant.org_name}}", tenantName);
+
+                request.Substitutions.Add("{{tenant_domain}}", pageUrl);
+
                 var response = await _emailClient.SendEmailAsync(request);
             }
             catch (Exception ex) { Console.WriteLine(ex + ex.Message + ex.StackTrace); }
