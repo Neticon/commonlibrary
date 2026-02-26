@@ -14,6 +14,7 @@
         public static string BOOKING_VENUES_STATISTICS = "select* from utility.get_venue_booking_statistics(@payload) as result";
         public static string BOOKING_LIST = "select* from utility.get_booking_list(@payload) as result";
         public static string BOOKING_DETAIL = "select utility.get_booking_venue_intel(@booking_id) as result;";
+        public static string BOOKING_UPDATE_MODEL = "select utility.get_booking_update_data(@booking_id) as result;";
         public static string WRITE_ERROR_LOG = "SELECT utility.write_error_log(@payload) as result;";
         public static string RATE_BOOKING = "select utility.rate_booking(@id, @date, @value) as x";
         public static string APPEND_EVENT_BODY = "select utility.append_event_body(@id, @origin, @new_body) as x";

@@ -69,10 +69,9 @@ namespace CommonLibrary.SharedServices.Services
                     return response;
                 }
                 var secret = await _secretService.GetSecret(org_code);
+                var venue = await GetVenueObject(data.venue_id.ToString(), secret);
 
                 var date = DateTime.Parse(data.date);
-                var venueJobject = await _venueRepository.GetData(new GraphApiPayload { data = new Venue { time_zone = "", street = "", street_number = "", street_addition = "", city = "", postal_code = "", province_name = "", country_code = "", name = "", phone = "", email = "", users = new List<VenueUser> { }, notifications = new VenueNotifications { } }, filters = new VenueModelFilter { venue_id = data.venue_id.ToString() } }, secret);
-                var venue = JsonConvert.DeserializeObject<Venue>(JsonConvert.SerializeObject(venueJobject.rows[0]));
                 var venueTimezoneOffset = TimeZoneInfo.FindSystemTimeZoneById(venue.time_zone).GetUtcOffset(DateTime.UtcNow);
 
                 var startTs = new DateTimeOffset(date.AddMinutes(data.block_start), venueTimezoneOffset);
@@ -141,7 +140,7 @@ namespace CommonLibrary.SharedServices.Services
                     _obfIndexRepository.InsertBulkIndexes(obfIndexes);
                     if (venue.notifications.notify == 1)
                     {
-                        SendEmail(booking, data, start, end, dateS, venue, tenant.web_pages.Last(), u_reasonDb, tenant.org_name);
+                        SendEmail($"booking_scheduled_{data.type}".ToLower(), "Il tuo appuntamento è stato confermato", "BookingScheduled", booking, data, start, end, dateS, venue, tenant.web_pages.Last(), u_reasonDb, tenant.org_name);
                         SendEmailToStaff(booking, venue.users, data, secret, start, end, dateS, u_reasonDb, venue.name, tenant.org_name, tenant.web_pages.Last());
                     }
                 }
@@ -158,6 +157,9 @@ namespace CommonLibrary.SharedServices.Services
         public async Task<ServiceResponse> UpdateBooking(BookingUpdateModel data, string venue_id)
         {
             var response = new ServiceResponse { StatusCode = 200 };
+            var dataFromDB = await _bookingRepository.GetBookingUpdateData(data.filters.booking_id);
+            var dataObject = dataFromDB.rows[0];
+            var tenant = JsonConvert.DeserializeObject<Tenant>(dataObject["tenant"].ToString());
             if (data.data.block_status == "RESCHEDULED")
             {
                 if (data.data.block_start == null || data.data.block_end == null)
@@ -165,9 +167,14 @@ namespace CommonLibrary.SharedServices.Services
                     response.Result = 204;
                     return response;
                 }
-                var bookingReason = await _bookingRepository.GetBookingReason(new Guid(data.filters.booking_id));
+                var secret = await _secretService.GetSecret(tenant.org_code);
+
+                var booking = JsonConvert.DeserializeObject<Booking>(dataObject["booking"].ToString());
+                var encryptPaths = EncryptionMetadataHelper.GetEncryptedPropertyPaths(typeof(Booking));
+                ObjectEncryption.DecryptObject(booking, secret, encryptPaths.Item1, encryptPaths.Item2);
+
                 //CHECK PATTERN LATER WITH FE {SRV*}
-                var service = bookingReason.StartsWith("SRV", StringComparison.OrdinalIgnoreCase) ? bookingReason : "DEFAULT";
+                var service = booking.u_reason.StartsWith("SRV", StringComparison.OrdinalIgnoreCase) ? booking.u_reason : "DEFAULT";
                 var blockAvailability = await _blocksRepository.CheckBlocAvailability(data.data.block_start.Value, data.data.block_end.Value, data.data.type, new Guid(venue_id), data.data.date, service);
                 if (blockAvailability.avail == -2)
                     response.StatusCode = 403;
@@ -175,9 +182,33 @@ namespace CommonLibrary.SharedServices.Services
                     response.StatusCode = 404;
                 else if (blockAvailability.avail > 0)
                 {
+                    var venue = JsonConvert.DeserializeObject<Venue>(dataObject["venue"].ToString());
+                    var encryptPathsVenue = EncryptionMetadataHelper.GetEncryptedPropertyPaths(typeof(Venue));
+                    ObjectEncryption.DecryptObject(venue, secret, encryptPathsVenue.Item1, encryptPathsVenue.Item2);
+
+                    var venueTimezoneOffset = TimeZoneInfo.FindSystemTimeZoneById(venue.time_zone).GetUtcOffset(DateTime.UtcNow);
+
+                    var date = DateTime.Parse(data.data.date);
+                    var startTs = new DateTimeOffset(date.AddMinutes(data.data.block_start.Value), venueTimezoneOffset);
+                    var endTs = new DateTimeOffset(date.AddMinutes(data.data.block_end.Value), venueTimezoneOffset);
+
+                    data.data.start_ts = startTs.ToString(Constants.PSQLTimestampWithTZFromat);
+                    data.data.end_ts = endTs.ToString(Constants.PSQLTimestampWithTZFromat);
+
                     var result = await _bookingRepository.UpdateEntity(data, ignoreEncryption: true);
                     if (result != null && result.success)
+                    {
                         response.Result = result;
+                        if (venue.notifications.notify == 1)
+                        {
+                            var dateS = startTs.ToString("dd/MM/yyyy");
+                            var start = startTs.ToString("HH:mm");
+                            var end = endTs.ToString("HH:mm");
+                            var bookingData = new BookingModelData { tenant_id = tenant.tenant_id.Value, u_first = booking.u_first, u_last = booking.u_last, u_email = booking.u_email, type = booking.type };
+                            SendEmail($"booking_rescheduled_{data.data.type}".ToLower(), "Il tuo appuntamento è stato confermato", "BookingScheduled", booking, bookingData, start, end, dateS, venue, tenant.web_pages.Last(), "", tenant.org_name);
+                            SendEmailToStaff(booking, venue.users, bookingData, secret, start, end, dateS, "", venue.name, tenant.org_name, tenant.web_pages.Last());
+                        }
+                    }
                     else
                     {
                         response.StatusCode = 204;
@@ -215,17 +246,17 @@ namespace CommonLibrary.SharedServices.Services
             return result;
         }
 
-        private async Task<string> SendEmail(Booking booking, BookingModelData modelData, string start, string end, string date, Venue venue, string pageUrl, string u_reason, string tenantName)
+        private async Task<string> SendEmail(string templateId, string subject, string messageType, Booking booking, BookingModelData modelData, string start, string end, string date, Venue venue, string pageUrl, string u_reason, string tenantName)
         {
             try
             {
                 var request = new SendEmailRequest
                 {
-                    TemplateId = $"booking_scheduled_{modelData.type}".ToLower(),
+                    TemplateId = templateId,
                     ReferenceEntity = $"{booking._schema}.{booking._table}",
                     ReferenceId = booking.booking_id.ToString(),
-                    Subject = "Il tuo appuntamento è stato confermato",
-                    MessageType = "BookingScheduled",
+                    Subject = subject,
+                    MessageType = messageType,
                     TenantId = modelData.tenant_id.ToString(),
                     FromEmail = EMAIL_FROM_HD,
                     FromName = EMAIL_FROM_NAME_HD
@@ -288,14 +319,15 @@ namespace CommonLibrary.SharedServices.Services
                         var dec = AesEncryption.Decrypt(email, secret);
                         emailsTo.Add(dec);
                     }
-                    catch {
+                    catch
+                    {
                         continue;
                     }
                 }
             }
             try
             {
-                Console.WriteLine("SEND STAFF EMAIL => "+ JsonConvert.SerializeObject(emailsTo));
+                Console.WriteLine("SEND STAFF EMAIL => " + JsonConvert.SerializeObject(emailsTo));
 
                 var request = new SendEmailRequest
                 {
@@ -314,7 +346,7 @@ namespace CommonLibrary.SharedServices.Services
                 request.Substitutions.Add("{{date}}", date);
                 request.Substitutions.Add("{{start_hour}}", start);
                 request.Substitutions.Add("{{end_hour}}", end);
-                request.Substitutions.Add("{{venue_or_online}}", modelData.type.ToString().ToLower() == "p" ? "venue" : "online" );
+                request.Substitutions.Add("{{venue_or_online}}", modelData.type.ToString().ToLower() == "p" ? "venue" : "online");
                 request.Substitutions.Add("{{reason_service_none}}", u_reason ?? "none");
                 request.Substitutions.Add("{{sp_booking_link}}", $"{SP_URL.TrimEnd('/')}/appointments/{booking.booking_id}");
                 request.Substitutions.Add("{{venue_name}}", venueName);
@@ -325,7 +357,20 @@ namespace CommonLibrary.SharedServices.Services
                 var response = await _emailClient.SendEmailAsync(request);
             }
             catch (Exception ex) { Console.WriteLine(ex + ex.Message + ex.StackTrace); }
+        }
 
+        private async Task<Venue> GetVenueObject(string venueId, string secret)
+        {
+            var venueJobject = await _venueRepository.GetData(new GraphApiPayload { data = new Venue { tenant_id = new Guid(), time_zone = "", street = "", street_number = "", street_addition = "", city = "", postal_code = "", province_name = "", country_code = "", name = "", phone = "", email = "", users = new List<VenueUser> { }, notifications = new VenueNotifications { } }, filters = new VenueModelFilter { venue_id = venueId } }, secret);
+            var venue = JsonConvert.DeserializeObject<Venue>(JsonConvert.SerializeObject(venueJobject.rows[0]));
+            return venue;
+        }
+
+        private async Task<Tenant> GetTenantObject(Guid tenantId)
+        {
+            var tenantJobject = await _tenantRepository.GetData(new GraphApiPayload { data = new Tenant { org_code = "", web_pages = new List<string>(), org_name = "" }, filters = new TenantIdModel { tenant_id = tenantId } });
+            var tenant = JsonConvert.DeserializeObject<Tenant>(JsonConvert.SerializeObject(tenantJobject.rows[0]));
+            return tenant;
         }
     }
 }

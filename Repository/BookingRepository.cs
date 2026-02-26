@@ -5,6 +5,7 @@ using CommonLibrary.Models;
 using CommonLibrary.Repository.Interfaces;
 using Microsoft.Extensions.Configuration;
 using Newtonsoft.Json;
+using Newtonsoft.Json.Linq;
 using Npgsql;
 using NpgsqlTypes;
 using ServicePortal.Domain.PSQL;
@@ -75,6 +76,16 @@ namespace CommonLibrary.Repository
             query.Parameters.AddWithValue("id", NpgsqlTypes.NpgsqlDbType.Uuid, id);
             query.Parameters.AddWithValue("date", NpgsqlDbType.Date, DateTime.Parse(date));
             query.Parameters.AddWithValue("value", NpgsqlDbType.Integer, value);
+
+            var result = await ExecuteNotTypedStandardCommand(query);
+            return result;
+
+        }
+
+        public async Task<GraphAPIResponse<JObject>> GetBookingUpdateData(Guid id)
+        {
+            var query = new NpgsqlCommand(PredefinedQueryPatterns.BOOKING_UPDATE_MODEL);
+            query.Parameters.AddWithValue("booking_id", NpgsqlDbType.Uuid, id);
 
             var result = await ExecuteNotTypedStandardCommand(query);
             return result;
