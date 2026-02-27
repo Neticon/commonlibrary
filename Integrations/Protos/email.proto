@@ -19,6 +19,7 @@ message SendEmailRequest{
 	string tenant_id = 8;
 	string from_email = 9;
 	string from_name = 10;
+	string reply_to = 11;
 }
 
 message SendEmailResponse{

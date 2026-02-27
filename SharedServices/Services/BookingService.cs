@@ -181,7 +181,15 @@ namespace CommonLibrary.SharedServices.Services
                     return response;
                 }
                 //CHECK PATTERN LATER WITH FE {SRV*}
-                var service = booking.u_reason.StartsWith("SRV", StringComparison.OrdinalIgnoreCase) ? booking.u_reason : "DEFAULT";
+                var service = "";
+                if (booking.u_reason == null)
+                {
+                    service = "DEFAULT";
+                }
+                else
+                {
+                    service = booking.u_reason.StartsWith("SRV", StringComparison.OrdinalIgnoreCase) ? booking.u_reason : "DEFAULT";
+                }
                 var blockAvailability = await _blocksRepository.CheckBlocAvailability(data.data.block_start.Value, data.data.block_end.Value, data.data.type, new Guid(venue_id), data.data.date, service);
                 if (blockAvailability.avail == -2)
                     response.StatusCode = 403;
@@ -287,7 +295,8 @@ namespace CommonLibrary.SharedServices.Services
                     MessageType = messageType,
                     TenantId = modelData.tenant_id.ToString(),
                     FromEmail = EMAIL_FROM_NOTIFICATIONS,
-                    FromName = $"{envPrefix} {venue.name} -notifiche sulle prenotazioni da Conventus"
+                    FromName = $"{envPrefix} {venue.name} -notifiche sulle prenotazioni da Conventus",
+                    ReplyTo = NO_REPLY_EMAIL
                 };
                 request.EmailTo.Add(modelData.u_email);
                 request.Substitutions.Add("{{first_name}}", modelData.u_first);
@@ -373,7 +382,8 @@ namespace CommonLibrary.SharedServices.Services
                     MessageType = messageType,
                     TenantId = modelData.tenant_id.ToString(),
                     FromEmail = EMAIL_FROM_NOTIFICATIONS,
-                    FromName = $"{envPrefix} {venueName} -notifiche sulle prenotazioni da Conventus"
+                    FromName = $"{envPrefix} {venueName} -notifiche sulle prenotazioni da Conventus",
+                    ReplyTo = NO_REPLY_EMAIL
                 };
                 request.EmailTo.AddRange(emailsTo);
                 request.Substitutions.Add("{{appointee_first_name}}", modelData.u_first);
