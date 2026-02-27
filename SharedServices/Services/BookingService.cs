@@ -309,7 +309,7 @@ namespace CommonLibrary.SharedServices.Services
                 {
                     request.Substitutions.Add("{{make_appointment_link}}", $"{pageUrl}");
                 }
-                request.Substitutions.Add("{{reason_service_none}}", u_reason ?? "none");
+                request.Substitutions.Add("{{reason_service_none}}", u_reason ?? "");
                 request.Substitutions.Add("{{phone}}", venue.phone);
                 request.Substitutions.Add("{{e-mail}}", venue.email);
                 request.Substitutions.Add("{{dynamic_modify_link}}", $"{pageUrl}?modify={booking.booking_id}");
@@ -382,7 +382,7 @@ namespace CommonLibrary.SharedServices.Services
                 request.Substitutions.Add("{{start_hour}}", start);
                 request.Substitutions.Add("{{end_hour}}", end);
                 request.Substitutions.Add("{{venue_or_online}}", modelData.type.ToString().ToLower() == "p" ? "venue" : "online");
-                request.Substitutions.Add("{{reason_service_none}}", u_reason ?? "none");
+                request.Substitutions.Add("{{reason_service_none}}", u_reason ?? "");
                 request.Substitutions.Add("{{sp_booking_link}}", $"{SP_URL.TrimEnd('/')}/appointments/{booking.booking_id}");
                 request.Substitutions.Add("{{venue_name}}", venueName);
                 request.Substitutions.Add("{{tenant.org_name}}", tenantName);
