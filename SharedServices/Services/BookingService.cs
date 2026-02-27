@@ -8,6 +8,7 @@ using CommonLibrary.Repository.Interfaces;
 using CommonLibrary.SharedServices.Interfaces;
 using Integration.Grpc;
 using Newtonsoft.Json;
+using WebApp.API.Controllers.Helper;
 
 namespace CommonLibrary.SharedServices.Services
 {
@@ -22,8 +23,8 @@ namespace CommonLibrary.SharedServices.Services
         private readonly ISecretService _secretService;
         private readonly IEmailClient _emailClient;
         private readonly string[] INDEXED_FIELDS = ["u_first", "u_last", "u_email", "u_phone", "u_message", "u_reason"];
-        public static string EMAIL_FROM_HD = Environment.GetEnvironmentVariable("EMAIL_FROM_HD");
-        public static string EMAIL_FROM_NAME_HD = Environment.GetEnvironmentVariable("EMAIL_FROM_NAME_HD");
+        public static string EMAIL_FROM_NOTIFICATIONS = Environment.GetEnvironmentVariable("EMAIL_FROM_NOTIFICATIONS");
+        public static string NO_REPLY_EMAIL = Environment.GetEnvironmentVariable("NO_REPLY_EMAIL");
         public static string SP_URL = Environment.GetEnvironmentVariable("SERVICE_PORTAL_URL");
 
         public BookingService(IBlocksRepository blocksRepository, IValidationService validationService, IBookingRepository bookingRepository, IVenueRepository venueRepository, IObfIndexRepository obfIndexRepository, ITenantRepository tenantRepository, ISecretService secretService, IEmailClient emailClient)
@@ -140,8 +141,8 @@ namespace CommonLibrary.SharedServices.Services
                     _obfIndexRepository.InsertBulkIndexes(obfIndexes);
                     if (venue.notifications.notify == 1)
                     {
-                        SendEmail($"booking_scheduled_{data.type}".ToLower(), "Il tuo appuntamento è stato confermato", "BookingScheduled", booking, data, start, end, dateS, venue, tenant.web_pages.Last(), u_reasonDb, tenant.org_name);
-                        SendEmailToStaff(booking, venue.users, data, secret, start, end, dateS, u_reasonDb, venue.name, tenant.org_name, tenant.web_pages.Last());
+                        SendEmail($"booking_scheduled_{data.type}".ToLower(), "U+1F4C5 Il tuo appuntamento è stato confermato", "BookingScheduled", booking, data, start, end, dateS, venue, tenant.web_pages.Last(), u_reasonDb, tenant.org_name);
+                        SendEmailToStaff($"booking_scheduled_venue", "U+1F4C5 Il tuo appuntamento è stato confermato", "BookingScheduled", booking, venue.users, data, secret, start, end, dateS, u_reasonDb, venue.name, tenant.org_name, tenant.web_pages.Last());
                     }
                 }
                 else
@@ -205,8 +206,8 @@ namespace CommonLibrary.SharedServices.Services
                             var start = startTs.ToString("HH:mm");
                             var end = endTs.ToString("HH:mm");
                             var bookingData = new BookingModelData { tenant_id = tenant.tenant_id.Value, u_first = booking.u_first, u_last = booking.u_last, u_email = booking.u_email, type = booking.type };
-                            SendEmail($"booking_rescheduled_{data.data.type}".ToLower(), "Il tuo appuntamento è stato confermato", "BookingScheduled", booking, bookingData, start, end, dateS, venue, tenant.web_pages.Last(), "", tenant.org_name);
-                            SendEmailToStaff(booking, venue.users, bookingData, secret, start, end, dateS, "", venue.name, tenant.org_name, tenant.web_pages.Last());
+                            SendEmail($"booking_rescheduled_{data.data.type}".ToLower(), "Il tuo appuntamento è stato riprogrammato", "BookingRescheduled", booking, bookingData, start, end, dateS, venue, tenant.web_pages.Last(), "", tenant.org_name);
+                            SendEmailToStaff($"booking_rescheduled_venue", "Il tuo appuntamento è stato riprogrammato", "BookingRescheduled", booking, venue.users, bookingData, secret, start, end, dateS, "", venue.name, tenant.org_name, tenant.web_pages.Last());
                         }
                     }
                     else
@@ -250,6 +251,8 @@ namespace CommonLibrary.SharedServices.Services
         {
             try
             {
+                var envPrefix = CommonHelperFunctions.GetEnvPrefix(Environment.GetEnvironmentVariable("ASPNETCORE_ENVIRONMENT"));
+
                 var request = new SendEmailRequest
                 {
                     TemplateId = templateId,
@@ -258,8 +261,8 @@ namespace CommonLibrary.SharedServices.Services
                     Subject = subject,
                     MessageType = messageType,
                     TenantId = modelData.tenant_id.ToString(),
-                    FromEmail = EMAIL_FROM_HD,
-                    FromName = EMAIL_FROM_NAME_HD
+                    FromEmail = EMAIL_FROM_NOTIFICATIONS,
+                    FromName = $"{envPrefix} {venue.name} -notifiche sulle prenotazioni da Conventus"
                 };
                 request.EmailTo.Add(modelData.u_email);
                 request.Substitutions.Add("{{first_name}}", modelData.u_first);
@@ -295,7 +298,7 @@ namespace CommonLibrary.SharedServices.Services
             return null;
         }
 
-        private async Task SendEmailToStaff(Booking booking, List<VenueUser> users, BookingModelData modelData, string secret, string start, string end, string date, string u_reason, string venueName, string tenantName, string pageUrl)
+        private async Task SendEmailToStaff(string templateId, string subject, string messageType, Booking booking, List<VenueUser> users, BookingModelData modelData, string secret, string start, string end, string date, string u_reason, string venueName, string tenantName, string pageUrl)
         {
             Console.WriteLine("SEND STAFF EMAIL");
             var venueStaffEmails = users.Where(q => !q.r.Equals("ADMIN", StringComparison.OrdinalIgnoreCase) && q.n == 1).Select(q => q.u);
@@ -313,7 +316,7 @@ namespace CommonLibrary.SharedServices.Services
                     failed = true;
                 }
                 if (failed)
-                { //for now because we still have ECB values somewhere in DEV
+                { //for now because we still have NON ECB values somewhere in DEV
                     try
                     {
                         var dec = AesEncryption.Decrypt(email, secret);
@@ -329,16 +332,18 @@ namespace CommonLibrary.SharedServices.Services
             {
                 Console.WriteLine("SEND STAFF EMAIL => " + JsonConvert.SerializeObject(emailsTo));
 
+                var envPrefix = CommonHelperFunctions.GetEnvPrefix(Environment.GetEnvironmentVariable("ASPNETCORE_ENVIRONMENT"));
+
                 var request = new SendEmailRequest
                 {
-                    TemplateId = $"booking_scheduled_venue".ToLower(),
+                    TemplateId = templateId,
                     ReferenceEntity = $"{booking._schema}.{booking._table}",
                     ReferenceId = booking.booking_id.ToString(),
-                    Subject = "Il tuo appuntamento è stato confermato",
-                    MessageType = "BookingScheduled",
+                    Subject = subject,
+                    MessageType = messageType,
                     TenantId = modelData.tenant_id.ToString(),
-                    FromEmail = EMAIL_FROM_HD,
-                    FromName = EMAIL_FROM_NAME_HD
+                    FromEmail = EMAIL_FROM_NOTIFICATIONS,
+                    FromName = $"{envPrefix} {venueName} -notifiche sulle prenotazioni da Conventus"
                 };
                 request.EmailTo.AddRange(emailsTo);
                 request.Substitutions.Add("{{appointee_first_name}}", modelData.u_first);

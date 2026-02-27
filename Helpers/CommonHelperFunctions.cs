@@ -11,6 +11,16 @@ namespace WebApp.API.Controllers.Helper
             return sWhitespace.Replace(input, replacement);
         }
 
+        public static string GetEnvPrefix(string environoment)
+        {
+            if (environoment.Equals("development", StringComparison.OrdinalIgnoreCase))
+                return "[DEV]";
+            else if (environoment.Equals("staging", StringComparison.OrdinalIgnoreCase))
+                return "[STG]";
+            else 
+                return "";
+        }
+
         public static string GeneratePassword(int length = 16)
         {
             if (length < 4)
