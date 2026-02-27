@@ -239,8 +239,8 @@ namespace CommonLibrary.SharedServices.Services
                         var end = DateTime.Parse(booking.end_ts).ToString("HH:mm");
                         var subject = "❌ Il tuo appuntamento è stato annullato";
                         string messageType = "BookingCanceled";
-                        var bookingData = new BookingModelData { tenant_id = tenant.tenant_id.Value, u_first = booking.u_first, u_last = booking.u_last, u_email = booking.u_email, type = 'c' };
-                        SendEmail($"booking_cancellation", subject, messageType, booking, bookingData, start, end, dateS, venue, tenant.web_pages.Last(), "", tenant.org_name);
+                        var bookingData = new BookingModelData { tenant_id = tenant.tenant_id.Value, u_first = booking.u_first, u_last = booking.u_last, u_email = booking.u_email, type = booking.type };
+                        SendEmail($"booking_cancellation", subject, messageType, booking, bookingData, start, end, dateS, venue, tenant.web_pages.Last(), "", tenant.org_name, true);
                         SendEmailToStaff($"booking_cancellation_venue", subject, messageType, booking, venue.users, bookingData, secret, start, end, dateS, "", venue.name, tenant.org_name, tenant.web_pages.Last());
                     }
                 }
@@ -280,7 +280,7 @@ namespace CommonLibrary.SharedServices.Services
             return result;
         }
 
-        private async Task<string> SendEmail(string templateId, string subject, string messageType, Booking booking, BookingModelData modelData, string start, string end, string date, Venue venue, string pageUrl, string u_reason, string tenantName)
+        private async Task<string> SendEmail(string templateId, string subject, string messageType, Booking booking, BookingModelData modelData, string start, string end, string date, Venue venue, string pageUrl, string u_reason, string tenantName, bool cancel =false)
         {
             try
             {
@@ -304,7 +304,6 @@ namespace CommonLibrary.SharedServices.Services
                 request.Substitutions.Add("{{date}}", date);
                 request.Substitutions.Add("{{start_hour}}", start);
                 request.Substitutions.Add("{{end_hour}}", end);
-                request.Substitutions.Add("{{hour}}", start);
 
                 if (modelData.type.ToString().ToLower() == "p")
                 {
@@ -314,9 +313,10 @@ namespace CommonLibrary.SharedServices.Services
                     request.Substitutions.Add("{{city}}", venue.city);
                     request.Substitutions.Add("{{region_code}}", venue.province_name ?? "");
                     request.Substitutions.Add("{{country_name}}", venue.country_code);
-                }else if (modelData.type.ToString().ToLower() == "c")
+                }else if (cancel)
                 {
                     request.Substitutions.Add("{{make_appointment_link}}", $"{pageUrl}");
+                    request.Substitutions.Add("{{hour}}", start);
                 }
                 request.Substitutions.Add("{{reason_service_none}}", u_reason ?? "");
                 request.Substitutions.Add("{{phone}}", venue.phone);
@@ -388,6 +388,7 @@ namespace CommonLibrary.SharedServices.Services
                 request.EmailTo.AddRange(emailsTo);
                 request.Substitutions.Add("{{appointee_first_name}}", modelData.u_first);
                 request.Substitutions.Add("{{appointee_last_name}}", modelData.u_last);
+                request.Substitutions.Add("{{appointee_email}}", modelData.u_email);
                 request.Substitutions.Add("{{date}}", date);
                 request.Substitutions.Add("{{start_hour}}", start);
                 request.Substitutions.Add("{{end_hour}}", end);
