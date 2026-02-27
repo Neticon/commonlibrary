@@ -7,7 +7,9 @@ using CommonLibrary.Models.API;
 using CommonLibrary.Repository.Interfaces;
 using CommonLibrary.SharedServices.Interfaces;
 using Integration.Grpc;
+using Microsoft.AspNetCore.DataProtection;
 using Newtonsoft.Json;
+using System.Net.Sockets;
 using WebApp.API.Controllers.Helper;
 
 namespace CommonLibrary.SharedServices.Services
@@ -141,8 +143,8 @@ namespace CommonLibrary.SharedServices.Services
                     _obfIndexRepository.InsertBulkIndexes(obfIndexes);
                     if (venue.notifications.notify == 1)
                     {
-                        SendEmail($"booking_scheduled_{data.type}".ToLower(), "U+1F4C5 Il tuo appuntamento è stato confermato", "BookingScheduled", booking, data, start, end, dateS, venue, tenant.web_pages.Last(), u_reasonDb, tenant.org_name);
-                        SendEmailToStaff($"booking_scheduled_venue", "U+1F4C5 Il tuo appuntamento è stato confermato", "BookingScheduled", booking, venue.users, data, secret, start, end, dateS, u_reasonDb, venue.name, tenant.org_name, tenant.web_pages.Last());
+                        SendEmail($"booking_scheduled_{data.type}".ToLower(), "📅 Il tuo appuntamento è stato confermato", "BookingScheduled", booking, data, start, end, dateS, venue, tenant.web_pages.Last(), u_reasonDb, tenant.org_name);
+                        SendEmailToStaff($"booking_scheduled_venue", "📅 Il tuo appuntamento è stato confermato", "BookingScheduled", booking, venue.users, data, secret, start, end, dateS, u_reasonDb, venue.name, tenant.org_name, tenant.web_pages.Last());
                     }
                 }
                 else
@@ -161,6 +163,16 @@ namespace CommonLibrary.SharedServices.Services
             var dataFromDB = await _bookingRepository.GetBookingUpdateData(data.filters.booking_id);
             var dataObject = dataFromDB.rows[0];
             var tenant = JsonConvert.DeserializeObject<Tenant>(dataObject["tenant"].ToString());
+            var secret = await _secretService.GetSecret(tenant.org_code);
+
+            var booking = JsonConvert.DeserializeObject<Booking>(dataObject["booking"].ToString());
+            var encryptPaths = EncryptionMetadataHelper.GetEncryptedPropertyPaths(typeof(Booking));
+            ObjectEncryption.DecryptObject(booking, secret, encryptPaths.Item1, encryptPaths.Item2);
+
+            var venue = JsonConvert.DeserializeObject<Venue>(dataObject["venue"].ToString());
+            var encryptPathsVenue = EncryptionMetadataHelper.GetEncryptedPropertyPaths(typeof(Venue));
+            ObjectEncryption.DecryptObject(venue, secret, encryptPathsVenue.Item1, encryptPathsVenue.Item2);
+
             if (data.data.block_status == "RESCHEDULED")
             {
                 if (data.data.block_start == null || data.data.block_end == null)
@@ -168,12 +180,6 @@ namespace CommonLibrary.SharedServices.Services
                     response.Result = 204;
                     return response;
                 }
-                var secret = await _secretService.GetSecret(tenant.org_code);
-
-                var booking = JsonConvert.DeserializeObject<Booking>(dataObject["booking"].ToString());
-                var encryptPaths = EncryptionMetadataHelper.GetEncryptedPropertyPaths(typeof(Booking));
-                ObjectEncryption.DecryptObject(booking, secret, encryptPaths.Item1, encryptPaths.Item2);
-
                 //CHECK PATTERN LATER WITH FE {SRV*}
                 var service = booking.u_reason.StartsWith("SRV", StringComparison.OrdinalIgnoreCase) ? booking.u_reason : "DEFAULT";
                 var blockAvailability = await _blocksRepository.CheckBlocAvailability(data.data.block_start.Value, data.data.block_end.Value, data.data.type, new Guid(venue_id), data.data.date, service);
@@ -183,10 +189,6 @@ namespace CommonLibrary.SharedServices.Services
                     response.StatusCode = 404;
                 else if (blockAvailability.avail > 0)
                 {
-                    var venue = JsonConvert.DeserializeObject<Venue>(dataObject["venue"].ToString());
-                    var encryptPathsVenue = EncryptionMetadataHelper.GetEncryptedPropertyPaths(typeof(Venue));
-                    ObjectEncryption.DecryptObject(venue, secret, encryptPathsVenue.Item1, encryptPathsVenue.Item2);
-
                     var venueTimezoneOffset = TimeZoneInfo.FindSystemTimeZoneById(venue.time_zone).GetUtcOffset(DateTime.UtcNow);
 
                     var date = DateTime.Parse(data.data.date);
@@ -206,8 +208,8 @@ namespace CommonLibrary.SharedServices.Services
                             var start = startTs.ToString("HH:mm");
                             var end = endTs.ToString("HH:mm");
                             var bookingData = new BookingModelData { tenant_id = tenant.tenant_id.Value, u_first = booking.u_first, u_last = booking.u_last, u_email = booking.u_email, type = booking.type };
-                            SendEmail($"booking_rescheduled_{data.data.type}".ToLower(), "Il tuo appuntamento è stato riprogrammato", "BookingRescheduled", booking, bookingData, start, end, dateS, venue, tenant.web_pages.Last(), "", tenant.org_name);
-                            SendEmailToStaff($"booking_rescheduled_venue", "Il tuo appuntamento è stato riprogrammato", "BookingRescheduled", booking, venue.users, bookingData, secret, start, end, dateS, "", venue.name, tenant.org_name, tenant.web_pages.Last());
+                            SendEmail($"booking_rescheduled_{data.data.type}".ToLower(), "🔁 Il tuo appuntamento è stato riprogrammato", "BookingRescheduled", booking, bookingData, start, end, dateS, venue, tenant.web_pages.Last(), "", tenant.org_name);
+                            SendEmailToStaff($"booking_rescheduled_venue", "🔁 Il tuo appuntamento è stato riprogrammato", "BookingRescheduled", booking, venue.users, bookingData, secret, start, end, dateS, "", venue.name, tenant.org_name, tenant.web_pages.Last());
                         }
                     }
                     else
@@ -215,6 +217,29 @@ namespace CommonLibrary.SharedServices.Services
                         response.StatusCode = 204;
                     }
                 };
+            }
+            else if(data.data.block_status == "CANCELLED")
+            {
+                var result = await _bookingRepository.UpdateEntity(data, ignoreEncryption: true);
+                if (result != null && result.success)
+                {
+                    response.Result = result;
+                    if (venue.notifications.notify == 1)
+                    {
+                        var dateS = booking.date.ToString("dd/MM/yyyy");
+                        var start = DateTime.Parse(booking.start_ts).ToString("HH:mm"); 
+                        var end = DateTime.Parse(booking.end_ts).ToString("HH:mm");
+                        var subject = "❌ Il tuo appuntamento è stato annullato";
+                        string messageType = "BookingCanceled";
+                        var bookingData = new BookingModelData { tenant_id = tenant.tenant_id.Value, u_first = booking.u_first, u_last = booking.u_last, u_email = booking.u_email, type = 'c' };
+                        SendEmail($"booking_cancellation", subject, messageType, booking, bookingData, start, end, dateS, venue, tenant.web_pages.Last(), "", tenant.org_name);
+                        SendEmailToStaff($"booking_cancellation_venue", subject, messageType, booking, venue.users, bookingData, secret, start, end, dateS, "", venue.name, tenant.org_name, tenant.web_pages.Last());
+                    }
+                }
+                else
+                {
+                    response.StatusCode = 204;
+                }
             }
             else
             {
@@ -270,6 +295,7 @@ namespace CommonLibrary.SharedServices.Services
                 request.Substitutions.Add("{{date}}", date);
                 request.Substitutions.Add("{{start_hour}}", start);
                 request.Substitutions.Add("{{end_hour}}", end);
+                request.Substitutions.Add("{{hour}}", start);
 
                 if (modelData.type.ToString().ToLower() == "p")
                 {
@@ -279,11 +305,15 @@ namespace CommonLibrary.SharedServices.Services
                     request.Substitutions.Add("{{city}}", venue.city);
                     request.Substitutions.Add("{{region_code}}", venue.province_name ?? "");
                     request.Substitutions.Add("{{country_name}}", venue.country_code);
+                }else if (modelData.type.ToString().ToLower() == "c")
+                {
+                    request.Substitutions.Add("{{make_appointment_link}}", $"{pageUrl}");
                 }
                 request.Substitutions.Add("{{reason_service_none}}", u_reason ?? "none");
                 request.Substitutions.Add("{{phone}}", venue.phone);
                 request.Substitutions.Add("{{e-mail}}", venue.email);
                 request.Substitutions.Add("{{dynamic_modify_link}}", $"{pageUrl}?modify={booking.booking_id}");
+                request.Substitutions.Add("{{dynamic_cancel_link}}", $"{pageUrl}?cancel={booking.booking_id}");
                 request.Substitutions.Add("{{venue_name}}", venue.name);
                 request.Substitutions.Add("{{tenant.org_name}}", tenantName);
 
