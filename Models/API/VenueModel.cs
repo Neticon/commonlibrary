@@ -37,7 +37,7 @@ namespace CommonLibrary.Models.API
         public VenueNotifications? notifications { get; set; }
         public List<JObject>? users { get; set; } //to:do - check for specific structure
         public List<VenueExceptions>? exceptions { get; set; }
-        public List<JObject>? reasons { get; set; } //to:do - check for specific structure
+        public object? reasons { get; set; } //to:do - check for specific structure
         public Links? links { get; set; }
         public string? description { get; set; }
         public object? configuration { get; set; } 
