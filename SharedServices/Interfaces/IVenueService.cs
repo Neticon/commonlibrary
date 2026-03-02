@@ -7,7 +7,7 @@ namespace CommonLibrary.SharedServices.Interfaces
     {
         Task<ServiceResponse> GetVenues(object data);
         Task<ServiceResponse> DeleteVenue(DeleteVenueModel data);
-        Task<ServiceResponse> CreateVenue(VenueModelData data);
+        Task<ServiceResponse> CreateVenue(VenueModel data);
         Task<ServiceResponse> UpdateVenue(VenueModel data);
     }
 }

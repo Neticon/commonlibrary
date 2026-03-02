@@ -23,13 +23,13 @@ namespace CommonLibrary.SharedServices.Services
             _venueGenerationService = venueGenerationService;
         }
 
-        public async Task<ServiceResponse> CreateVenue(VenueModelData data)
+        public async Task<ServiceResponse> CreateVenue(VenueModel data)
         {
-            var validationResult = await _validationService.GetRedisDeviceIntel(data.email, data.phone, "");
+            var validationResult = await _validationService.GetRedisDeviceIntel(data.data.email, data.data.phone, "");
             if (validationResult == null)
                 throw new Exception("Invalid email or phone");
 
-            var venue = data.Adapt<Venue>();
+            var venue = data.data.Adapt<Venue>();
             venue.venue_id = Guid.NewGuid();
             venue.tenant_id = CurrentUser.TenantId; //GetFromUserContext
             venue.create_bu = CurrentUser.Decr_Email;
@@ -37,7 +37,8 @@ namespace CommonLibrary.SharedServices.Services
             venue.pnvs_id = new Guid(validationResult.PhoneValidation);
 
             var resp = await _genericRepository.SaveEntity(venue, CurrentUser.OrgSecret);
-            _venueGenerationService.ReplaceJs(CurrentUser.TenantId.ToString());
+            if (resp.success == true && data.isPublish)
+                _venueGenerationService.ReplaceJs(CurrentUser.TenantId.ToString());
             return new ServiceResponse { Result = resp };
         }
 
@@ -79,7 +80,8 @@ namespace CommonLibrary.SharedServices.Services
             var payload = new GraphApiPayload { data = venue, filters = data.filters };
 
             var resp = await _genericRepository.UpdateEntity(payload, CurrentUser.OrgSecret);
-            _venueGenerationService.ReplaceJs(CurrentUser.TenantId.ToString());
+            if(resp.success == true && data.isPublish) 
+                _venueGenerationService.ReplaceJs(CurrentUser.TenantId.ToString());
             return new ServiceResponse { Result = resp };
         }
     }

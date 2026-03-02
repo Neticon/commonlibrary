@@ -7,6 +7,7 @@ namespace CommonLibrary.Models.API
     {
         public VenueModelData data { get; set; }
         public VenueModelFilter? filters { get; set; }
+        public bool isPublish {  get; set; }    
     }
 
     public class VenueModelFilter

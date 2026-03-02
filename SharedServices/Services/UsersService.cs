@@ -168,7 +168,8 @@ namespace CommonLibrary.SharedServices.Services
 
         public async Task DeleteUser(DeleteUserModel model)
         {
-            var prefix = "DELETED|";
+            var timestamp = new DateTimeOffset(DateTime.UtcNow).ToUnixTimeSeconds().ToString();
+            var prefix = $"DELETED|{timestamp}|";
 
             model.data.email = $"{prefix}{model.filters.email}";
             model.data.delete_dt = DateTime.UtcNow.ToString("yyyy-MM-dd HH:mm:ss.ffffff+00");
