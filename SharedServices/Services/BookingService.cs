@@ -285,6 +285,8 @@ namespace CommonLibrary.SharedServices.Services
             try
             {
                 var envPrefix = CommonHelperFunctions.GetEnvPrefix(Environment.GetEnvironmentVariable("ASPNETCORE_ENVIRONMENT"));
+                if (!pageUrl.StartsWith("https"))
+                    pageUrl = $"https://{pageUrl}";
 
                 var request = new SendEmailRequest
                 {
@@ -295,7 +297,7 @@ namespace CommonLibrary.SharedServices.Services
                     MessageType = messageType,
                     TenantId = modelData.tenant_id.ToString(),
                     FromEmail = EMAIL_FROM_NOTIFICATIONS,
-                    FromName = $"{envPrefix} {venue.name} -notifiche sulle prenotazioni da Conventus",
+                    FromName = $"{envPrefix} {venue.name} - notifiche sulle prenotazioni da Conventus",
                     ReplyTo = NO_REPLY_EMAIL
                 };
                 request.EmailTo.Add(modelData.u_email);
@@ -311,7 +313,7 @@ namespace CommonLibrary.SharedServices.Services
                     request.Substitutions.Add("{{street_additional}}", venue.street_addition ?? "");
                     request.Substitutions.Add("{{postal_code}}", venue.postal_code);
                     request.Substitutions.Add("{{city}}", venue.city);
-                    request.Substitutions.Add("{{region_code}}", venue.province_name ?? "");
+                    request.Substitutions.Add("{{region_code}}", venue.province_code ?? "");
                     request.Substitutions.Add("{{country_name}}", venue.country_code);
                 }else if (cancel)
                 {
@@ -370,7 +372,8 @@ namespace CommonLibrary.SharedServices.Services
             try
             {
                 Console.WriteLine("SEND STAFF EMAIL => " + JsonConvert.SerializeObject(emailsTo));
-
+                if (!pageUrl.StartsWith("https"))
+                    pageUrl = $"https://{pageUrl}";
                 var envPrefix = CommonHelperFunctions.GetEnvPrefix(Environment.GetEnvironmentVariable("ASPNETCORE_ENVIRONMENT"));
 
                 var request = new SendEmailRequest
@@ -382,7 +385,7 @@ namespace CommonLibrary.SharedServices.Services
                     MessageType = messageType,
                     TenantId = modelData.tenant_id.ToString(),
                     FromEmail = EMAIL_FROM_NOTIFICATIONS,
-                    FromName = $"{envPrefix} {venueName} -notifiche sulle prenotazioni da Conventus",
+                    FromName = $"{envPrefix} {venueName} - notifiche sulle prenotazioni da Conventus",
                     ReplyTo = NO_REPLY_EMAIL
                 };
                 request.EmailTo.AddRange(emailsTo);
@@ -407,7 +410,7 @@ namespace CommonLibrary.SharedServices.Services
 
         private async Task<Venue> GetVenueObject(string venueId, string secret)
         {
-            var venueJobject = await _venueRepository.GetData(new GraphApiPayload { data = new Venue { tenant_id = new Guid(), time_zone = "", street = "", street_number = "", street_addition = "", city = "", postal_code = "", province_name = "", country_code = "", name = "", phone = "", email = "", users = new List<VenueUser> { }, notifications = new VenueNotifications { } }, filters = new VenueModelFilter { venue_id = venueId } }, secret);
+            var venueJobject = await _venueRepository.GetData(new GraphApiPayload { data = new Venue { tenant_id = new Guid(), time_zone = "", street = "", street_number = "", street_addition = "", city = "", postal_code = "", province_code = "", country_code = "", name = "", phone = "", email = "", users = new List<VenueUser> { }, notifications = new VenueNotifications { } }, filters = new VenueModelFilter { venue_id = venueId } }, secret);
             var venue = JsonConvert.DeserializeObject<Venue>(JsonConvert.SerializeObject(venueJobject.rows[0]));
             return venue;
         }
