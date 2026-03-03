@@ -88,7 +88,7 @@ namespace CommonLibrary.SharedServices.Services
 
         public async Task<ServiceResponse> GetBookingDetail(Guid bookingId)
         {
-            var fieldsForDecrypt = new List<string> { "u_last", "u_first", "u_phone", "u_message", "u_salutation" };
+            var fieldsForDecrypt = new List<string> { "u_last", "u_first", "u_phone", "u_message", "u_salutation", "u_phone_local" };
             var fieldsForDecryptECB = new List<string> { "u_email" };
             var query = new NpgsqlCommand(PredefinedQueryPatterns.BOOKING_DETAIL);
             query.Parameters.AddWithValue("booking_id", NpgsqlDbType.Uuid, bookingId);
