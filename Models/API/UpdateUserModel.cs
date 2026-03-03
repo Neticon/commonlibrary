@@ -13,6 +13,7 @@
         public string? role { get; set; }
         public string? phone_number { get; set; }
         public string? modify_bu {  get; set; }
+        public DateTime? modify_dt { get; set; }
     }
 
     public class UpdateUserFilters

@@ -66,6 +66,7 @@ namespace CommonLibrary.SharedServices.Services
                 UserAttributes = new List<AttributeType>
                 {
                     new AttributeType { Name = "email", Value = model.data.email },
+                    new AttributeType { Name = "email_verified", Value = "true" },
                     new AttributeType { Name = "custom:group", Value = idpCode  },
                     new AttributeType { Name = "phone_number", Value = model.data.phone_number },
                     new AttributeType { Name = "given_name", Value = model.data.first_name },
@@ -126,8 +127,7 @@ namespace CommonLibrary.SharedServices.Services
                 if (!ValidRoles.Contains(model.data.role))
                     throw new Exception("Invalid role");
             }
-            var resp = await _genericEntityRepo.UpdateEntity(model, CurrentUser.OrgSecret);
-
+            model.data.modify_dt = DateTime.Now;
 
             var updateUserAttributes = new List<AttributeType>();
             if (!string.IsNullOrEmpty(model.data.phone_number))
@@ -136,10 +136,12 @@ namespace CommonLibrary.SharedServices.Services
             if (!string.IsNullOrEmpty(model.data.first_name))
                 updateUserAttributes.Add(new AttributeType { Name = "given_name", Value = model.data.first_name });
 
-            if (!string.IsNullOrEmpty(model.data.first_name))
+            if (!string.IsNullOrEmpty(model.data.last_name))
                 updateUserAttributes.Add(new AttributeType { Name = "family_name", Value = model.data.last_name });
 
-            if (updateUserAttributes.Count > 0)
+            var resp = await _genericEntityRepo.UpdateEntity(model, CurrentUser.OrgSecret);
+
+            if (resp.success && updateUserAttributes.Count > 0)
             {
                 var emailDecr = AesEncryption.DecryptEcb(model.filters.email, CurrentUser.OrgSecret);
                 var request = new AdminUpdateUserAttributesRequest
