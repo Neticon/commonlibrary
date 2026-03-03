@@ -31,7 +31,7 @@
         public string? u_phone { get; set; }
         [Encrypt]
         public string? u_phone_local { get; set; }
-        [Encrypt]
+        [EncryptECB]
         public string u_email { get; set; }
         [Encrypt]
         public string? u_message { get; set; }
