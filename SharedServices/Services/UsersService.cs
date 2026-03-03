@@ -69,6 +69,7 @@ namespace CommonLibrary.SharedServices.Services
                     new AttributeType { Name = "email_verified", Value = "true" },
                     new AttributeType { Name = "custom:group", Value = idpCode  },
                     new AttributeType { Name = "phone_number", Value = model.data.phone_number },
+                    new AttributeType { Name = "phone_number_verified", Value = "true" },
                     new AttributeType { Name = "given_name", Value = model.data.first_name },
                     new AttributeType { Name = "family_name", Value = model.data.last_name },
                     new AttributeType { Name = "custom:postal_code", Value = hashedMail  },
