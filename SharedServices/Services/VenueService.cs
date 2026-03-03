@@ -61,7 +61,11 @@ namespace CommonLibrary.SharedServices.Services
 
         public async Task<ServiceResponse> UpdateVenue(VenueModel data)
         {
+            var includeNullList = new List<string>();
+            if (data.data.reasons.HasValue)
+                includeNullList.Add("reasons");
             var venue = data.data.Adapt<Venue>();
+            venue.reasons = data.data.reasons.Value.Value;
             venue.modify_bu = CurrentUser.Decr_Email;
             venue.modify_dt = DateTime.UtcNow;
             var emailUpdate = !string.IsNullOrEmpty(data.data.email);
@@ -79,7 +83,7 @@ namespace CommonLibrary.SharedServices.Services
 
             var payload = new GraphApiPayload { data = venue, filters = data.filters };
 
-            var resp = await _genericRepository.UpdateEntity(payload, CurrentUser.OrgSecret);
+            var resp = await _genericRepository.UpdateEntity(payload, CurrentUser.OrgSecret, includeNullList: includeNullList);
             if(resp.success == true && data.isPublish) 
                 _venueGenerationService.ReplaceJs(CurrentUser.TenantId.ToString());
             return new ServiceResponse { Result = resp };

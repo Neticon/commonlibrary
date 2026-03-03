@@ -1,4 +1,6 @@
 ﻿using CommonLibrary.Domain.Entities;
+using CommonLibrary.Helpers;
+using Newtonsoft.Json;
 using Newtonsoft.Json.Linq;
 
 namespace CommonLibrary.Models.API
@@ -38,7 +40,8 @@ namespace CommonLibrary.Models.API
         public VenueNotifications? notifications { get; set; }
         public List<JObject>? users { get; set; } //to:do - check for specific structure
         public List<VenueExceptions>? exceptions { get; set; }
-        public object? reasons { get; set; } //to:do - check for specific structure
+        [JsonConverter(typeof(OptionalConverter<object>))]
+        public Optional<object>? reasons { get; set; } //to:do - check for specific structure
         public Links? links { get; set; }
         public string? description { get; set; }
         public object? configuration { get; set; } 

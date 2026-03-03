@@ -5,6 +5,7 @@ using CommonLibrary.Repository.Interfaces;
 using Microsoft.Extensions.Configuration;
 using Newtonsoft.Json;
 using Newtonsoft.Json.Linq;
+using Newtonsoft.Json.Serialization;
 using Npgsql;
 using ServicePortal.Domain.PSQL;
 using System.Text;
@@ -308,11 +309,14 @@ namespace ServicePortal.API.Infrastructure.Repository
             return query;
         }
 
-        public NpgsqlCommand GenerateDoOperationsQuery(Object queryObject, string schema, string table, DoOperationQueryType type)
+        public NpgsqlCommand GenerateDoOperationsQuery(Object queryObject, string schema, string table, DoOperationQueryType type, List<string> includeNullList = null)
         {
             var query = new NpgsqlCommand(PredefinedQueryPatterns.DO_OPERATION_QUERY_PATTERN);
 
-            query.Parameters.AddWithValue("@query", NpgsqlTypes.NpgsqlDbType.Jsonb, JsonConvert.SerializeObject(queryObject, new JsonSerializerSettings { NullValueHandling = NullValueHandling.Ignore }));
+            var settings = new JsonSerializerSettings { NullValueHandling = NullValueHandling.Ignore };
+            if(includeNullList != null)
+                settings.ContractResolver = new IncludeNullContractResolver(includeNullList);
+            query.Parameters.AddWithValue("@query", NpgsqlTypes.NpgsqlDbType.Jsonb, JsonConvert.SerializeObject(queryObject, settings));
             query.Parameters.AddWithValue("@schema", schema);
             query.Parameters.AddWithValue("@table", table);
             query.Parameters.AddWithValue("@querytype", type.ToString());
