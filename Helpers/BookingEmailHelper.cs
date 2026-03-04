@@ -32,7 +32,7 @@ namespace CommonLibrary.Helpers
             request.Substitutions.Add("{{start_hour}}", data.local_start);
             request.Substitutions.Add("{{end_hour}}", data.local_end);
 
-            if (data.type.ToString().ToLower() == "p")
+            if (data.type.ToString().ToLower() == "p" && !data.isCancel)
             {
                 request.Substitutions.Add("{{street_street_number}}", $"{data.street} {data.street_number}");
                 request.Substitutions.Add("{{street_additional}}", data.street_addition ?? "");
@@ -41,7 +41,7 @@ namespace CommonLibrary.Helpers
                 request.Substitutions.Add("({{region_code}})", $"({data.province_code})" ?? "");
                 request.Substitutions.Add("{{country_name}}", data.country_name);
             }
-            else if (data.isCancel)
+            if (data.isCancel)
             {
                 request.Substitutions.Add("{{make_appointment_link}}", $"{data.page_url}");
                 request.Substitutions.Add("{{hour}}", data.local_start);
