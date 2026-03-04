@@ -65,7 +65,8 @@ namespace CommonLibrary.SharedServices.Services
             if (data.data.reasons.HasValue)
                 includeNullList.Add("reasons");
             var venue = data.data.Adapt<Venue>();
-            venue.reasons = data.data.reasons.Value.Value;
+            if(data.data.reasons.HasValue)
+                venue.reasons = data.data.reasons.Value.Value;
             venue.modify_bu = CurrentUser.Decr_Email;
             venue.modify_dt = DateTime.UtcNow;
             var emailUpdate = !string.IsNullOrEmpty(data.data.email);
