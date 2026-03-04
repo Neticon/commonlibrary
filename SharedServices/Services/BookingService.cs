@@ -285,55 +285,90 @@ namespace CommonLibrary.SharedServices.Services
             try
             {
                 var envPrefix = CommonHelperFunctions.GetEnvPrefix(Environment.GetEnvironmentVariable("ASPNETCORE_ENVIRONMENT"));
-                if (!pageUrl.StartsWith("https"))
-                    pageUrl = $"https://{pageUrl}";
-
-                var request = new SendEmailRequest
+                var request = BookingEmailHelper.GetClientEmailRequest(new BookingNotificationClientEmailModel
                 {
-                    TemplateId = templateId,
-                    ReferenceEntity = $"{booking._schema}.{booking._table}",
-                    ReferenceId = booking.booking_id.ToString(),
-                    Subject = subject,
-                    MessageType = messageType,
-                    TenantId = modelData.tenant_id.ToString(),
-                    FromEmail = EMAIL_FROM_NOTIFICATIONS,
-                    FromName = $"{envPrefix} {venue.name} - notifiche sulle prenotazioni da Conventus",
-                    ReplyTo = NO_REPLY_EMAIL
-                };
-                request.EmailTo.Add(modelData.u_email);
-                request.Substitutions.Add("{{first_name}}", modelData.u_first);
-                request.Substitutions.Add("{{last_name}}", modelData.u_last);
-                request.Substitutions.Add("{{date}}", date);
-                request.Substitutions.Add("{{start_hour}}", start);
-                request.Substitutions.Add("{{end_hour}}", end);
+                    page_url = pageUrl,
+                    templateId = templateId,
+                    referenceSchema = booking._schema,
+                    referenceEntity = booking._table,
+                    subject = subject,
+                    messageType = messageType,
+                    emailFrom = EMAIL_FROM_NOTIFICATIONS,
+                    tenant_id = modelData.tenant_id.ToString(),
+                    replyTo = NO_REPLY_EMAIL,
+                    envPrefix = envPrefix,
+                    venue_name = venue.name,
+                    u_email = modelData.u_email,
+                    u_first = modelData.u_first,
+                    u_last = modelData.u_last,
+                    date = date,
+                    local_end = end,
+                    local_start = start,
+                    street = venue.street,
+                    street_addition = venue.street_addition,
+                    street_number = venue.street_number,
+                    postal_code = venue.postal_code,
+                    city = venue.city,
+                    country_name = venue.country_code,
+                    u_reason = modelData.u_reason,
+                    booking_id = booking.booking_id.ToString(),
+                    isCancel = cancel,
+                    org_name = tenantName,
+                    province_code = venue.province_code,
+                    type = modelData.type.ToString(),
+                    venue_email = venue.email,
+                    venue_phone = venue.phone,
+                });
 
-                if (modelData.type.ToString().ToLower() == "p")
-                {
-                    request.Substitutions.Add("{{street_street_number}}", $"{venue.street} {venue.street_number}");
-                    request.Substitutions.Add("{{street_additional}}", venue.street_addition ?? "");
-                    request.Substitutions.Add("{{postal_code}}", venue.postal_code);
-                    request.Substitutions.Add("{{city}}", venue.city);
-                    request.Substitutions.Add("{{region_code}}", venue.province_code ?? "");
-                    request.Substitutions.Add("{{country_name}}", venue.country_code);
-                }else if (cancel)
-                {
-                    request.Substitutions.Add("{{make_appointment_link}}", $"{pageUrl}");
-                    request.Substitutions.Add("{{hour}}", start);
-                }
-                request.Substitutions.Add("{{reason_service_none}}", u_reason ?? "");
-                request.Substitutions.Add("{{phone}}", venue.phone);
-                request.Substitutions.Add("{{e-mail}}", venue.email);
-                request.Substitutions.Add("{{dynamic_modify_link}}", $"{pageUrl}?modify={booking.booking_id}");
-                request.Substitutions.Add("{{dynamic_cancel_link}}", $"{pageUrl}?cancel={booking.booking_id}");
-                request.Substitutions.Add("{{venue_name}}", venue.name);
-                request.Substitutions.Add("{{tenant.org_name}}", tenantName);
+                //if (!pageUrl.StartsWith("https"))
+                //    pageUrl = $"https://{pageUrl}";
 
-                request.Substitutions.Add("{{appointee_email}}", modelData.u_email);
-                request.Substitutions.Add("{{tenant_domain}}", pageUrl);
+                //var request = new SendEmailRequest
+                //{
+                //    TemplateId = templateId,
+                //    ReferenceEntity = $"{booking._schema}.{booking._table}",
+                //    ReferenceId = booking.booking_id.ToString(),
+                //    Subject = subject,
+                //    MessageType = messageType,
+                //    TenantId = modelData.tenant_id.ToString(),
+                //    FromEmail = EMAIL_FROM_NOTIFICATIONS,
+                //    FromName = $"{envPrefix} {venue.name} - notifiche sulle prenotazioni da Conventus",
+                //    ReplyTo = NO_REPLY_EMAIL
+                //};
+                //request.EmailTo.Add(modelData.u_email);
+                //request.Substitutions.Add("{{first_name}}", modelData.u_first);
+                //request.Substitutions.Add("{{last_name}}", modelData.u_last);
+                //request.Substitutions.Add("{{date}}", date);
+                //request.Substitutions.Add("{{start_hour}}", start);
+                //request.Substitutions.Add("{{end_hour}}", end);
+
+                //if (modelData.type.ToString().ToLower() == "p")
+                //{
+                //    request.Substitutions.Add("{{street_street_number}}", $"{venue.street} {venue.street_number}");
+                //    request.Substitutions.Add("{{street_additional}}", venue.street_addition ?? "");
+                //    request.Substitutions.Add("{{postal_code}}", venue.postal_code);
+                //    request.Substitutions.Add("{{city}}", venue.city);
+                //    request.Substitutions.Add("{{region_code}}", venue.province_code ?? "");
+                //    request.Substitutions.Add("{{country_name}}", venue.country_code);
+                //}else if (cancel)
+                //{
+                //    request.Substitutions.Add("{{make_appointment_link}}", $"{pageUrl}");
+                //    request.Substitutions.Add("{{hour}}", start);
+                //}
+                //request.Substitutions.Add("{{reason_service_none}}", u_reason ?? "");
+                //request.Substitutions.Add("{{phone}}", venue.phone);
+                //request.Substitutions.Add("{{e-mail}}", venue.email);
+                //request.Substitutions.Add("{{dynamic_modify_link}}", $"{pageUrl}?modify={booking.booking_id}");
+                //request.Substitutions.Add("{{dynamic_cancel_link}}", $"{pageUrl}?cancel={booking.booking_id}");
+                //request.Substitutions.Add("{{venue_name}}", venue.name);
+                //request.Substitutions.Add("{{tenant.org_name}}", tenantName);
+
+                //request.Substitutions.Add("{{appointee_email}}", modelData.u_email);
+                //request.Substitutions.Add("{{tenant_domain}}", pageUrl);
 
                 Console.WriteLine("Sending EMAIL_REQUEST=>" + JsonConvert.SerializeObject(request));
                 var response = await _emailClient.SendEmailAsync(request);
-                return response;
+                return response;                  
             }
             catch (Exception ex) { Console.WriteLine(ex + ex.Message + ex.StackTrace); }
             return null;
@@ -376,32 +411,59 @@ namespace CommonLibrary.SharedServices.Services
                     pageUrl = $"https://{pageUrl}";
                 var envPrefix = CommonHelperFunctions.GetEnvPrefix(Environment.GetEnvironmentVariable("ASPNETCORE_ENVIRONMENT"));
 
-                var request = new SendEmailRequest
+                var request = BookingEmailHelper.GetVenueStaffEmailRequest(new BookingNotificationVenueEmailModel
                 {
-                    TemplateId = templateId,
-                    ReferenceEntity = $"{booking._schema}.{booking._table}",
-                    ReferenceId = booking.booking_id.ToString(),
-                    Subject = subject,
-                    MessageType = messageType,
-                    TenantId = modelData.tenant_id.ToString(),
-                    FromEmail = EMAIL_FROM_NOTIFICATIONS,
-                    FromName = $"{envPrefix} {venueName} - notifiche sulle prenotazioni da Conventus",
-                    ReplyTo = NO_REPLY_EMAIL
-                };
-                request.EmailTo.AddRange(emailsTo);
-                request.Substitutions.Add("{{appointee_first_name}}", modelData.u_first);
-                request.Substitutions.Add("{{appointee_last_name}}", modelData.u_last);
-                request.Substitutions.Add("{{appointee_email}}", modelData.u_email);
-                request.Substitutions.Add("{{date}}", date);
-                request.Substitutions.Add("{{start_hour}}", start);
-                request.Substitutions.Add("{{end_hour}}", end);
-                request.Substitutions.Add("{{venue_or_online}}", modelData.type.ToString().ToLower() == "p" ? "venue" : "online");
-                request.Substitutions.Add("{{reason_service_none}}", u_reason ?? "");
-                request.Substitutions.Add("{{sp_booking_link}}", $"{SP_URL.TrimEnd('/')}/appointments/{booking.booking_id}");
-                request.Substitutions.Add("{{venue_name}}", venueName);
-                request.Substitutions.Add("{{tenant.org_name}}", tenantName);
+                    templateId = templateId,
+                    referenceEntity = booking._table,
+                    referenceSchema = booking._schema,
+                    appointee_email = modelData.u_email,
+                    appointee_first_name = modelData.u_first,
+                    appointee_last_name = modelData.u_last,
+                    booking_id = booking.booking_id.ToString(),
+                    date = date,
+                    emailFrom = EMAIL_FROM_NOTIFICATIONS,
+                    replyTo = NO_REPLY_EMAIL,
+                    envPrefix = envPrefix,
+                    venue_name = venueName,
+                    emails = emailsTo,
+                    end_hour = end,
+                    start_hour = start,
+                    messageType = messageType,
+                    pageUrl = pageUrl,
+                    sp_url = SP_URL,
+                    subject = subject,
+                    tenant_id = modelData.tenant_id.ToString(),
+                    tenant_name = tenantName,
+                    type = modelData.type.ToString(),
+                    u_reason = u_reason,
+                });
 
-                request.Substitutions.Add("{{tenant_domain}}", pageUrl);
+                //var request = new SendEmailRequest
+                //{
+                //    TemplateId = templateId,
+                //    ReferenceEntity = $"{booking._schema}.{booking._table}",
+                //    ReferenceId = booking.booking_id.ToString(),
+                //    Subject = subject,
+                //    MessageType = messageType,
+                //    TenantId = modelData.tenant_id.ToString(),
+                //    FromEmail = EMAIL_FROM_NOTIFICATIONS,
+                //    FromName = $"{envPrefix} {venueName} - notifiche sulle prenotazioni da Conventus",
+                //    ReplyTo = NO_REPLY_EMAIL
+                //};
+                //request.EmailTo.AddRange(emailsTo);
+                //request.Substitutions.Add("{{appointee_first_name}}", modelData.u_first);
+                //request.Substitutions.Add("{{appointee_last_name}}", modelData.u_last);
+                //request.Substitutions.Add("{{appointee_email}}", modelData.u_email);
+                //request.Substitutions.Add("{{date}}", date);
+                //request.Substitutions.Add("{{start_hour}}", start);
+                //request.Substitutions.Add("{{end_hour}}", end);
+                //request.Substitutions.Add("{{venue_or_online}}", modelData.type.ToString().ToLower() == "p" ? "venue" : "online");
+                //request.Substitutions.Add("{{reason_service_none}}", u_reason ?? "");
+                //request.Substitutions.Add("{{sp_booking_link}}", $"{SP_URL.TrimEnd('/')}/appointments/{booking.booking_id}");
+                //request.Substitutions.Add("{{venue_name}}", venueName);
+                //request.Substitutions.Add("{{tenant.org_name}}", tenantName);
+
+                //request.Substitutions.Add("{{tenant_domain}}", pageUrl);
 
                 var response = await _emailClient.SendEmailAsync(request);
             }

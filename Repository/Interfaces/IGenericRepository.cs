@@ -16,5 +16,6 @@ namespace CommonLibrary.Repository.Interfaces
         Task<DoSelectOperationResponse<T>> ExecuteDoSelectCommand(string query);
         Task<DoSelectOperationResponse<JObject>> ExecuteDoSelectCommandObject(string query);
         Task<T> ExecuteCommandTyped(string query);
+        Task<T> ExecuteCommandTyped(NpgsqlCommand query);
     }
 }

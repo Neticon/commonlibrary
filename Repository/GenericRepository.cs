@@ -278,6 +278,31 @@ namespace ServicePortal.API.Infrastructure.Repository
             return default;
         }
 
+        public async Task<T> ExecuteCommandTyped(NpgsqlCommand query)
+        {
+            using (var conn = new NpgsqlConnection(_connectionString))
+            {
+                conn.Open();
+                using (var command = query)
+                {
+                    query.Connection = conn;
+                    try
+                    {
+                        var commandResult = await command.ExecuteReaderAsync();
+                        while (commandResult.Read())
+                        {
+                            return JsonConvert.DeserializeObject<T>(commandResult.GetValue(0).ToString());
+                        }
+                    }
+                    catch (Exception ex)
+                    {
+                        throw ex;
+                    }
+                }
+            }
+            return default;
+        }
+
         public string GenerateDoOperationsQuery(Dictionary<string, string> fields, Dictionary<string, string> filters, string schema, string table, DoOperationQueryType type)
         {
             var queryList = new List<string>();
