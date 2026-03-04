@@ -19,7 +19,7 @@
         public static string RATE_BOOKING = "select utility.rate_booking(@id, @date, @value) as x";
         public static string APPEND_EVENT_BODY = "select utility.append_event_body(@id, @origin, @new_body) as x";
         public static string INSERT_EVENT = "select utility.insert_event(@id, @origin, @message_type, @body, @reference_entity, @reference_id, @tenant_id) as x";
-        public static string GET_NOTIFICATIONS = "select utility.get_notifications_for_period_v2(@p_period, @p_now, @p_p_minutes , @p_v_minutes , @p_t_minutes) as x";
+        public static string GET_NOTIFICATIONS = "select utility.get_notifications_for_period_v2(@p_period) as x";
     }
 
     public class PredefinedQueryPatternsReplacements

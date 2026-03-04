@@ -4,6 +4,10 @@ namespace CommonLibrary.Helpers
 {
     public static class BookingEmailHelper
     {
+        public static string EMAIL_FROM_NOTIFICATIONS = Environment.GetEnvironmentVariable("EMAIL_FROM_NOTIFICATIONS");
+        public static string NO_REPLY_EMAIL = Environment.GetEnvironmentVariable("NO_REPLY_EMAIL");
+        public static string SP_URL = Environment.GetEnvironmentVariable("SERVICE_PORTAL_URL");
+
         public static SendEmailRequest GetClientEmailRequest(BookingNotificationClientEmailModel data)
         {
             if (!data.page_url.StartsWith("https"))
@@ -17,9 +21,9 @@ namespace CommonLibrary.Helpers
                 Subject = data.subject,
                 MessageType = data.messageType,
                 TenantId = data.tenant_id.ToString(),
-                FromEmail = data.emailFrom,
+                FromEmail = EMAIL_FROM_NOTIFICATIONS,
                 FromName = $"{data.envPrefix} {data.venue_name} - notifiche sulle prenotazioni da Conventus",
-                ReplyTo = data.replyTo,
+                ReplyTo = NO_REPLY_EMAIL
             };
             request.EmailTo.Add(data.u_email);
             request.Substitutions.Add("{{first_name}}", data.u_first);
@@ -69,9 +73,9 @@ namespace CommonLibrary.Helpers
                 Subject = data.subject,
                 MessageType = data.messageType,
                 TenantId = data.tenant_id.ToString(),
-                FromEmail = data.emailFrom,
+                FromEmail = EMAIL_FROM_NOTIFICATIONS,
                 FromName = $"{data.envPrefix} {data.venue_name} - notifiche sulle prenotazioni da Conventus",
-                ReplyTo = data.replyTo
+                ReplyTo = NO_REPLY_EMAIL
             };
             request.EmailTo.AddRange(data.emails);
             request.Substitutions.Add("{{appointee_first_name}}", data.appointee_first_name);
@@ -80,12 +84,42 @@ namespace CommonLibrary.Helpers
             request.Substitutions.Add("{{date}}", data.date);
             request.Substitutions.Add("{{start_hour}}", data.start_hour);
             request.Substitutions.Add("{{end_hour}}", data.end_hour);
-            request.Substitutions.Add("{{venue_or_online}}", data.type.ToString().ToLower() == "p" ? "venue" : "online");
+            request.Substitutions.Add("{{venue_or_online}}", data.type.ToUpper());
             request.Substitutions.Add("{{reason_service_none}}", data.u_reason ?? "");
-            request.Substitutions.Add("{{sp_booking_link}}", $"{data.sp_url.TrimEnd('/')}/appointments/{data.booking_id}");
+            request.Substitutions.Add("{{sp_booking_link}}", $"{SP_URL.TrimEnd('/')}/appointments/{data.booking_id}");
             request.Substitutions.Add("{{venue_name}}", data.venue_name);
             request.Substitutions.Add("{{tenant.org_name}}", data.tenant_name);
 
+            request.Substitutions.Add("{{tenant_domain}}", data.pageUrl);
+
+            return request;
+        }
+
+        public static SendEmailRequest GetVenueThankYouEmailRequest(BookingNotificationThankYouEmailModel data)
+        {
+            if (!data.pageUrl.StartsWith("https"))
+                data.pageUrl = $"https://{data.pageUrl}";
+
+            var request = new SendEmailRequest
+            {
+                TemplateId = data.templateId,
+                ReferenceEntity = $"{data.referenceSchema}.{data.referenceEntity}",
+                ReferenceId = data.booking_id.ToString(),
+                Subject = data.subject,
+                MessageType = data.messageType,
+                TenantId = data.tenant_id.ToString(),
+                FromEmail = EMAIL_FROM_NOTIFICATIONS,
+                FromName = $"{data.envPrefix} {data.venue_name} - notifiche sulle prenotazioni da Conventus",
+                ReplyTo = NO_REPLY_EMAIL
+            };
+            request.EmailTo.Add(data.appointee_email);
+            request.Substitutions.Add("{{first_name}}", data.appointee_first_name);
+            request.Substitutions.Add("{{last_name}}", data.appointee_first_name);
+            request.Substitutions.Add("{{appointee_email}}", data.appointee_email);
+            request.Substitutions.Add("{{venue_name}}", data.venue_name);
+            request.Substitutions.Add("{{feedback_link}}", "");
+            request.Substitutions.Add("{{venue_name}}", data.venue_name);
+            request.Substitutions.Add("{{tenant.org_name}}", data.tenant_name);
             request.Substitutions.Add("{{tenant_domain}}", data.pageUrl);
 
             return request;
@@ -120,8 +154,6 @@ namespace CommonLibrary.Helpers
         public bool isCancel { get; set; }
         public string referenceEntity { get; set; }
         public string referenceSchema { get; set; }
-        public string emailFrom { get; set; }
-        public string replyTo { get; set; }
         public string envPrefix { get; set; }
         public string u_reason { get; set; }
         public string country_name { get; set; }
@@ -134,8 +166,6 @@ namespace CommonLibrary.Helpers
         public string messageType { get; set; }
         public string referenceEntity { get; set; }
         public string referenceSchema { get; set; }
-        public string emailFrom { get; set; }
-        public string replyTo { get; set; }
         public string appointee_first_name { get; set; }
         public string appointee_last_name { get; set; }
         public string appointee_email { get; set; }
@@ -144,13 +174,30 @@ namespace CommonLibrary.Helpers
         public string end_hour { get; set; }
         public string type { get; set; }
         public string u_reason { get; set; }
-        public string sp_url { get; set; }
         public string venue_name { get; set; }
         public string tenant_name { get; set; }
         public string booking_id { get; set; }
         public string envPrefix { get; set; }
         public string tenant_id { get; set; }
         public List<string> emails { get; set; }
+        public string pageUrl { get; set; }
+    }
+
+    public class BookingNotificationThankYouEmailModel
+    {
+        public string templateId { get; set; }
+        public string subject { get; set; }
+        public string messageType { get; set; }
+        public string referenceEntity { get; set; }
+        public string referenceSchema { get; set; }
+        public string appointee_first_name { get; set; }
+        public string appointee_last_name { get; set; }
+        public string appointee_email { get; set; }
+        public string venue_name { get; set; }
+        public string tenant_name { get; set; }
+        public string booking_id { get; set; }
+        public string envPrefix { get; set; }
+        public string tenant_id { get; set; }
         public string pageUrl { get; set; }
     }
 }
