@@ -11,20 +11,17 @@ namespace CommonLibrary.Integrations
 {
     public class S3Service : IS3Service
     {
-        private IAmazonS3 _s3Client = null;
-        private DateTime _expiry;
-        private string _roleArn;
+        private IAmazonS3 _s3Client;
 
-        public S3Service()
+        public S3Service(IAmazonS3 s3Service)
         {
-            _roleArn = Environment.GetEnvironmentVariable("S3_ROLE_ARN");
+            _s3Client = s3Service;
         }
 
         public static async Task LogCurrentRoleAsync()
         {
             try
             {
-
                 using var stsClient = new AmazonSecurityTokenServiceClient(); // auto picks up default credentials
                 var response = await stsClient.GetCallerIdentityAsync(new GetCallerIdentityRequest());
 
@@ -38,37 +35,8 @@ namespace CommonLibrary.Integrations
             }
         }
 
-        private async Task InitializeClient()
-        {
-            // await LogCurrentRoleAsync();
-
-            if (_s3Client == null || DateTime.UtcNow > _expiry.AddMinutes(-5)) // refresh 5 min before expiry
-            {
-                try
-                {
-                    var credentials = new InstanceProfileAWSCredentials();
-                    var stsClient = new AmazonSecurityTokenServiceClient(credentials, RegionEndpoint.EUCentral1);
-                    var resp = await stsClient.AssumeRoleAsync(new AssumeRoleRequest
-                    {
-                        RoleArn = _roleArn,
-                        RoleSessionName = "AutoRenewSession",
-                        DurationSeconds = 3600
-                    });
-
-                    _s3Client = new AmazonS3Client(resp.Credentials, RegionEndpoint.EUCentral1);
-                    //_s3Client = new AmazonS3Client(RegionEndpoint.EUCentral1);
-                    _expiry = DateTime.UtcNow.AddDays(1);
-                }
-                catch (Exception ex)
-                {
-                    throw new Exception("Failed to connect with S3 =>" + ex.Message);
-                }
-            }
-        }
-
         public async Task<string> UploadFileAsync(string bucketName, string key, string filePath, CancellationToken cancellationToken = default)
         {
-            await InitializeClient();
             var putRequest = new PutObjectRequest
             {
                 BucketName = bucketName,
@@ -94,7 +62,6 @@ namespace CommonLibrary.Integrations
             {
                 cacheControl = cacheControl + $"max-age={expireSeconds}";
             }
-            await InitializeClient();
             var putRequest = new PutObjectRequest
             {
                 BucketName = bucketName,
@@ -120,7 +87,6 @@ namespace CommonLibrary.Integrations
 
         public async Task<Stream> DownloadFileAsync(string bucketName, string key, CancellationToken cancellationToken = default)
         {
-            await InitializeClient();
             var request = new GetObjectRequest
             {
                 BucketName = bucketName,
@@ -160,7 +126,6 @@ namespace CommonLibrary.Integrations
         string fileExtension = ".webp",
         string? fileNameStartsWith = null)
         {
-            await InitializeClient();
             var files = new List<S3FileMetadata>();
             string continuationToken = null;
             do
@@ -174,18 +139,18 @@ namespace CommonLibrary.Integrations
                 var response = await _s3Client.ListObjectsV2Async(request);
                 if (response.S3Objects != null)
                 {
-                var filtered = response.S3Objects
-                    .Where(o =>
-                        o.Key.EndsWith(fileExtension, StringComparison.OrdinalIgnoreCase) &&
-                        (fileNameStartsWith == null ||
-                         Path.GetFileName(o.Key).StartsWith(fileNameStartsWith, StringComparison.OrdinalIgnoreCase)))
-                    .Select(o => new S3FileMetadata
-                    {
-                        Key = o.Key,
-                        Size = o.Size,
-                        LastModified = o.LastModified
-                    });
-                files.AddRange(filtered);
+                    var filtered = response.S3Objects
+                        .Where(o =>
+                            o.Key.EndsWith(fileExtension, StringComparison.OrdinalIgnoreCase) &&
+                            (fileNameStartsWith == null ||
+                             Path.GetFileName(o.Key).StartsWith(fileNameStartsWith, StringComparison.OrdinalIgnoreCase)))
+                        .Select(o => new S3FileMetadata
+                        {
+                            Key = o.Key,
+                            Size = o.Size,
+                            LastModified = o.LastModified
+                        });
+                    files.AddRange(filtered);
                 }
                 continuationToken = response.IsTruncated.Value ? response.NextContinuationToken : null;
             } while (continuationToken != null);
@@ -194,7 +159,6 @@ namespace CommonLibrary.Integrations
 
         public async Task DeleteFileAsync(string bucket, string key)
         {
-            await InitializeClient();
             var request = new DeleteObjectRequest
             {
                 BucketName = bucket,
@@ -209,7 +173,6 @@ namespace CommonLibrary.Integrations
 
         public async Task<DeleteObjectsResponse> DeleteFilesAsync(string bucket, List<string> keys)
         {
-            await InitializeClient();
             var keysToRemove = keys.Select(q => new KeyVersion { Key = q }).ToList();
             var request = new DeleteObjectsRequest
             {
