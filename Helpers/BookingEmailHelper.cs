@@ -79,7 +79,7 @@ namespace CommonLibrary.Helpers
             };
             request.EmailTo.AddRange(data.emails);
             request.Substitutions.Add("{{appointee_first_name}}", data.appointee_first_name);
-            request.Substitutions.Add("{{appointee_last_name}}", data.appointee_first_name);
+            request.Substitutions.Add("{{appointee_last_name}}", data.appointee_last_name);
             request.Substitutions.Add("{{appointee_email}}", data.appointee_email);
             request.Substitutions.Add("{{date}}", data.date);
             request.Substitutions.Add("{{start_hour}}", data.start_hour);
