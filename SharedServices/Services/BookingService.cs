@@ -140,8 +140,8 @@ namespace CommonLibrary.SharedServices.Services
                     _obfIndexRepository.InsertBulkIndexes(obfIndexes);
                     if (venue.notifications.notify == 1)
                     {
-                        SendEmail($"booking_scheduled_{data.type}".ToLower(), "📅 Il tuo appuntamento è stato confermato", "BookingScheduled", booking, data, start, end, dateS, venue, tenant.web_pages.Last(), u_reasonDb, tenant.org_name);
-                        SendEmailToStaff($"booking_scheduled_venue", "📅 Il tuo appuntamento è stato confermato", "BookingScheduled", booking, venue.users, data, secret, start, end, dateS, u_reasonDb, venue.name, tenant.org_name, tenant.web_pages.Last());
+                        SendEmail($"booking_scheduled_{data.type}".ToLower(), "📅 Il tuo appuntamento è stato confermato", "booking_scheduled", booking, data, start, end, dateS, venue, tenant.web_pages.Last(), u_reasonDb, tenant.org_name);
+                        SendEmailToStaff($"booking_scheduled_venue", "📅 Il tuo appuntamento è stato confermato", "booking_scheduled_venue", booking, venue.users, data, secret, start, end, dateS, u_reasonDb, venue.name, tenant.org_name, tenant.web_pages.Last());
                     }
                 }
                 else
@@ -213,8 +213,8 @@ namespace CommonLibrary.SharedServices.Services
                             var start = startTs.ToString("HH:mm");
                             var end = endTs.ToString("HH:mm");
                             var bookingData = new BookingModelData { tenant_id = tenant.tenant_id.Value, u_first = booking.u_first, u_last = booking.u_last, u_email = booking.u_email, type = booking.type };
-                            SendEmail($"booking_rescheduled_{data.data.type}".ToLower(), "🔁 Il tuo appuntamento è stato riprogrammato", "BookingRescheduled", booking, bookingData, start, end, dateS, venue, tenant.web_pages.Last(), "", tenant.org_name);
-                            SendEmailToStaff($"booking_rescheduled_venue", "🔁 Il tuo appuntamento è stato riprogrammato", "BookingRescheduled", booking, venue.users, bookingData, secret, start, end, dateS, "", venue.name, tenant.org_name, tenant.web_pages.Last());
+                            SendEmail($"booking_rescheduled_{data.data.type}".ToLower(), "🔁 Il tuo appuntamento è stato riprogrammato", "booking_rescheduled", booking, bookingData, start, end, dateS, venue, tenant.web_pages.Last(), "", tenant.org_name);
+                            SendEmailToStaff($"booking_rescheduled_venue", "🔁 Il tuo appuntamento è stato riprogrammato", "booking_rescheduled_venue", booking, venue.users, bookingData, secret, start, end, dateS, "", venue.name, tenant.org_name, tenant.web_pages.Last());
                         }
                     }
                     else
@@ -235,10 +235,9 @@ namespace CommonLibrary.SharedServices.Services
                         var start = DateTime.Parse(booking.start_ts).ToString("HH:mm"); 
                         var end = DateTime.Parse(booking.end_ts).ToString("HH:mm");
                         var subject = "❌ Il tuo appuntamento è stato annullato";
-                        string messageType = "BookingCanceled";
                         var bookingData = new BookingModelData { tenant_id = tenant.tenant_id.Value, u_first = booking.u_first, u_last = booking.u_last, u_email = booking.u_email, type = booking.type };
-                        SendEmail($"booking_cancellation", subject, messageType, booking, bookingData, start, end, dateS, venue, tenant.web_pages.Last(), "", tenant.org_name, true);
-                        SendEmailToStaff($"booking_cancellation_venue", subject, messageType, booking, venue.users, bookingData, secret, start, end, dateS, "", venue.name, tenant.org_name, tenant.web_pages.Last());
+                        SendEmail($"booking_cancellation", subject, "booking_cancelled", booking, bookingData, start, end, dateS, venue, tenant.web_pages.Last(), "", tenant.org_name, true);
+                        SendEmailToStaff($"booking_cancellation_venue", subject, "booking_cancelled_venue", booking, venue.users, bookingData, secret, start, end, dateS, "", venue.name, tenant.org_name, tenant.web_pages.Last());
                     }
                 }
                 else

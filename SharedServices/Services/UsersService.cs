@@ -213,7 +213,7 @@ namespace CommonLibrary.SharedServices.Services
                 ReferenceEntity = $"{user._schema}.{user._table}",
                 ReferenceId = Guid.NewGuid().ToString(),
                 Subject = "Il tuo Conventus account è stato creato – Attivazione richiesta",
-                MessageType = "CreateUser",
+                MessageType = "user_create",
                 TenantId = user.tenant_id.ToString(),
                 FromEmail = EMAIL_FROM_HD,
                 FromName = EMAIL_FROM_NAME_HD
