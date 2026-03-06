@@ -35,11 +35,11 @@ public static class AwsS3ServiceCollectionExtensions
             //    $"S3Session-{Environment.MachineName}"
             //);
             using var s3Client = new AmazonS3Client(sourceCredentials, RegionEndpoint.EUCentral1);
-            var buckets = await s3Client.ListBucketsAsync();
-            foreach (var b in buckets.Buckets)
-            {
-                Console.WriteLine(b.BucketName);
-            }
+           // var buckets = await s3Client.ListBucketsAsync();
+            //foreach (var b in buckets.Buckets)
+            //{
+            //    Console.WriteLine(b.BucketName);
+            //}
             return new AmazonS3Client(sourceCredentials, region);
         });
 
