@@ -12,7 +12,11 @@ public static class AwsS3ServiceCollectionExtensions
     {
         services.AddSingleton<IAmazonS3>(_ =>
         {
-            var sourceCredentials = FallbackCredentialsFactory.GetCredentials(); // <- will return AssumeRoleWithWebIdentityCredentials
+            var sourceCredentials = new AssumeRoleWithWebIdentityCredentials(
+                Environment.GetEnvironmentVariable("AWS_WEB_IDENTITY_TOKEN_FILE"),
+                roleArn: Environment.GetEnvironmentVariable("AWS_ROLE_ARN"),
+                roleSessionName: $"session-{Guid.NewGuid}"
+            );
 
             var assumedCredentials = new AssumeRoleAWSCredentials(
                 sourceCredentials,
