@@ -12,7 +12,7 @@ public static class AwsS3ServiceCollectionExtensions
     {
         services.AddSingleton<IAmazonS3>(_ =>
         {
-            var sourceCredentials = new InstanceProfileAWSCredentials();
+            var sourceCredentials = FallbackCredentialsFactory.GetCredentials(); // <- will return AssumeRoleWithWebIdentityCredentials
 
             var assumedCredentials = new AssumeRoleAWSCredentials(
                 sourceCredentials,
