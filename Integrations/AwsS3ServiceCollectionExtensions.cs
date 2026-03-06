@@ -14,8 +14,7 @@ public static class AwsS3ServiceCollectionExtensions
         {
             var sourceCredentials = new AssumeRoleWithWebIdentityCredentials(
                 Environment.GetEnvironmentVariable("AWS_WEB_IDENTITY_TOKEN_FILE"),
-                roleArn: Environment.GetEnvironmentVariable("AWS_ROLE_ARN"),
-                roleSessionName: $"session-{Guid.NewGuid}"
+                Environment.GetEnvironmentVariable("AWS_ROLE_ARN"), ""
             );
 
             var assumedCredentials = new AssumeRoleAWSCredentials(
