@@ -12,10 +12,10 @@ public static class AwsS3ServiceCollectionExtensions
     {
         services.AddSingleton<IAmazonS3>(_ =>
         {
-            //var sourceCredentials = new AssumeRoleWithWebIdentityCredentials(
-            //    Environment.GetEnvironmentVariable("AWS_WEB_IDENTITY_TOKEN_FILE"),
-            //    Environment.GetEnvironmentVariable("AWS_ROLE_ARN"), ""
-            //);
+            var sourceCredentials = new AssumeRoleWithWebIdentityCredentials(
+                Environment.GetEnvironmentVariable("AWS_WEB_IDENTITY_TOKEN_FILE"),
+                Environment.GetEnvironmentVariable("AWS_ROLE_ARN"), ""
+            );
 
             //var assumedCredentials = new AssumeRoleAWSCredentials(
             //    sourceCredentials,
@@ -23,7 +23,7 @@ public static class AwsS3ServiceCollectionExtensions
             //    $"S3Session-{Environment.MachineName}"
             //);
 
-            return new AmazonS3Client(region);
+            return new AmazonS3Client(sourceCredentials, region);
         });
 
         return services;
