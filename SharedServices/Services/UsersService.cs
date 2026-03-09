@@ -80,14 +80,8 @@ namespace CommonLibrary.SharedServices.Services
             };
             var provider = GetCognitoProvider();
             AdminCreateUserResponse createUserResponse;
-            try
-            {
-                createUserResponse = await provider.AdminCreateUserAsync(request);
-            }
-            catch (Exception ex)
-            {
-                throw new Exception("Failed to create cognito user." + ex.Message);
-            }
+
+            createUserResponse = await provider.AdminCreateUserAsync(request);
 
             var addToGroupRequest = new AdminAddUserToGroupRequest
             {
