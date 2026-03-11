@@ -5,7 +5,6 @@ using CommonLibrary.Repository.Interfaces;
 using Microsoft.Extensions.Configuration;
 using Newtonsoft.Json;
 using Newtonsoft.Json.Linq;
-using Newtonsoft.Json.Serialization;
 using Npgsql;
 using ServicePortal.Domain.PSQL;
 using System.Text;
@@ -24,9 +23,8 @@ namespace ServicePortal.API.Infrastructure.Repository
 
         public async Task<GraphAPIResponse<T>> ExecuteStandardCommand(NpgsqlCommand query, bool returnError = false)
         {
-            using (var conn = new NpgsqlConnection(_connectionString))
+            using (var conn = await OpenConnectionAsync())
             {
-                conn.Open();
                 using (var command = query)
                 {
                     try
@@ -57,9 +55,8 @@ namespace ServicePortal.API.Infrastructure.Repository
 
         public async Task<GraphAPIResponse<JObject>> ExecuteNotTypedStandardCommand(NpgsqlCommand query, bool returnError = false)
         {
-            using (var conn = new NpgsqlConnection(_connectionString))
+            using (var conn = await OpenConnectionAsync())
             {
-                conn.Open();
                 using (var command = query)
                 {
                     try
@@ -90,9 +87,8 @@ namespace ServicePortal.API.Infrastructure.Repository
 
         public async Task<GraphAPIResponse<T>> ExecuteStandardCommand(string query)
         {
-            using (var conn = new NpgsqlConnection(_connectionString))
+            using (var conn = await OpenConnectionAsync())
             {
-                conn.Open();
                 using (var command = new NpgsqlCommand(query, conn))
                 {
                     try
@@ -122,9 +118,8 @@ namespace ServicePortal.API.Infrastructure.Repository
 
         public async Task<DoSelectOperationResponse<T>> ExecuteDoSelectCommand(string query)
         {
-            using (var conn = new NpgsqlConnection(_connectionString))
+            using (var conn = await OpenConnectionAsync())
             {
-                conn.Open();
                 using (var command = new NpgsqlCommand(query, conn))
                 {
                     try
@@ -149,9 +144,8 @@ namespace ServicePortal.API.Infrastructure.Repository
 
         public async Task<DoSelectOperationResponse<JObject>> ExecuteDoSelectCommandObject(string query)
         {
-            using (var conn = new NpgsqlConnection(_connectionString))
+            using (var conn = await OpenConnectionAsync())
             {
-                conn.Open();
                 using (var command = new NpgsqlCommand(query, conn))
                 {
                     try
@@ -176,9 +170,8 @@ namespace ServicePortal.API.Infrastructure.Repository
 
         public async Task ExecuteCommandVoid(string query)
         {
-            using (var conn = new NpgsqlConnection(_connectionString))
+            using (var conn = await OpenConnectionAsync())
             {
-                conn.Open();
                 using (var command = new NpgsqlCommand(query, conn))
                 {
                     var commandResult = await command.ExecuteReaderAsync();
@@ -188,17 +181,17 @@ namespace ServicePortal.API.Infrastructure.Repository
 
         public async Task ExecuteCommandVoid(NpgsqlCommand query)
         {
-            using (var conn = new NpgsqlConnection(_connectionString))
+            using (var conn = await OpenConnectionAsync())
             {
                 try
                 {
-                    conn.Open();
                     using (var command = query)
                     {
                         command.Connection = conn;
                         var commandResult = await command.ExecuteReaderAsync();
                     }
-                }catch (Exception ex)
+                }
+                catch (Exception ex)
                 {
                     var a = ex.Message;
                 }
@@ -207,9 +200,8 @@ namespace ServicePortal.API.Infrastructure.Repository
 
         public async Task<string> ExecuteCommandString(string query)
         {
-            using (var conn = new NpgsqlConnection(_connectionString))
+            using (var conn = await OpenConnectionAsync())
             {
-                conn.Open();
                 using (var command = new NpgsqlCommand(query, conn))
                 {
                     try
@@ -231,9 +223,8 @@ namespace ServicePortal.API.Infrastructure.Repository
 
         public async Task<string> ExecuteCommandString(NpgsqlCommand query)
         {
-            using (var conn = new NpgsqlConnection(_connectionString))
+            using (var conn = await OpenConnectionAsync())
             {
-                conn.Open();
                 using (var command = query)
                 {
                     query.Connection = conn;
@@ -256,9 +247,8 @@ namespace ServicePortal.API.Infrastructure.Repository
 
         public async Task<T> ExecuteCommandTyped(string query)
         {
-            using (var conn = new NpgsqlConnection(_connectionString))
+            using (var conn = await OpenConnectionAsync())
             {
-                conn.Open();
                 using (var command = new NpgsqlCommand(query, conn))
                 {
                     try
@@ -280,9 +270,8 @@ namespace ServicePortal.API.Infrastructure.Repository
 
         public async Task<T> ExecuteCommandTyped(NpgsqlCommand query)
         {
-            using (var conn = new NpgsqlConnection(_connectionString))
+            using (var conn = await OpenConnectionAsync())
             {
-                conn.Open();
                 using (var command = query)
                 {
                     query.Connection = conn;
@@ -339,7 +328,7 @@ namespace ServicePortal.API.Infrastructure.Repository
             var query = new NpgsqlCommand(PredefinedQueryPatterns.DO_OPERATION_QUERY_PATTERN);
 
             var settings = new JsonSerializerSettings { NullValueHandling = NullValueHandling.Ignore };
-            if(includeNullList != null)
+            if (includeNullList != null)
                 settings.ContractResolver = new IncludeNullContractResolver(includeNullList);
             query.Parameters.AddWithValue("@query", NpgsqlTypes.NpgsqlDbType.Jsonb, JsonConvert.SerializeObject(queryObject, settings));
             query.Parameters.AddWithValue("@schema", schema);
@@ -395,6 +384,17 @@ namespace ServicePortal.API.Infrastructure.Repository
             query = query.Replace("-SCHEMA-", schema);
             query = query.Replace("-TABLE-", table);
             return query;
+        }
+
+        private async Task<NpgsqlConnection> OpenConnectionAsync()
+        {
+            var conn = new NpgsqlConnection(_connectionString);
+            await conn.OpenAsync();
+
+            await using var cmd = new NpgsqlCommand("SET ROLE api_caller;", conn);
+            await cmd.ExecuteNonQueryAsync();
+
+            return conn;
         }
 
     }
