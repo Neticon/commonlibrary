@@ -214,7 +214,7 @@ namespace CommonLibrary.SharedServices.Services
                 MessageType = "user_create",
                 TenantId = user.tenant_id.ToString(),
                 FromEmail = EMAIL_FROM_HD,
-                FromName = $"[{envPrefix}] Conventus Service Portal".TrimStart(' ')
+                FromName = $"{envPrefix} Conventus Service Portal".TrimStart(' ')
             };
             request.EmailTo.Add(email);
             request.Substitutions.Add("{{first_name}}", firstName);
