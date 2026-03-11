@@ -120,7 +120,7 @@ namespace CommonLibrary.Helpers
             request.Substitutions.Add("{{last_name}}", data.appointee_last_name);
             request.Substitutions.Add("{{appointee_email}}", data.appointee_email);
             request.Substitutions.Add("{{venue_name}}", data.venue_name);
-            request.Substitutions.Add("{{feedback_link}}", "");
+            request.Substitutions.Add("{{feedback_link}}", $"{data.pageUrl}?rate={data.booking_id}");
             request.Substitutions.Add("{{tenant.org_name}}", data.tenant_name);
             request.Substitutions.Add("{{tenant_domain}}", data.pageUrl);
 
