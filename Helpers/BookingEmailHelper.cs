@@ -1,4 +1,7 @@
-﻿using Integration.Grpc;
+﻿using CommonLibrary.Domain.Entities;
+using Integration.Grpc;
+using Newtonsoft.Json.Linq;
+using Newtonsoft.Json;
 
 namespace CommonLibrary.Helpers
 {
@@ -38,7 +41,7 @@ namespace CommonLibrary.Helpers
                 request.Substitutions.Add("{{street_additional}}", data.street_addition ?? "");
                 request.Substitutions.Add("{{postal_code}}", data.postal_code);
                 request.Substitutions.Add("{{city}}", data.city);
-                request.Substitutions.Add("({{region_code}})", $"({data.province_code})" ?? "");
+                request.Substitutions.Add("({{region_code}})", string.IsNullOrEmpty(data.province_code) ? "" : $"({data.province_code})");
                 request.Substitutions.Add("{{country_name}}", data.country_name);
             }
             if (data.isCancel)
@@ -114,15 +117,28 @@ namespace CommonLibrary.Helpers
             };
             request.EmailTo.Add(data.appointee_email);
             request.Substitutions.Add("{{first_name}}", data.appointee_first_name);
-            request.Substitutions.Add("{{last_name}}", data.appointee_first_name);
+            request.Substitutions.Add("{{last_name}}", data.appointee_last_name);
             request.Substitutions.Add("{{appointee_email}}", data.appointee_email);
             request.Substitutions.Add("{{venue_name}}", data.venue_name);
             request.Substitutions.Add("{{feedback_link}}", "");
-            request.Substitutions.Add("{{venue_name}}", data.venue_name);
             request.Substitutions.Add("{{tenant.org_name}}", data.tenant_name);
             request.Substitutions.Add("{{tenant_domain}}", data.pageUrl);
 
             return request;
+        }
+
+        public static Tuple<string, bool> GetReasonForMail(string u_reason, Venue venue)
+        {
+            var reason = u_reason;
+            var isServiceMode = u_reason.StartsWith("SRV", StringComparison.OrdinalIgnoreCase);
+            if (isServiceMode)
+            {
+                var services = JsonConvert.DeserializeObject<List<JObject>>(venue.reasons.ToString());
+                var service = services.FirstOrDefault(q => q["id"].ToString() == u_reason);
+                var serviceDesc = service["name"].ToString();
+                reason = serviceDesc;
+            }
+            return new Tuple<string, bool>(reason, isServiceMode);
         }
     }
 

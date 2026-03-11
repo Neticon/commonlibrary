@@ -11,6 +11,7 @@ using CommonLibrary.Repository.Interfaces;
 using CommonLibrary.SharedServices.Interfaces;
 using Integration.Grpc;
 using Newtonsoft.Json;
+using Npgsql;
 using ServicePortal.Application.Interfaces;
 using WebApp.API.Controllers.Helper;
 
@@ -50,7 +51,7 @@ namespace CommonLibrary.SharedServices.Services
             var orgName = "";
             if (model.data.tenant_id != null)
             {
-                var tenantData = await _tenantRepository.GetOrgCodeAndName(model.data.tenant_id.Value); 
+                var tenantData = await _tenantRepository.GetOrgCodeAndName(model.data.tenant_id.Value);
                 if (tenantData == null)
                     throw new Exception("Failed to get idp_group from tenant");
                 idpCode = tenantData.Item1;
@@ -173,6 +174,8 @@ namespace CommonLibrary.SharedServices.Services
 
             var resp = await _genericEntityRepo.UpdateEntity(model, CurrentUser.OrgSecret);
 
+            _ = RemoveUserFromVenues(model.filters.tenant_id, model.filters.email);
+
             var emailDecr = AesEncryption.DecryptEcb(model.filters.email, CurrentUser.OrgSecret);
             var request = new AdminDeleteUserRequest
             {
@@ -201,16 +204,17 @@ namespace CommonLibrary.SharedServices.Services
 
         private async Task<string> SendEmail(string email, User user, string tempPass, string firstName, string tenantName)
         {
+            var envPrefix = CommonHelperFunctions.GetEnvPrefix(Environment.GetEnvironmentVariable("ASPNETCORE_ENVIRONMENT"));
             var request = new SendEmailRequest
             {
                 TemplateId = "user_create",
                 ReferenceEntity = $"{user._schema}.{user._table}",
                 ReferenceId = Guid.NewGuid().ToString(),
-                Subject = "Il tuo Conventus account è stato creato – Attivazione richiesta",
+                Subject = "📧 Il tuo Conventus account è stato creato – Attivazione richiesta",
                 MessageType = "user_create",
                 TenantId = user.tenant_id.ToString(),
                 FromEmail = EMAIL_FROM_HD,
-                FromName = EMAIL_FROM_NAME_HD
+                FromName = $"[{envPrefix}] Conventus Service Portal".TrimStart(' ')
             };
             request.EmailTo.Add(email);
             request.Substitutions.Add("{{first_name}}", firstName);
@@ -226,6 +230,15 @@ namespace CommonLibrary.SharedServices.Services
             }
             catch (Exception ex) { Console.WriteLine(ex); }
             return null;
+        }
+
+        private async Task RemoveUserFromVenues(Guid tenant_id, string email)
+        {
+            var query = new NpgsqlCommand(PredefinedQueryPatterns.REMOVE_USER_FROM_VENUE);//@p_tenant_id uuid, @p_u_email
+            query.Parameters.AddWithValue("@p_tenant_id", NpgsqlTypes.NpgsqlDbType.Uuid, tenant_id);
+            query.Parameters.AddWithValue("@p_u_email", NpgsqlTypes.NpgsqlDbType.Text, email);
+
+            await _genericEntityRepo.ExecuteCommandVoid(query);
         }
     }
 }

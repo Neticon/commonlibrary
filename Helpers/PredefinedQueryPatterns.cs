@@ -20,6 +20,7 @@
         public static string APPEND_EVENT_BODY = "select utility.append_event_body(@id, @origin, @new_body) as x";
         public static string INSERT_EVENT = "select utility.insert_event(@id, @origin, @message_type, @body, @reference_entity, @reference_id, @tenant_id) as x";
         public static string GET_NOTIFICATIONS = "select utility.get_notifications_for_period_v2(@p_period) as x";
+        public static string REMOVE_USER_FROM_VENUE = "select utility.remove_user_from_venu(@p_tenant_id uuid, @p_u_email) as x";
     }
 
     public class PredefinedQueryPatternsReplacements
