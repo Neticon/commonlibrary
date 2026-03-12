@@ -7,13 +7,13 @@
         [IgnoreForSerialization]
         public override string _schema => "service_portal";
         public TimeSpan? create_dt { get; set; }
-        [Encrypt]
+        [EncryptECB]
         public string create_bu { get; set; }
         public TimeSpan? modify_dt { get; set; }
-        [Encrypt]
+        [EncryptECB]
         public string? modify_bu { get; set; }
         public TimeSpan? delete_dt { get; set; }
-        [Encrypt]
+        [EncryptECB]
         public string? delete_bu { get; set; }
         public string? mods { get; set; }
         public string email { get; set; }
