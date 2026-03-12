@@ -26,6 +26,7 @@ namespace CommonLibrary.Models.API
         public string? postal_code { get; set; }
         public string? province_code { get; set; }
         public string? province_name { get; set; }
+        public string? city { get; set; }
         public string? country_code { get; set; }
         public string? currency_code { get; set; }
         public string? phone { get; set; }
