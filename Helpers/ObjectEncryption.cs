@@ -129,6 +129,14 @@ public static class ObjectEncryption
                         ProcessObject(item, key, encrypt);
                     }
                 }
+                else if (value.GetType() == typeof(JToken))
+                {
+                    continue;
+                }
+                else if (value.GetType() == typeof(JArray))
+                {
+                    continue;
+                }
                 else
                 {
                     ProcessObject(value, key, encrypt);
@@ -225,6 +233,14 @@ public static class ObjectEncryption
                     {
                         ProcessObject(item, key, fieldsToEncrypt, fieldsToEncryptECB, encrypt, currentPath);
                     }
+                }
+                else if (value.GetType() == typeof(JToken))
+                {
+                    continue;
+                }
+                else if (value.GetType() == typeof(JArray))
+                {
+                    continue;
                 }
                 else
                 {

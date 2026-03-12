@@ -114,7 +114,7 @@ namespace CommonLibrary.SharedServices.Services
 
                     foreach (var field in INDEXED_FIELDS)
                     {
-                        var value = booking.GetPropertyValue(field);
+                        var value = data.GetPropertyValue(field);
                         if (value == null)
                             continue;
                         var stringValue = value.ToString();
