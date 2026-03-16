@@ -6,11 +6,7 @@ using CommonLibrary.Models;
 using CommonLibrary.Models.API;
 using CommonLibrary.Repository.Interfaces;
 using CommonLibrary.SharedServices.Interfaces;
-using Integration.Grpc;
-using Microsoft.AspNetCore.DataProtection;
 using Newtonsoft.Json;
-using Newtonsoft.Json.Linq;
-using System.Net.Sockets;
 using WebApp.API.Controllers.Helper;
 
 namespace CommonLibrary.SharedServices.Services
@@ -142,7 +138,7 @@ namespace CommonLibrary.SharedServices.Services
                     if (venue.notifications.notify == 1)
                     {
                         var reason = BookingEmailHelper.GetReasonForMail(u_reasonDb, venue).Item1;
-                       
+
                         SendEmail($"booking_scheduled_{data.type}".ToLower(), "📅 Il tuo appuntamento è stato confermato", "booking_scheduled", booking, data, start, end, dateS, venue, tenant.web_pages.Last(), reason, tenant.org_name);
                         SendEmailToStaff($"booking_scheduled_venue", "📅 Il tuo appuntamento è stato confermato", "booking_scheduled_venue", booking, venue.users, data, secret, start, end, dateS, reason, venue.name, tenant.org_name, tenant.web_pages.Last());
                     }
@@ -218,7 +214,7 @@ namespace CommonLibrary.SharedServices.Services
                             var start = startTs.ToString("HH:mm");
                             var end = endTs.ToString("HH:mm");
                             var bookingData = new BookingModelData { tenant_id = tenant.tenant_id.Value, u_first = booking.u_first, u_last = booking.u_last, u_email = booking.u_email, type = booking.type, u_reason = "" };
-                            SendEmail($"booking_rescheduled_{data.data.type}".ToLower(), "🔁 Il tuo appuntamento è stato riprogrammato", "booking_rescheduled", booking, bookingData, start, end, dateS, venue, tenant.web_pages.Last(), reason , tenant.org_name);
+                            SendEmail($"booking_rescheduled_{data.data.type}".ToLower(), "🔁 Il tuo appuntamento è stato riprogrammato", "booking_rescheduled", booking, bookingData, start, end, dateS, venue, tenant.web_pages.Last(), reason, tenant.org_name);
                             SendEmailToStaff($"booking_rescheduled_venue", "🔁 Il tuo appuntamento è stato riprogrammato", "booking_rescheduled_venue", booking, venue.users, bookingData, secret, start, end, dateS, reason, venue.name, tenant.org_name, tenant.web_pages.Last());
                         }
                     }
@@ -228,7 +224,7 @@ namespace CommonLibrary.SharedServices.Services
                     }
                 };
             }
-            else if(data.data.block_status == "CANCELLED")
+            else if (data.data.block_status == "CANCELLED")
             {
                 var result = await _bookingRepository.UpdateEntity(data, ignoreEncryption: true);
                 if (result != null && result.success)
@@ -237,7 +233,7 @@ namespace CommonLibrary.SharedServices.Services
                     if (venue.notifications.cancel == 1)
                     {
                         var dateS = booking.date.ToString("dd/MM/yyyy");
-                        var start = DateTime.Parse(booking.start_ts).ToString("HH:mm"); 
+                        var start = DateTime.Parse(booking.start_ts).ToString("HH:mm");
                         var end = DateTime.Parse(booking.end_ts).ToString("HH:mm");
                         var subject = "❌ Il tuo appuntamento è stato annullato";
                         var bookingData = new BookingModelData { tenant_id = tenant.tenant_id.Value, u_first = booking.u_first, u_last = booking.u_last, u_email = booking.u_email, type = booking.type };
@@ -281,7 +277,17 @@ namespace CommonLibrary.SharedServices.Services
             return result;
         }
 
-        private async Task<string> SendEmail(string templateId, string subject, string messageType, Booking booking, BookingModelData modelData, string start, string end, string date, Venue venue, string pageUrl, string reason, string tenantName, bool cancel =false)
+        public async Task<OBFSearchResponse> SearchBooking(ObfSearchModel searchModel)
+        {
+            var secret = await _secretService.GetSecret(searchModel.org_code);
+            searchModel.salt = secret;
+            var resp = await _obfIndexRepository.SearchBooking(searchModel);
+            var respObject = JsonConvert.DeserializeObject<OBFSearchResponse>(resp);
+            ObjectEncryption.DecryptObject(respObject, secret);
+            return respObject;
+        }
+
+        private async Task<string> SendEmail(string templateId, string subject, string messageType, Booking booking, BookingModelData modelData, string start, string end, string date, Venue venue, string pageUrl, string reason, string tenantName, bool cancel = false)
         {
             try
             {
@@ -320,7 +326,7 @@ namespace CommonLibrary.SharedServices.Services
                 });
 
                 var response = await _emailClient.SendEmailAsync(request);
-                return response;                  
+                return response;
             }
             catch (Exception ex) { Console.WriteLine(ex + ex.Message + ex.StackTrace); }
             return null;
