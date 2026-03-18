@@ -24,9 +24,9 @@ namespace CommonLibrary.Repository.Redis
             return redisResult;
         }
 
-        public async Task<bool> SetString(string key, string value, TimeSpan? expiry = null)
+        public async Task<bool> SetString(string key, string value, TimeSpan? expiry = null, When when = When.Always)
         {
-            return await _database.StringSetAsync(key, value, expiry);
+            return await _database.StringSetAsync(key, value, expiry, when);
         }
 
         public async Task<string> GetString(string key)
