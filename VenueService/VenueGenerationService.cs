@@ -37,11 +37,12 @@ namespace VenueGenerationService
         private readonly ISecretService _secretService;
 
 
-        public VenueGenerationService(IGenericRepository<object> repository, IS3Service s3Service, ITenantRepository tenantRepository)
+        public VenueGenerationService(IGenericRepository<object> repository, IS3Service s3Service, ITenantRepository tenantRepository, ISecretService secretService)
         {
             _repository = repository;
             _s3Servce = s3Service;
             _tenantRepository = tenantRepository;
+            _secretService = secretService;
         }
 
         public async Task ReplaceJs(string tenantId)
