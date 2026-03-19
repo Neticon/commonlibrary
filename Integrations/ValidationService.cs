@@ -17,7 +17,9 @@ namespace CommonLibrary.Integrations
         private readonly IVenueGenerationService _venueGenerationService;
         private readonly IRedisService _redisService;
         private readonly List<int> valid_mail_statuses = new List<int> { 200, 207, 215 };
+        private readonly List<int> expired_licence_mail_statuses = new List<int> { 118, 119 };
         private readonly List<string> valid_phone_statuses = new List<string> { "VALID_CONFIRMED", "VALID_UNCONFIRMED", "DELAYED" };
+        private readonly string expired_licence_phone_status = "API_KEY_INVALID_OR_DEPLETED";
         private readonly string REDIS_PREFIX = "di::";
 
         public ValidationService(IOptions<BytePlanConfiguration> configuration, IDeviceIntelRepository deviceIntelRepository, IVenueGenerationService venueGenerationService, IRedisService redisService)
@@ -102,6 +104,11 @@ namespace CommonLibrary.Integrations
             if (runApiCheck) //Record does not exist or expired
             {
                 var resultObject = await EmailApiValidation(email);
+
+                var licenceError = expired_licence_mail_statuses.Contains(resultObject.status);
+                if (licenceError)
+                    return false;
+
                 var valid = valid_mail_statuses.Contains(resultObject.status);
                 if (deviceIntel == null)
                 {
@@ -136,6 +143,9 @@ namespace CommonLibrary.Integrations
             if (runApiCheck) //Record does not exist or expired
             {
                 var resultObject = await PhoneApiValidation(phone);
+                var expiredKey = resultObject.status.Equals(expired_licence_phone_status, StringComparison.OrdinalIgnoreCase);
+                if (expiredKey)
+                    return false;
                 var valid = valid_phone_statuses.Contains(resultObject.status);
                 if (deviceIntel == null)
                 {
