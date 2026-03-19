@@ -3,6 +3,7 @@ using CommonLibrary.Integrations.Model;
 using CommonLibrary.Models;
 using CommonLibrary.Repository.Interfaces;
 using CommonLibrary.Repository.Redis;
+using CommonLibrary.SharedServices.Interfaces;
 using MaxMind.GeoIP2;
 using Microsoft.Extensions.Options;
 using Newtonsoft.Json;
@@ -40,8 +41,8 @@ namespace CommonLibrary.Integrations
             var origin = apiCall ? 0 : 1;
             if (!string.IsNullOrEmpty(data.e) && !string.IsNullOrEmpty(data.p))
             {
-                var hashedMail = _venueGenerationService.GenerateHmac(email, "");
-                var hashedPhone = _venueGenerationService.GenerateHmac(phone, "");
+                var hashedMail = await _venueGenerationService.GenerateHmac(email, "");
+                var hashedPhone = await _venueGenerationService.GenerateHmac(phone, "");
                 var redisKeys = new List<string> { GetRedisKey(hashedMail), GetRedisKey(hashedPhone) };
                 var results = await _redisService.MGet(redisKeys);
                 var resultEmail = results[0];
@@ -58,7 +59,7 @@ namespace CommonLibrary.Integrations
             }
             else if (!string.IsNullOrEmpty(data.e))
             {
-                var hashedMail = _venueGenerationService.GenerateHmac(email, "");
+                var hashedMail = await _venueGenerationService.GenerateHmac(email, "");
                 var redisValue = await _redisService.GetString(GetRedisKey(hashedMail));
                 if (redisValue == "0")
                     emailValid = false;
@@ -67,7 +68,7 @@ namespace CommonLibrary.Integrations
             }
             else if (!string.IsNullOrEmpty(data.p))
             {
-                var hashedPhone = _venueGenerationService.GenerateHmac(phone, "");
+                var hashedPhone = await _venueGenerationService.GenerateHmac(phone, "");
                 var redisValue = await _redisService.GetString(GetRedisKey(hashedPhone));
                 if (redisValue == "0")
                     phoneValid = false;
@@ -196,9 +197,9 @@ namespace CommonLibrary.Integrations
         public async Task<RedisDeviceIntel> GetRedisDeviceIntel(string email, string phone, string ip)
         {
             var keys = new List<string>();
-            keys.Add(GetRedisKey(_venueGenerationService.GenerateHmac(email, "")));
-            keys.Add(GetRedisKey(_venueGenerationService.GenerateHmac(phone, "")));
-            keys.Add(GetRedisKey(_venueGenerationService.GenerateHmac(ip, "")));
+            keys.Add(GetRedisKey(await _venueGenerationService.GenerateHmac(email, "")));
+            keys.Add(GetRedisKey(await _venueGenerationService.GenerateHmac(phone, "")));
+            keys.Add(GetRedisKey(await _venueGenerationService.GenerateHmac(ip, "")));
 
             var hasEmail = !string.IsNullOrEmpty(email);
             var hasPhone = !string.IsNullOrEmpty(phone);
@@ -257,7 +258,7 @@ namespace CommonLibrary.Integrations
             //localhost
             if (ip == "::1")
                 return null;
-            var hashedIp = _venueGenerationService.GenerateHmac(ip, "");
+            var hashedIp = await _venueGenerationService.GenerateHmac(ip, "");
             var redisValue = await _redisService.GetString(GetRedisKey(hashedIp));
             if (redisValue != null)
             {

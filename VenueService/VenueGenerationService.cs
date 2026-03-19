@@ -1,6 +1,7 @@
 ﻿using CommonLibrary.Helpers;
 using CommonLibrary.Integrations;
 using CommonLibrary.Repository.Interfaces;
+using CommonLibrary.SharedServices.Interfaces;
 using Newtonsoft.Json;
 using Npgsql;
 using System.Security.Cryptography;
@@ -30,9 +31,11 @@ namespace VenueGenerationService
             WriteIndented = true
         };
 
-        private const string SecretKey = "keyTest";
+        private string SecretKey = null;
         private readonly IGenericRepository<object> _repository;
         private readonly ITenantRepository _tenantRepository;
+        private readonly ISecretService _secretService;
+
 
         public VenueGenerationService(IGenericRepository<object> repository, IS3Service s3Service, ITenantRepository tenantRepository)
         {
@@ -61,7 +64,7 @@ namespace VenueGenerationService
             templateJs = templateJs.Replace(TimestampPlaceholder, new DateTimeOffset(DateTime.UtcNow).ToUnixTimeSeconds().ToString());
             templateJs = templateJs.Replace(UISettingsPlaceholder, JsonConvert.SerializeObject(tenantData.library, Formatting.None));
 
-            templateJs = ProcessLibrary(templateJs);
+            templateJs = await ProcessLibrary(templateJs);
 
             //add timestamp after to be able to compare ob
 
@@ -99,7 +102,7 @@ namespace VenueGenerationService
             var domainsHash = new List<string>();
             foreach (var domain in tenant.web_pages)
             {
-                domainsHash.Add(CreateHashWithReverseAlgorythm(domain));
+                domainsHash.Add(await CreateHashWithReverseAlgorythm(domain));
             }
 
             tenant.web_pages = domainsHash;
@@ -107,20 +110,22 @@ namespace VenueGenerationService
             return tenant;
         }
 
-        public string GenerateHmac(string message, string secretKey)
+        public async Task<string> GenerateHmac(string message, string secretKey)
         {
+            if (SecretKey == null)
+                SecretKey = await _secretService.GetSecret("sharedKey");
             using var hmac = new HMACSHA256(Encoding.UTF8.GetBytes(string.IsNullOrEmpty(secretKey) ? SecretKey : secretKey));
             var hash = hmac.ComputeHash(Encoding.UTF8.GetBytes(message));
             return BitConverter.ToString(hash).Replace("-", "").ToLower();
         }
 
-        private string ProcessLibrary(string jsContent)
+        private async Task<string> ProcessLibrary(string jsContent)
         {
             // Perform the actual replacement
-            return jsContent.Replace(ObfuscationPlaceholder, GetObfuscationValue(jsContent));
+            return jsContent.Replace(ObfuscationPlaceholder, await GetObfuscationValue(jsContent));
         }
 
-        private string GetObfuscationValue(string jsContent)
+        private async Task<string> GetObfuscationValue(string jsContent)
         {
             var originalLength = Encoding.UTF8.GetByteCount(jsContent);
             var lengthAfterReplacement = originalLength; // Same length replacement
@@ -136,7 +141,7 @@ namespace VenueGenerationService
 
             tempContent = CommonHelperFunctions.ReplaceWhitespace(tempContent, "");
             var byteLength = Encoding.UTF8.GetByteCount(tempContent);
-            var hmac = GenerateHmac(tempContent, byteLength.ToString());
+            var hmac = await GenerateHmac(tempContent, byteLength.ToString());
             tempContent = tempContent.TrimEnd();
             var bytes = Encoding.UTF8.GetBytes(tempContent);
             Console.WriteLine(Encoding.UTF8.EncodingName);
@@ -193,10 +198,10 @@ namespace VenueGenerationService
             return input.Substring(startIndex, endIndex - startIndex);
         }
 
-        public string CreateHashWithReverseAlgorythm(string input)
+        public async Task<string> CreateHashWithReverseAlgorythm(string input)
         {
             var secret = Convert.ToBase64String(Encoding.UTF8.GetBytes(input)).Reverse();
-            return GenerateHmac(input, new string(secret.ToArray()));
+            return await GenerateHmac(input, new string(secret.ToArray()));
         }
 
         public async Task<DateTime> GetExpiry(string tenantId)
