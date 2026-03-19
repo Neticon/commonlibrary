@@ -39,7 +39,7 @@ namespace CommonLibrary.Repository
 
         private string GenerateCreateQuery(Guid id, string type, int origin, string apiJsonResponse, string hash)
         {
-            return $"SELECT web_app.create_device_intel('{id}', '{type}', {origin}, '{apiJsonResponse}'::jsonb, '{hash}');";
+            return $"SELECT utility.create_device_intel('{id}', '{type}', {origin}, '{apiJsonResponse}'::jsonb, '{hash}');";
         }
 
         private string GetDeviceIntelQuery(string hash)
