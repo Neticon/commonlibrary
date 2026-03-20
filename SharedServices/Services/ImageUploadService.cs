@@ -27,7 +27,7 @@ namespace CommonLibrary.SharedServices.Services
 
         public async Task<ServiceResponse> UploadImages(Dictionary<string, MemoryStream> files, string venueId)
         {
-            if (!CurrentUser.Role.Equals("ADMIN", StringComparison.OrdinalIgnoreCase))
+            if (CurrentUser.Role.Equals("ASSISTANT", StringComparison.OrdinalIgnoreCase))
             {
                 if(CurrentUser.Venues != null && !CurrentUser.Venues.Contains(venueId))
                 {
@@ -66,6 +66,14 @@ namespace CommonLibrary.SharedServices.Services
                     if (response.cover == null)
                         response.cover = new List<string>();
                     response.cover.Add($"{CDN_URL}{key}");
+                    width = 400;
+                    height = 300;
+                }
+                else if (type == "service")
+                {
+                    if (response.service == null)
+                        response.service = new List<string>();
+                    response.service.Add($"{CDN_URL}{key}");
                     width = 400;
                     height = 300;
                 }
@@ -211,6 +219,7 @@ namespace CommonLibrary.SharedServices.Services
         {
             public List<string> logo { get; set; }
             public List<string> cover { get; set; }
+            public List<string> service { get; set; }
         }
     }
 }
