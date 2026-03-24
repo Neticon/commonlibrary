@@ -22,6 +22,13 @@
         public static string GET_NOTIFICATIONS = "select utility.get_notifications_for_period_v2(@p_period) as x";
         public static string REMOVE_USER_FROM_VENUE = "select utility.remove_user_from_venues(@p_tenant_id, @p_u_email) as x";
         public static string OBF_INDEX_SEARCH_AND_FETCH = "select utility.obf_index_search_and_fetch_v3(@payload) as x";
+        public static string GET_KEY_METRICS = "select utility.get_key_metrics(@payload) as x";
+        public static string GET_RECENT_BOOKING_CHANGES = "select utility.get_recent_booking_changes(@payload) as x";
+        public static string GET_BELOW_AVERAGE_RATINGS = "select utility.get_below_average_ratings(@payload) as x";
+        public static string GET_BOOKING_REVIEWS_RADAR = "select utility.get_booking_reviews_radar(@payload) as x";
+        public static string GET_BOOKING_FREQUENCIES = "select utility.get_booking_frequencies(@payload) as x";
+        public static string GET_USAGE_STATISTICS_MV = "select utility.get_usage_statistics_mv(@payload) as x";
+
     }
 
     public class PredefinedQueryPatternsReplacements

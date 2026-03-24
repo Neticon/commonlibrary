@@ -1,4 +1,5 @@
-﻿using System.Security.Cryptography;
+﻿using CommonLibrary.Domain.Entities;
+using System.Security.Cryptography;
 using System.Text.RegularExpressions;
 
 namespace WebApp.API.Controllers.Helper
@@ -52,6 +53,13 @@ namespace WebApp.API.Controllers.Helper
             }
 
             return new string(chars.ToArray());
+        }
+
+        public static int GetRoleInt(string role)
+        {
+            if (Enum.TryParse<UserRole>(role, true, out var roleValue))
+                return (int)roleValue;
+            else return -1;
         }
     }
 }

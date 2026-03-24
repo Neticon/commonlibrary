@@ -30,4 +30,12 @@
         public bool is_deleted { get; set; }
         public Guid? tenant_id { get; set; }
     }
+
+    public enum UserRole
+    {
+        ASSISTANT,
+        VENUE_MANAGER,
+        ADMIN,
+        SUPER
+    }
 }
