@@ -19,7 +19,8 @@ namespace CommonLibrary.SharedServices.Services
         private readonly string CDN_URL = Environment.GetEnvironmentVariable("CDN_URL");
         private readonly string KEY_PATTERN = "r/{0}/{1}/{2}/{3}_{4}.webp";
         private readonly string KEY_PATTERN_ARRAY = "r/{0}/{1}/{2}/{3}_{4}_{5}.webp";
-
+        private readonly int IMAGE_LIMIT_BY_TYPE = 10;
+ 
         public ImageUploadService(IS3Service s3Service, ICurrentUserService currentUserService) : base(currentUserService)
         {
             _s3Service = s3Service;
@@ -29,11 +30,17 @@ namespace CommonLibrary.SharedServices.Services
         {
             if (CurrentUser.Role.Equals("ASSISTANT", StringComparison.OrdinalIgnoreCase))
             {
-                if(CurrentUser.Venues != null && !CurrentUser.Venues.Contains(venueId))
+                if (CurrentUser.Venues != null && !CurrentUser.Venues.Contains(venueId))
                 {
                     return new ServiceResponse { StatusCode = 403, Result = "Operation not authorized for this Venue" };
                 }
             }
+            //check images count on S3 (currently only one type is expected in request)
+            var imgType = files.First().Key.Split('_')[0];
+            var imagesCount = await GetImageCountByType(venueId, CurrentUser.OrgCode, imgType);
+            if (imagesCount + files.Count > IMAGE_LIMIT_BY_TYPE)
+                return new ServiceResponse { StatusCode = 409, Result = "Max number of images exceeded" };
+
             var validationResponse = await ValidateImages(files);
             if (!validationResponse.success)
                 return new ServiceResponse { StatusCode = 415, Result = validationResponse };
@@ -45,23 +52,23 @@ namespace CommonLibrary.SharedServices.Services
                 var key = "";
                 var width = 0;
                 var height = 0;
-                if(files.Count > 1)
+                if (files.Count > 1)
                 {
-                     key = string.Format(KEY_PATTERN_ARRAY, CurrentUser.OrgCode, venueId, type, type, DateTime.UtcNow.ToString("yyyyMMdd_HHmm"), index); 
+                    key = string.Format(KEY_PATTERN_ARRAY, CurrentUser.OrgCode, venueId, type, type, DateTime.UtcNow.ToString("yyyyMMdd_HHmm"), index);
                 }
                 else
                 {
-                     key = string.Format(KEY_PATTERN, CurrentUser.OrgCode, venueId, type, type, DateTime.UtcNow.ToString("yyyyMMdd_HHmm"));
+                    key = string.Format(KEY_PATTERN, CurrentUser.OrgCode, venueId, type, type, DateTime.UtcNow.ToString("yyyyMMdd_HHmm"));
                 }
-                
-                if(type == "logo")
+
+                if (type == "logo")
                 {
                     if (response.logo == null)
                         response.logo = new List<string>();
                     response.logo.Add($"{CDN_URL}{key}");
                     width = 60;
                     height = 60;
-                }else if (type == "cover")
+                } else if (type == "cover")
                 {
                     if (response.cover == null)
                         response.cover = new List<string>();
@@ -81,7 +88,7 @@ namespace CommonLibrary.SharedServices.Services
                 await _s3Service.UploadStreamAsync(_bucket, key, resizedStream, "Service_Portal", null);
             }
             var graphApiResponse = new GraphAPIResponse<UploadResponse> { rows = new List<UploadResponse> { response }, success = true, request_id = Guid.NewGuid() };
-            return new ServiceResponse { Result = graphApiResponse};
+            return new ServiceResponse { Result = graphApiResponse };
         }
 
         public async Task<ServiceResponse> GetImages(string type, string venueId)
@@ -96,6 +103,26 @@ namespace CommonLibrary.SharedServices.Services
             };
 
             return new ServiceResponse { Result = response, StatusCode = 200 };
+        }
+
+        private async Task<CountByType> GetImageCountByType(string venueId) // unused for now, if UI changes to support multiple types we will use this (not to check all types)
+        {
+            var imagesLogo = await _s3Service.ListFilesAsync(_bucket, $"r/{CurrentUser.OrgCode}/{venueId}/logo");
+            var imagesCover = await _s3Service.ListFilesAsync(_bucket, $"r/{CurrentUser.OrgCode}/{venueId}/cover");
+            var imagesService = await _s3Service.ListFilesAsync(_bucket, $"r/{CurrentUser.OrgCode}/{venueId}/service");
+
+            return new CountByType
+            {
+                cover = imagesCover.Count(),
+                logo = imagesLogo.Count(),
+                service = imagesService.Count(),
+            };
+        }
+
+        private async Task<int> GetImageCountByType(string venueId, string orgCode, string type) // unused for now, if UI changes to support multiple types we will use this (not to check all types)
+        {
+            var images = await _s3Service.ListFilesAsync(_bucket, $"r/{orgCode}/{venueId}/{type}", ".jpg");
+            return images.Count();
         }
 
         public async Task<ServiceResponse> DeleteImage(string url)
@@ -220,6 +247,13 @@ namespace CommonLibrary.SharedServices.Services
             public List<string> logo { get; set; }
             public List<string> cover { get; set; }
             public List<string> service { get; set; }
+        }
+
+        private class CountByType
+        {
+            public int logo { get; set; }
+            public int cover { get; set; }
+            public int service { get; set; }    
         }
     }
 }
