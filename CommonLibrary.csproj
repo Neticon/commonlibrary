@@ -6,7 +6,7 @@
     <Nullable>enable</Nullable>
 
     <!-- NuGet metadata -->
-    <Version>2.0.16</Version>
+    <Version>2.0.17</Version>
     <Authors>Djordje Stojakovic</Authors>
     <Company>Neticon</Company>
     <PackageId>CommonLibrary</PackageId>
@@ -47,12 +47,11 @@
     <None Include="bin\Release\net8.0\*.pdb" Pack="true" PackagePath="lib\net8.0" />
   </ItemGroup>
 	<ItemGroup>
-    <Folder Include="SharedServices\Interfaces\" />
-  </ItemGroup>
-	<ItemGroup>
 		<None Include="Integrations\**\*.proto" Pack="true" PackagePath="protos" />
 	</ItemGroup>
 	<ItemGroup>
 		<Protobuf Include="Integrations\Protos\email.proto" GrpcServices="Client" />
+		<Protobuf Include="Integrations\Protos\MicrosoftUser.proto" GrpcServices="Client" />
+		<Protobuf Include="Integrations\Protos\microsoftEvent.proto" GrpcServices="Client" />
 	</ItemGroup>
 </Project>

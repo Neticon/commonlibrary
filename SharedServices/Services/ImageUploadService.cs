@@ -1,4 +1,5 @@
-﻿using CommonLibrary.Integrations;
+﻿using CommonLibrary.Helpers;
+using CommonLibrary.Integrations;
 using CommonLibrary.Models;
 using CommonLibrary.SharedServices.Interfaces;
 using ServicePortal.Application.Interfaces;
@@ -8,6 +9,7 @@ using SixLabors.ImageSharp;
 using SixLabors.ImageSharp.Formats.Webp;
 using SixLabors.ImageSharp.PixelFormats;
 using SixLabors.ImageSharp.Processing;
+using System.Text.RegularExpressions;
 
 namespace CommonLibrary.SharedServices.Services
 {
@@ -19,6 +21,8 @@ namespace CommonLibrary.SharedServices.Services
         private readonly string CDN_URL = Environment.GetEnvironmentVariable("CDN_URL");
         private readonly string KEY_PATTERN = "r/{0}/{1}/{2}/{3}_{4}.webp";
         private readonly string KEY_PATTERN_ARRAY = "r/{0}/{1}/{2}/{3}_{4}_{5}.webp";
+        private readonly string KEY_PATTERN_WITH_FILENAME = "r/{0}/{1}/{2}/{3}.webp";
+        private readonly string FILENAME_PATTERN = @"^.+_\d{8}_([01]\d|2[0-3])[0-5]\d[0-5]\d_(10|[1-9])\..+$";
         private readonly int IMAGE_LIMIT_BY_TYPE = 10;
  
         public ImageUploadService(IS3Service s3Service, ICurrentUserService currentUserService) : base(currentUserService)
@@ -32,43 +36,46 @@ namespace CommonLibrary.SharedServices.Services
             {
                 if (CurrentUser.Venues != null && !CurrentUser.Venues.Contains(venueId))
                 {
-                    return new ServiceResponse { StatusCode = 403, Result = "Operation not authorized for this Venue" };
+                    return new ServiceResponse { StatusCode = 403, Result = "ui_upload_unauthorized - Unauthorized request." };
                 }
             }
             //check images count on S3 (currently only one type is expected in request)
             var imgType = files.First().Key.Split('_')[0];
             var imagesCount = await GetImageCountByType(venueId, CurrentUser.OrgCode, imgType);
             if (imagesCount + files.Count > IMAGE_LIMIT_BY_TYPE)
-                return new ServiceResponse { StatusCode = 409, Result = "Max number of images exceeded" };
+                return new ServiceResponse { StatusCode = 409, Result = "ui_upload_limit - Number of files in the upload request exceeds allowed limits." };
 
+            //validate type
             var validationResponse = await ValidateImages(files);
             if (!validationResponse.success)
                 return new ServiceResponse { StatusCode = 415, Result = validationResponse };
+
+            //validate filename
+            var validatonFilenameResponse = await ValidateFilename(files);
+            if (!validatonFilenameResponse.success)
+                return new ServiceResponse { StatusCode = 415, Result = validatonFilenameResponse };
+
             var response = new UploadResponse();
             foreach (var image in files)
             {
-                var type = image.Key.Split('_')[0];
-                var index = image.Key.Split('_')[1];
+                var keyParts = image.Key.Split("_");
+                var type = keyParts[0];
+                var filename = string.Join("_", keyParts.Skip(2));
                 var key = "";
                 var width = 0;
                 var height = 0;
-                if (files.Count > 1)
-                {
-                    key = string.Format(KEY_PATTERN_ARRAY, CurrentUser.OrgCode, venueId, type, type, DateTime.UtcNow.ToString("yyyyMMdd_HHmm"), index);
-                }
-                else
-                {
-                    key = string.Format(KEY_PATTERN, CurrentUser.OrgCode, venueId, type, type, DateTime.UtcNow.ToString("yyyyMMdd_HHmm"));
-                }
+  
+                var filenameWithNewExtension = Path.ChangeExtension(filename, ".webp");
+                key = string.Format(KEY_PATTERN_WITH_FILENAME, CurrentUser.OrgCode, venueId, type, filenameWithNewExtension);
 
-                if (type == "logo")
+                if (type == ImageUploadTypes.Logo)
                 {
                     if (response.logo == null)
                         response.logo = new List<string>();
                     response.logo.Add($"{CDN_URL}{key}");
                     width = 60;
                     height = 60;
-                } else if (type == "cover")
+                } else if (type == ImageUploadTypes.Cover)
                 {
                     if (response.cover == null)
                         response.cover = new List<string>();
@@ -76,7 +83,7 @@ namespace CommonLibrary.SharedServices.Services
                     width = 400;
                     height = 300;
                 }
-                else if (type == "service")
+                else if (type == ImageUploadTypes.Service)
                 {
                     if (response.service == null)
                         response.service = new List<string>();
@@ -107,9 +114,9 @@ namespace CommonLibrary.SharedServices.Services
 
         private async Task<CountByType> GetImageCountByType(string venueId) // unused for now, if UI changes to support multiple types we will use this (not to check all types)
         {
-            var imagesLogo = await _s3Service.ListFilesAsync(_bucket, $"r/{CurrentUser.OrgCode}/{venueId}/logo");
-            var imagesCover = await _s3Service.ListFilesAsync(_bucket, $"r/{CurrentUser.OrgCode}/{venueId}/cover");
-            var imagesService = await _s3Service.ListFilesAsync(_bucket, $"r/{CurrentUser.OrgCode}/{venueId}/service");
+            var imagesLogo = await _s3Service.ListFilesAsync(_bucket, $"r/{CurrentUser.OrgCode}/{venueId}/{ImageUploadTypes.Logo}");
+            var imagesCover = await _s3Service.ListFilesAsync(_bucket, $"r/{CurrentUser.OrgCode}/{venueId}/{ImageUploadTypes.Cover}");
+            var imagesService = await _s3Service.ListFilesAsync(_bucket, $"r/{CurrentUser.OrgCode}/{venueId}/{ImageUploadTypes.Service}");
 
             return new CountByType
             {
@@ -150,7 +157,7 @@ namespace CommonLibrary.SharedServices.Services
             var valid = true;
             var invalidKeys = new List<string>();
             var operation = "stream_validation";
-            var message = "Uploaded file is not an image.";
+            var message = "ui_upload_filemime - Uploaded file is not a valid image.";
             //stage1 - check is stram an image
             foreach (var image in images)
             {
@@ -168,7 +175,7 @@ namespace CommonLibrary.SharedServices.Services
             if (valid)
             {
                 operation = "image_validation";
-                message = "Unsupported image type, only 'image/jpeg', 'image/png', and 'image/webp' are supported.";
+                message = "ui_upload_unsupported - Unsupported image format.";
                 foreach (var img in images)
                 {
                     img.Value.Position = 0; 
@@ -181,6 +188,39 @@ namespace CommonLibrary.SharedServices.Services
                 }
             }
             if (valid)
+                return new GraphAPIResponse<object>() { success = true };
+            else
+                return new GraphAPIResponse<object>() { success = false, stage = stage, message = message, operation = operation, invalid_keys = invalidKeys };
+
+        }
+
+        private async Task<GraphAPIResponse<object>> ValidateFilename(Dictionary<string, MemoryStream> images)
+        {
+            var stage = "upload_validation";
+            var invalidKeys = new List<string>();
+            var operation = "filename_validation";
+            var message = "ui_upload_filename - Invalid file name.";
+            //stage1 - check is stram an image
+            foreach (var image in images)
+            {
+                var valid = true;
+
+                var keyParts = image.Key.Split("_");
+                var type = keyParts[0];
+                var filename = string.Join("_", keyParts.Skip(2));
+
+                if (type == ImageUploadTypes.Service && !filename.StartsWith("SRV"))
+                    valid = false;
+                else if (!filename.StartsWith(type))
+                    valid = false;
+
+                if(valid)
+                    valid = Regex.IsMatch(filename, FILENAME_PATTERN);
+
+                if (!valid)
+                    invalidKeys.Add(filename);
+            }
+            if (invalidKeys.Count == 0)
                 return new GraphAPIResponse<object>() { success = true };
             else
                 return new GraphAPIResponse<object>() { success = false, stage = stage, message = message, operation = operation, invalid_keys = invalidKeys };
