@@ -1,0 +1,20 @@
+﻿syntax = "proto3";
+
+option csharp_namespace = "Integration.Grpc";
+
+package microsoftUsers;
+
+service MicrosoftUser{
+	rpc CreateMicrosoftUser(MicrosoftUserRequest) returns (MicrosoftUserResponse);
+}
+
+message MicrosoftUserRequest{
+	string fullUpn = 1;
+	string usageLocation = 2;
+	string password = 3;
+	string displayName = 4;
+}
+
+message MicrosoftUserResponse{
+	string meeting_url = 1;
+}

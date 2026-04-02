@@ -13,6 +13,9 @@ message MicrosoftEventRequest{
 	string subject = 2;
 	string startUtc = 3;
 	string endUtc = 4;
+	string organizerUpnLocal = 5;
+	string externalId = 6;
+	string org_code = 7;
 }
 
 message MicrosoftEventResponse{
