@@ -43,7 +43,7 @@ namespace CommonLibrary.SharedServices.Services
             var imgType = files.First().Key.Split('_')[0];
             var imagesCount = await GetImageCountByType(venueId, CurrentUser.OrgCode, imgType);
             if (imagesCount + files.Count > IMAGE_LIMIT_BY_TYPE)
-                return new ServiceResponse { StatusCode = 409, Result = "ui_upload_limit - Number of files in the upload request exceeds allowed limits." };
+                return new ServiceResponse { StatusCode = 409, Result = "ui_upload_limit" };
 
             //validate type
             var validationResponse = await ValidateImages(files);
@@ -157,7 +157,7 @@ namespace CommonLibrary.SharedServices.Services
             var valid = true;
             var invalidKeys = new List<string>();
             var operation = "stream_validation";
-            var message = "ui_upload_filemime - Uploaded file is not a valid image.";
+            var message = "ui_upload_filemime";
             //stage1 - check is stram an image
             foreach (var image in images)
             {
@@ -175,7 +175,7 @@ namespace CommonLibrary.SharedServices.Services
             if (valid)
             {
                 operation = "image_validation";
-                message = "ui_upload_unsupported - Unsupported image format.";
+                message = "ui_upload_unsupported";
                 foreach (var img in images)
                 {
                     img.Value.Position = 0; 
@@ -199,7 +199,7 @@ namespace CommonLibrary.SharedServices.Services
             var stage = "upload_validation";
             var invalidKeys = new List<string>();
             var operation = "filename_validation";
-            var message = "ui_upload_filename - Invalid file name.";
+            var message = "ui_upload_filename.";
             //stage1 - check is stram an image
             foreach (var image in images)
             {
@@ -211,7 +211,7 @@ namespace CommonLibrary.SharedServices.Services
 
                 if (type == ImageUploadTypes.Service && !filename.StartsWith("SRV"))
                     valid = false;
-                else if (!filename.StartsWith(type))
+                else if (type != ImageUploadTypes.Service && !filename.StartsWith(type))
                     valid = false;
 
                 if(valid)
