@@ -21,7 +21,7 @@ namespace CommonLibrary.SharedServices.Services
         private readonly string CDN_URL = Environment.GetEnvironmentVariable("CDN_URL");
         private readonly string KEY_PATTERN = "r/{0}/{1}/{2}/{3}_{4}.webp";
         private readonly string KEY_PATTERN_ARRAY = "r/{0}/{1}/{2}/{3}_{4}_{5}.webp";
-        private readonly string KEY_PATTERN_WITH_FILENAME = "r/{0}/{1}/{2}/{3}.webp";
+        private readonly string KEY_PATTERN_WITH_FILENAME = "r/{0}/{1}/{2}/{3}";
         private readonly string FILENAME_PATTERN = @"^.+_\d{8}_([01]\d|2[0-3])[0-5]\d[0-5]\d_(10|[1-9])\..+$";
         private readonly int IMAGE_LIMIT_BY_TYPE = 10;
  
