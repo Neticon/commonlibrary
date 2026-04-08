@@ -15,6 +15,8 @@
         public string block_status { get; set; }
         public string start_ts { get; set; }
         public string end_ts { get; set; }  
+        public string? modify_bu {  get; set; }
+        public DateTime? modify_dt { get; set; }
     }
 
     public class BookingUpdateFilters
