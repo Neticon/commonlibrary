@@ -7,6 +7,7 @@ using CommonLibrary.Models.API;
 using CommonLibrary.Repository.Interfaces;
 using CommonLibrary.SharedServices.Interfaces;
 using Newtonsoft.Json;
+using ServicePortal.Application.Interfaces;
 using WebApp.API.Controllers.Helper;
 
 namespace CommonLibrary.SharedServices.Services
