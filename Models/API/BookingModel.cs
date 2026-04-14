@@ -21,5 +21,6 @@
         public string u_reason { get; set; }
         public string service_id { get; set; }
         public List<string>? val_fail { get; set; }
+        public string? create_bu {  get; set; }
     }
 }

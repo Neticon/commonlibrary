@@ -11,7 +11,7 @@ using WebApp.API.Controllers.Helper;
 
 namespace CommonLibrary.SharedServices.Services
 {
-    public class BookingService : IBookingService
+    public class BookingService : AppServiceBase, IBookingService
     {
         private readonly IBlocksRepository _blocksRepository;
         private readonly IValidationService _validationService;
@@ -23,7 +23,7 @@ namespace CommonLibrary.SharedServices.Services
         private readonly IEmailClient _emailClient;
         private readonly string[] INDEXED_FIELDS = ["u_first", "u_last", "u_email", "u_phone", "u_message", "u_reason"];
 
-        public BookingService(IBlocksRepository blocksRepository, IValidationService validationService, IBookingRepository bookingRepository, IVenueRepository venueRepository, IObfIndexRepository obfIndexRepository, ITenantRepository tenantRepository, ISecretService secretService, IEmailClient emailClient)
+        public BookingService(IBlocksRepository blocksRepository, IValidationService validationService, IBookingRepository bookingRepository, IVenueRepository venueRepository, IObfIndexRepository obfIndexRepository, ITenantRepository tenantRepository, ISecretService secretService, IEmailClient emailClient, ICurrentUserService currentUserService): base(currentUserService)
         {
             _blocksRepository = blocksRepository;
             _validationService = validationService;
@@ -80,7 +80,7 @@ namespace CommonLibrary.SharedServices.Services
                     date = date,
                     tenant_id = data.tenant_id,
                     venue_id = data.venue_id,
-                    create_bu = "web_api",
+                    create_bu = data.create_bu ?? CurrentUser.Decr_Email,
                     type = data.type,
                     start_ts = startTs.ToString(Constants.PSQLTimestampWithTZFromat),
                     end_ts = endTs.ToString(Constants.PSQLTimestampWithTZFromat),
@@ -171,6 +171,11 @@ namespace CommonLibrary.SharedServices.Services
 
             var reasonResult = BookingEmailHelper.GetReasonForMail(booking.u_reason, venue);
             var reason = reasonResult.Item1;
+
+            if (string.IsNullOrEmpty(data.data.modify_bu))
+                data.data.modify_bu = CurrentUser.Decr_Email;
+            data.data.modify_dt = DateTime.UtcNow;
+
             if (data.data.block_status == "RESCHEDULED")
             {
                 if (data.data.block_start == null || data.data.block_end == null)

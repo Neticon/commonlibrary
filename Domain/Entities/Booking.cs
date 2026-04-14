@@ -9,10 +9,13 @@
         public Guid tenant_id { get; set; }
         public Guid venue_id { get; set; }
         public TimeSpan? create_dt { get; set; }
+        [EncryptECB]
         public string create_bu { get; set; }
         public TimeSpan? modify_dt { get; set; }
+        [EncryptECB]
         public string? modify_bu { get; set; }
         public TimeSpan? delete_dt { get; set; }
+        [EncryptECB]
         public string? delete_bu { get; set; }
         public string? mods { get; set; }
         public string block_status { get; set; }
@@ -45,6 +48,10 @@
         public Guid ip_id { get; set; }
         public DateTime date { get; set; }
         public bool is_deleted { get; set; }
+        public int? slot_ref { get; set; }
+        public string? conference_upn { get; set; }
+        public string? booking_uri { get; set; }
+        public string? conference_id { get; set; }
     }
 
     public enum BlockStatus
