@@ -35,6 +35,7 @@ namespace CommonLibrary.Repository
             var encryptPaths = EncryptionMetadataHelper.GetEncryptedPropertyPaths(typeof(T));
             if (!ignoreEncryption && (encryptPaths.Item1.Count > 0 || encryptPaths.Item2.Count > 0) && string.IsNullOrEmpty(secret))
                 ThrowEncryptionException(encryptPaths.Item1.Concat(encryptPaths.Item2).ToList());
+            if (!ignoreEncryption)
             ObjectEncryption.EncryptObject(model, secret, encryptPaths.Item1, encryptPaths.Item2, true);
             var query = GenerateDoOperationsQuery(model, meta._schema, meta._table, DoOperationQueryType.update, includeNullList);
             var queryResult = await ExecuteStandardCommand(query, returnError);

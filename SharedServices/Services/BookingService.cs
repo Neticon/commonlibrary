@@ -174,7 +174,7 @@ namespace CommonLibrary.SharedServices.Services
             var reason = reasonResult.Item1;
 
             if (string.IsNullOrEmpty(data.data.modify_bu))
-                data.data.modify_bu = CurrentUser.Decr_Email;
+                data.data.modify_bu = CurrentUser.Email;
             data.data.modify_dt = DateTime.UtcNow;
 
             if (data.data.block_status == "RESCHEDULED")
