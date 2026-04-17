@@ -35,7 +35,7 @@ namespace CommonLibrary.Exceptions.Middleware
                         break;
                     default:
                         statusCode = 500;
-                        message = $"Internal server error => {exception.Message + exception.StackTrace} ";
+                        message = $"Internal server error => {exception.Message} ";
                         break;
                 }
                 context.Response.StatusCode = statusCode;

@@ -130,6 +130,10 @@ namespace CommonLibrary.Helpers
         public static Tuple<string, bool> GetReasonForMail(string u_reason, Venue venue)
         {
             var reason = u_reason;
+            if (string.IsNullOrEmpty(u_reason))
+            {
+                return new Tuple<string, bool>("", false);
+            }
             var isServiceMode = u_reason.StartsWith("SRV", StringComparison.OrdinalIgnoreCase);
             if (isServiceMode)
             {
