@@ -6,6 +6,6 @@ namespace CommonLibrary.Models
     {
         public object Result { get; set; }
         public int StatusCode { get; set; } = 200;
-        public string ResultJson => JsonConvert.SerializeObject(Result, new JsonSerializerSettings { NullValueHandling = NullValueHandling.Ignore });
+        public object ResultJson => JsonConvert.DeserializeObject<object>(JsonConvert.SerializeObject(Result, new JsonSerializerSettings { NullValueHandling = NullValueHandling.Ignore }));
     }
 }
