@@ -17,13 +17,14 @@
         public string end_ts { get; set; }  
         public string? modify_bu {  get; set; }
         public DateTime? modify_dt { get; set; }
+        public string? conference_upn { get; set; }
     }
 
     public class BookingUpdateFilters
     {
-        public string date { get; set; }
+        public string? date { get; set; }
         public Guid booking_id { get; set; }
         public string? venue_id { get; set; }
-        public string tenant_id { get; set; }
+        public string? tenant_id { get; set; }
     }
 }

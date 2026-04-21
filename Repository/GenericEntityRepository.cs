@@ -36,7 +36,7 @@ namespace CommonLibrary.Repository
             if (!ignoreEncryption && (encryptPaths.Item1.Count > 0 || encryptPaths.Item2.Count > 0) && string.IsNullOrEmpty(secret))
                 ThrowEncryptionException(encryptPaths.Item1.Concat(encryptPaths.Item2).ToList());
             if (!ignoreEncryption)
-            ObjectEncryption.EncryptObject(model, secret, encryptPaths.Item1, encryptPaths.Item2, true);
+                ObjectEncryption.EncryptObject(model, secret, encryptPaths.Item1, encryptPaths.Item2, true);
             var query = GenerateDoOperationsQuery(model, meta._schema, meta._table, DoOperationQueryType.update, includeNullList);
             var queryResult = await ExecuteStandardCommand(query, returnError);
             return queryResult;
@@ -46,6 +46,23 @@ namespace CommonLibrary.Repository
         {
             var query = GenerateDoSelectQuery(model, meta._schema, meta._table);
             var queryResult = await ExecuteDoSelectCommandObject(query);
+            if (queryResult.rows != null && queryResult.rows.Count > 0)
+            {
+                var encryptPaths = EncryptionMetadataHelper.GetEncryptedPropertyPaths(typeof(T));
+                if ((encryptPaths.Item1.Count > 0 || encryptPaths.Item2.Count > 0) && string.IsNullOrEmpty(secret))
+                    ThrowEncryptionException(encryptPaths.Item1.Concat(encryptPaths.Item2).ToList());
+                foreach (var row in queryResult.rows)
+                {
+                    ObjectEncryption.DecryptObject(row, secret, encryptPaths.Item1, encryptPaths.Item2);
+                }
+            }
+            return queryResult;
+        }
+
+        public async Task<DoSelectOperationResponse<T>> GetDataTyped(Object model, string secret = "")
+        {
+            var query = GenerateDoSelectQuery(model, meta._schema, meta._table);
+            var queryResult = await ExecuteDoSelectCommand(query);
             if (queryResult.rows != null && queryResult.rows.Count > 0)
             {
                 var encryptPaths = EncryptionMetadataHelper.GetEncryptedPropertyPaths(typeof(T));

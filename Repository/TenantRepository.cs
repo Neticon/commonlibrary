@@ -1,4 +1,5 @@
 ﻿using CommonLibrary.Domain.Entities;
+using CommonLibrary.Models;
 using CommonLibrary.Repository.Interfaces;
 using Microsoft.Extensions.Configuration;
 using ServicePortal.API.Infrastructure.Repository;
@@ -11,6 +12,12 @@ namespace CommonLibrary.Repository
 
         public TenantRepository(IConfiguration config) : base(config)
         {
+        }
+
+        public async Task<string> GetIntegrationConfig(Guid id)
+        {
+            var intg_video = (await GetDataTyped(new GraphApiPayload { data = new Tenant { intg_video = "" }, filters = new Tenant { tenant_id = id } })).rows.First().intg_video;
+            return intg_video;
         }
 
         public async Task<Tuple<string,string>> GetOrgCodeAndName(Guid id)

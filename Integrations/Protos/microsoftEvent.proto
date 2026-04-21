@@ -20,4 +20,5 @@ message MicrosoftEventRequest{
 
 message MicrosoftEventResponse{
 	string meeting_url = 1;
+	string meeting_id = 2;
 }
