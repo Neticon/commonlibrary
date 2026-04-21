@@ -6,6 +6,7 @@ package microsoftUsers;
 
 service MicrosoftUser{
 	rpc CreateMicrosoftUser(MicrosoftUserRequest) returns (MicrosoftUserResponse);
+	rpc RemoveMicrosoftUser(RemoveMicrosoftUserRequest) returns (RemoveMicrosoftUserResponse);
 }
 
 message MicrosoftUserRequest{
@@ -13,8 +14,18 @@ message MicrosoftUserRequest{
 	string usageLocation = 2;
 	string password = 3;
 	string displayName = 4;
+	string config = 5;
+}
+
+message RemoveMicrosoftUserRequest{
+	string fullUpn = 1;
+	string config = 2;
 }
 
 message MicrosoftUserResponse{
-	string meeting_url = 1;
+	string userId = 1;
+}
+
+message RemoveMicrosoftUserResponse{
+	bool removed = 1;
 }

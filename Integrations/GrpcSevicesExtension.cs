@@ -15,9 +15,16 @@ namespace CommonLibrary.Integrations
                     var channel = GrpcChannel.ForAddress(baseUrl);
                     return new EmailClient(channel, internalKey);
                 });
+
+                services.AddSingleton(sp =>
+                {
+                    var channel = GrpcChannel.ForAddress(baseUrl);
+                    return new MicrosoftClient(channel, internalKey);
+                });
             }
 
             services.AddSingleton<IEmailClient>(sp => sp.GetRequiredService<EmailClient>());
+            services.AddSingleton<IMicrosoftClient>(sp => sp.GetRequiredService<MicrosoftClient>());
 
             return services;
         }
