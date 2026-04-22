@@ -57,7 +57,7 @@ namespace CommonLibrary.SharedServices.Services
                 idpCode = tenantData.Item1;
                 orgName = tenantData.Item2;
             }
-            var secret = await _secretService.GetSecret(idpCode);
+            var secret = await _secretService.GetEncryptionSecret(idpCode);
             var hashedMail = AesEncryption.EncryptEcb(model.data.email, secret);
             var tempPassword = CommonHelperFunctions.GeneratePassword();
             var request = new AdminCreateUserRequest

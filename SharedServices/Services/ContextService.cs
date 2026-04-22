@@ -36,7 +36,7 @@ namespace CommonLibrary.SharedServices.Services
             var redisContext = await _redisService.GetString(key);
             if (redisContext != null)
                 return JsonConvert.DeserializeObject<TenantContextModel>(redisContext);
-            var secret = await _secretService.GetSecret(orgCode);
+            var secret = await _secretService.GetEncryptionSecret(orgCode);
             var tenantId = await _tenantRepo.GetTenantId(orgCode);
             if (tenantId == null)
                 throw new Exception($"GetCurrentTenantContext => Failed to find tenant id for org_code {orgCode}");

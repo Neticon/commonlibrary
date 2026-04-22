@@ -114,7 +114,7 @@ namespace VenueGenerationService
         public async Task<string> GenerateHmac(string message, string secretKey)
         {
             if (SecretKey == null)
-                SecretKey = await _secretService.GetSecret("sharedKey");
+                SecretKey = await _secretService.GetEncryptionSecret("sharedKey");
             using var hmac = new HMACSHA256(Encoding.UTF8.GetBytes(string.IsNullOrEmpty(secretKey) ? SecretKey : secretKey));
             var hash = hmac.ComputeHash(Encoding.UTF8.GetBytes(message));
             return BitConverter.ToString(hash).Replace("-", "").ToLower();

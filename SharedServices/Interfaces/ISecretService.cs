@@ -2,6 +2,8 @@
 {
     public interface ISecretService
     {
-        Task<string> GetSecret(string orgCode);
+        Task<string> GetEncryptionSecret(string orgCode);
+        Task<string> GetSecretAsync(string secretName);
+        Task CreateSecretAsync(string secretName, string secretValue, string description = "");
     }
 }
