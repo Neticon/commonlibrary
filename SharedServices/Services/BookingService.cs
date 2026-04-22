@@ -66,7 +66,7 @@ namespace CommonLibrary.SharedServices.Services
                     response.StatusCode = 422;
                     return response;
                 }
-                var secret = await _secretService.GetSecret(org_code);
+                var secret = await _secretService.GetEncryptionSecret(org_code);
                 var venue = await GetVenueObject(data.venue_id.ToString(), secret);
 
                 var date = DateTime.Parse(data.date);
@@ -160,7 +160,7 @@ namespace CommonLibrary.SharedServices.Services
             var dataFromDB = await _bookingRepository.GetBookingUpdateData(data.filters.booking_id);
             var dataObject = dataFromDB.rows[0];
             var tenant = JsonConvert.DeserializeObject<Tenant>(dataObject["tenant"].ToString());
-            var secret = await _secretService.GetSecret(tenant.org_code);
+            var secret = await _secretService.GetEncryptionSecret(tenant.org_code);
 
             var booking = JsonConvert.DeserializeObject<Booking>(dataObject["booking"].ToString());
             var encryptPaths = EncryptionMetadataHelper.GetEncryptedPropertyPaths(typeof(Booking));
@@ -280,12 +280,13 @@ namespace CommonLibrary.SharedServices.Services
             var result = new ServiceResponse { StatusCode = 200 };
             result.Result = await _bookingRepository.GetBooking(bookingId);
 
+            var secret = await _secretService.GetEncryptionSecret("");
             return result;
         }
 
         public async Task<OBFSearchResponse> SearchBooking(ObfSearchModel searchModel)
         {
-            var secret = await _secretService.GetSecret(searchModel.org_code);
+            var secret = await _secretService.GetEncryptionSecret(searchModel.org_code);
             searchModel.salt = secret;
             var resp = await _obfIndexRepository.SearchBooking(searchModel);
             var respObject = JsonConvert.DeserializeObject<OBFSearchResponse>(resp);
