@@ -32,4 +32,14 @@
         public bool? is_deleted { get; set; }
         public bool? whitelabel { get; set; }
     }
+
+    public enum INTG_VIDEO
+    {
+        MEET,
+        TEAMS,
+        ZOOM,
+        CONVENTUS_MEET,
+        CONVENTUS_TEAMS,
+        CONVENTUS_ZOOM
+    };
 }
