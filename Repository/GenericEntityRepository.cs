@@ -5,6 +5,7 @@ using CommonLibrary.Models;
 using CommonLibrary.Repository.Interfaces;
 using CommonLibrary.SharedServices.Interfaces;
 using Microsoft.Extensions.Configuration;
+using Newtonsoft.Json;
 using Newtonsoft.Json.Linq;
 using ServicePortal.API.Infrastructure.Repository;
 using ServicePortal.Domain.PSQL;
@@ -30,6 +31,21 @@ namespace CommonLibrary.Repository
             return queryResult;
         }
 
+        public async Task<BulkGraphAPIResponse<T>> SaveEntityBulk(List<T> data, string secret = "", bool returnError = false, List<string> includeNullList = null)
+        {
+            var encryptPaths = EncryptionMetadataHelper.GetEncryptedPropertyPaths(typeof(T));
+            if ((encryptPaths.Item1.Count > 0 || encryptPaths.Item2.Count > 0) && string.IsNullOrEmpty(secret))
+                ThrowEncryptionException(encryptPaths.Item1.Concat(encryptPaths.Item2).ToList());
+            foreach (var item in data)
+            {
+                ObjectEncryption.EncryptObject(item, secret, encryptPaths.Item1, encryptPaths.Item2);
+            }
+            var payload = data.Select(q => new GraphApiPayload { data = q });
+            var query = GenerateBulkOperationsQuery(payload, meta._schema, meta._table, DoOperationQueryType.insert, includeNullList);
+            var queryResultString = await ExecuteCommandString(query);
+            return JsonConvert.DeserializeObject<BulkGraphAPIResponse<T>>(queryResultString);
+        }
+
         public async Task<GraphAPIResponse<T>> UpdateEntity(Object model, string secret = "", bool returnError = false, bool ignoreEncryption = false, List<string> includeNullList = null)
         {
             var encryptPaths = EncryptionMetadataHelper.GetEncryptedPropertyPaths(typeof(T));
@@ -40,6 +56,23 @@ namespace CommonLibrary.Repository
             var query = GenerateDoOperationsQuery(model, meta._schema, meta._table, DoOperationQueryType.update, includeNullList);
             var queryResult = await ExecuteStandardCommand(query, returnError);
             return queryResult;
+        }
+
+        public async Task<BulkGraphAPIResponse<T>> UpdateEntityBulk(List<Object> models, string secret = "", bool returnError = false, bool ignoreEncryption = false, List<string> includeNullList = null)
+        {
+            var encryptPaths = EncryptionMetadataHelper.GetEncryptedPropertyPaths(typeof(T));
+            if (!ignoreEncryption && (encryptPaths.Item1.Count > 0 || encryptPaths.Item2.Count > 0) && string.IsNullOrEmpty(secret))
+                ThrowEncryptionException(encryptPaths.Item1.Concat(encryptPaths.Item2).ToList());
+            if (!ignoreEncryption)
+            {
+                foreach (var model in models)
+                {
+                    ObjectEncryption.EncryptObject(model, secret, encryptPaths.Item1, encryptPaths.Item2, true);
+                }
+            }
+            var query = GenerateBulkOperationsQuery(models, meta._schema, meta._table, DoOperationQueryType.update, includeNullList);
+            var queryResultString = await ExecuteCommandString(query);
+            return JsonConvert.DeserializeObject<BulkGraphAPIResponse<T>>(queryResultString);
         }
 
         public async Task<DoSelectOperationResponse<JObject>> GetData(Object model, string secret = "")

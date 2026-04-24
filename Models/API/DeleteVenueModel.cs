@@ -4,6 +4,7 @@
     {
         public DeleteVenueModelData data { get; set; }
         public DeleteVenueModelFilter filters { get; set; }
+        public bool isPublish { get; set; }
 
     }
 

@@ -22,69 +22,90 @@ namespace CommonLibrary.SharedServices.Services
             return new ServiceResponse { Result = resp };
         }
 
-        public async Task<ServiceResponse> DeleteBlocks(Object payload)
-        {
-            return await CheckIsBulkAndCallFunction(payload, DeleteBlock, CurrentUser.Decr_Email);
-        }
-
-        public async Task<ServiceResponse> CreateBlocks(Object payload)
-        {
-            return await CheckIsBulkAndCallFunction(payload, SaveBlock, CurrentUser.Decr_Email);
-        }
-
-
-        public async Task<ServiceResponse> UpdateBlocks(Object payload)
-        {
-            return await CheckIsBulkAndCallFunction(payload, UpdateBlock, CurrentUser.Decr_Email);
-        }
 
         public async Task<string> GetAvaliableBlocks(string venueId, string date, string service)
         {
             return await _entityRepository.GetAvaliableBlocks(venueId, date, service);
         }
 
-        private async Task<GraphAPIResponse<Block>> SaveBlock(JObject data, string email)
-        {
-            var block = JsonConvert.DeserializeObject<Block>(data["data"].ToString());
-            block.block_id = Guid.NewGuid();
-            block.create_bu = email;
-            return await _entityRepository.SaveEntity(block, CurrentUser.OrgSecret, true);
-        }
-
-        private async Task<GraphAPIResponse<Block>> UpdateBlock(JObject payload, string email)
-        {
-            payload["data"]["modify_bu"] = email;
-            payload["data"]["modify_dt"] = DateTime.UtcNow;
-            return await _entityRepository.UpdateEntity(payload, CurrentUser.OrgSecret, true);
-        }
-
-        private async Task<GraphAPIResponse<Block>> DeleteBlock(JObject payload, string email)
-        {
-            payload["data"]["delete_bu"] = email;
-            payload["data"]["delete_dt"] = DateTime.UtcNow;
-            payload["data"]["is_deleted"] = true;
-
-            return await _entityRepository.UpdateEntity(payload, CurrentUser.OrgSecret, true);
-        }
-
-        private async Task<ServiceResponse> CheckIsBulkAndCallFunction(object payload, Func<JObject, string, Task<GraphAPIResponse<Block>>> function, string email)
+        public async Task<ServiceResponse> CreateBlocks(JToken payload)
         {
             var array = payload is JToken je && je.Type == JTokenType.Array;
             if (array)
             {
-                var response = new List<GraphAPIResponse<Block>>();
+                var blocks = new List<Block>();
                 var json = JsonConvert.DeserializeObject<List<JObject>>(payload.ToString());
                 foreach (var item in json)
                 {
-                    response.Add(await function(item, email));
+                    var block = JsonConvert.DeserializeObject<Block>(item["data"].ToString());
+                    block.block_id = Guid.NewGuid();
+                    block.create_bu = CurrentUser.Decr_Email;
+                    blocks.Add(block);
                 }
+                var response = await _entityRepository.SaveEntityBulk(blocks, CurrentUser.OrgSecret, true);
 
                 return new ServiceResponse { Result = response };
             }
             else
             {
-                var json = JsonConvert.DeserializeObject<JObject>(payload.ToString());
-                return new ServiceResponse { Result = await function(json, email) };
+                var block = JsonConvert.DeserializeObject<Block>(payload["data"].ToString());
+                block.block_id = Guid.NewGuid();
+                block.create_bu = CurrentUser.Decr_Email;
+                var response = await _entityRepository.SaveEntity(block, CurrentUser.OrgSecret, true);
+
+                return new ServiceResponse { Result = response };
+            }
+        }
+
+        public async Task<ServiceResponse> UpdateBlocks(JToken payload)
+        {
+            var array = payload is JToken je && je.Type == JTokenType.Array;
+            if (array)
+            {
+                var json = JsonConvert.DeserializeObject<List<JObject>>(payload.ToString());
+                foreach (var item in json)
+                {
+                    item["data"]["modify_bu"] = CurrentUser.Decr_Email;
+                    item["data"]["modify_dt"] = DateTime.UtcNow;
+                }
+                var response = await _entityRepository.UpdateEntityBulk(json.Cast<object>().ToList(), CurrentUser.OrgSecret, true);
+
+                return new ServiceResponse { Result = response };
+            }
+            else
+            {
+                payload["data"]["modify_bu"] = CurrentUser.Decr_Email;
+                payload["data"]["modify_dt"] = DateTime.UtcNow;
+                var response = await _entityRepository.UpdateEntity(payload, CurrentUser.OrgSecret, true);
+
+                return new ServiceResponse { Result = response };
+            }
+        }
+
+        public async Task<ServiceResponse> DeleteBlocks(JToken payload)
+        {
+            var array = payload is JToken je && je.Type == JTokenType.Array;
+            if (array)
+            {
+                var json = JsonConvert.DeserializeObject<List<JObject>>(payload.ToString());
+                foreach (var item in json)
+                {
+                    item["data"]["delete_bu"] = CurrentUser.Decr_Email;
+                    item["data"]["delete_dt"] = DateTime.UtcNow;
+                    item["data"]["is_deleted"] = true;
+                }
+                var response = await _entityRepository.UpdateEntityBulk(json.Cast<object>().ToList(), CurrentUser.OrgSecret, true);
+
+                return new ServiceResponse { Result = response };
+            }
+            else
+            {
+                payload["data"]["delete_bu"] = CurrentUser.Decr_Email;
+                payload["data"]["delete_dt"] = DateTime.UtcNow;
+                payload["data"]["is_deleted"] = true;
+                var response = await _entityRepository.UpdateEntity(payload, CurrentUser.OrgSecret, true);
+
+                return new ServiceResponse { Result = response };
             }
         }
     }

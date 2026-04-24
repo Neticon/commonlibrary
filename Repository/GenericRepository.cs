@@ -337,6 +337,20 @@ namespace ServicePortal.API.Infrastructure.Repository
             return query;
         }
 
+        public NpgsqlCommand GenerateBulkOperationsQuery(object queryObjects, string schema, string table, DoOperationQueryType type, List<string> includeNullList = null)
+        {
+            var query = new NpgsqlCommand(PredefinedQueryPatterns.BULK_OPERATIONS);
+
+            var settings = new JsonSerializerSettings { NullValueHandling = NullValueHandling.Ignore };
+            if (includeNullList != null)
+                settings.ContractResolver = new IncludeNullContractResolver(includeNullList);
+            query.Parameters.AddWithValue("@payload", NpgsqlTypes.NpgsqlDbType.Jsonb, JsonConvert.SerializeObject(queryObjects, settings));
+            query.Parameters.AddWithValue("@schema", schema);
+            query.Parameters.AddWithValue("@table", table);
+            query.Parameters.AddWithValue("@querytype", type.ToString());
+            return query;
+        }
+
         public string GenerateDoSelectQuery(Dictionary<string, string> fields, Dictionary<string, string> filters, string schema, string table, int pageSize = 1, int page = 1)
         {
             var queryList = new List<string>();

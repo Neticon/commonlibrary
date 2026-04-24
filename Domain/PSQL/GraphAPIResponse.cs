@@ -12,4 +12,9 @@
         public string operation { get; set; }
         public List<string>? invalid_keys { get; set; }
     }
+
+    public class BulkGraphAPIResponse<T>
+    {
+        public List<GraphAPIResponse<T>> results { get; set; }
+    }
 }

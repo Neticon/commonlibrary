@@ -6,7 +6,7 @@
     <Nullable>enable</Nullable>
 
     <!-- NuGet metadata -->
-    <Version>2.0.26</Version>
+    <Version>2.0.27</Version>
     <Authors>Djordje Stojakovic</Authors>
     <Company>Neticon</Company>
     <PackageId>CommonLibrary</PackageId>
@@ -19,6 +19,7 @@
 
   <ItemGroup>
     <PackageReference Include="AWSSDK.CognitoIdentityProvider" Version="4.0.3.2" />
+    <PackageReference Include="AWSSDK.Extensions.NETCore.Setup" Version="4.0.3.33" />
     <PackageReference Include="AWSSDK.S3" Version="4.0.7.3" />
     <PackageReference Include="AWSSDK.SecretsManager" Version="4.0.4.17" />
     <PackageReference Include="AWSSDK.SecurityToken" Version="4.0.2.3" />
