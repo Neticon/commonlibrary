@@ -11,6 +11,11 @@
         public string message { get; set; }
         public string operation { get; set; }
         public List<string>? invalid_keys { get; set; }
+        public int? count { get; set; }
+        public string? entity {  get; set; } 
+        public string? schema { get; set; }
+        public int? per_page { get; set; }
+        public int? total_pages { get; set; }
     }
 
     public class BulkGraphAPIResponse<T>

@@ -9,6 +9,6 @@
         public string? start_date { get; set; }
         public string? end_date { get; set; }
         public int? page { get; set; }
-        public int? pageSize { get; set; }
+        public int? per_page { get; set; }
     }
 }

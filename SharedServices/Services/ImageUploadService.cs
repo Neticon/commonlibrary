@@ -88,8 +88,8 @@ namespace CommonLibrary.SharedServices.Services
                     if (response.service == null)
                         response.service = new List<string>();
                     response.service.Add($"{CDN_URL}{key}");
-                    width = 400;
-                    height = 300;
+                    width = 60;
+                    height = 60;
                 }
                 var resizedStream = ConvertToWebPWithCropAndResize(image.Value, width, height);
                 await _s3Service.UploadStreamAsync(_bucket, key, resizedStream, "Service_Portal", null);
