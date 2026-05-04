@@ -44,6 +44,10 @@ namespace CommonLibrary.Helpers
                 request.Substitutions.Add("({{region_code}})", string.IsNullOrEmpty(data.province_code) ? "" : $"({data.province_code})");
                 request.Substitutions.Add("{{country_name}}", data.country_name);
             }
+            if (data.type.ToString().ToLower() == "v" && !data.isCancel)
+            {
+                request.Substitutions.Add("{{teams_link}}", $"{data.meeting_url}");
+            }
             if (data.isCancel)
             {
                 request.Substitutions.Add("{{make_appointment_link}}", $"{data.page_url}");
@@ -138,7 +142,7 @@ namespace CommonLibrary.Helpers
             if (isServiceMode)
             {
                 var services = JsonConvert.DeserializeObject<List<JObject>>(venue.reasons.ToString());
-                var service = services.FirstOrDefault(q => q["id"].ToString() == u_reason);
+                  var service = services.FirstOrDefault(q => q["id"].ToString() == u_reason);
                 var serviceDesc = service["name"].ToString();
                 reason = serviceDesc;
             }
@@ -177,6 +181,7 @@ namespace CommonLibrary.Helpers
         public string envPrefix { get; set; }
         public string u_reason { get; set; }
         public string country_name { get; set; }
+        public string meeting_url { get; set; }
     }
 
     public class BookingNotificationVenueEmailModel
