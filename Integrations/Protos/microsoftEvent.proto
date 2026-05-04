@@ -6,6 +6,8 @@ package microsoftEvents;
 
 service MicrosoftEvents{
 	rpc CreateEvent(MicrosoftEventRequest) returns (MicrosoftEventResponse);
+	rpc UpdateEvent(UpdateMicrosoftEventRequest) returns (MicrosoftEventResponse);
+	rpc CancelEvent(UpdateMicrosoftEventRequest) returns (MicrosoftEventResponse);
 }
 
 message MicrosoftEventRequest{
@@ -21,4 +23,11 @@ message MicrosoftEventRequest{
 message MicrosoftEventResponse{
 	string meeting_url = 1;
 	string meeting_id = 2;
+}
+
+message UpdateMicrosoftEventRequest{
+	string meeting_id = 1;
+	string organizerUpnLocal = 2;
+	optional string startUtc = 3;
+	optional string endUtc = 4;
 }

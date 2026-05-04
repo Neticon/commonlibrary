@@ -155,7 +155,7 @@ namespace CommonLibrary.SharedServices.Services
                     var resp = await _microsoftClient.CreateMicrosoftUser(new MicrosoftUserRequest
                     {
                         DisplayName = displayName,
-                        FullUpn = fullUpn,
+                        FullUpn = localUpn,
                         Password = password,
                         UsageLocation = usageLocation,
                     });
