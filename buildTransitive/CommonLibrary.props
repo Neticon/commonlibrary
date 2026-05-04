@@ -1,6 +1,6 @@
 ﻿<Project>
   <ItemGroup>
     <IntegrationContractsProtos
-      Include="$(MSBuildThisFileDirectory)protos/email.proto" />
+      Include="$(MSBuildThisFileDirectory)protos/*.proto" />
   </ItemGroup>
 </Project>
