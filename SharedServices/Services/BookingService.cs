@@ -306,9 +306,16 @@ namespace CommonLibrary.SharedServices.Services
                 //get upn from DB (create does not return whole object and UPN is triggered value)
                 booking.conference_upn = (await _bookingRepository.GetData(new GraphApiPayload { data = new BookingUpdateData { conference_upn = "" }, filters = new BookingUpdateFilters { booking_id = booking.booking_id } }, secret)).rows.First()["conference_upn"].ToString();
 
-                var meetingResponse = await CreateMicrosoftEvent(booking, org_code, data.u_email);
-                meetingUrl = meetingResponse.MeetingUrl;
-                _= _bookingRepository.UpdateBooking(new GraphApiPayload { data = new BookingUpdateData { conference_id = meetingResponse.MeetingId, booking_uri = meetingResponse.MeetingUrl }, filters = new BookingUpdateFilters { booking_id = booking.booking_id } });
+                try
+                {
+                    var meetingResponse = await CreateMicrosoftEvent(booking, org_code, data.u_email);
+                    meetingUrl = meetingResponse.MeetingUrl;
+                    _ = _bookingRepository.UpdateBooking(new GraphApiPayload { data = new BookingUpdateData { conference_id = meetingResponse.MeetingId, booking_uri = meetingResponse.MeetingUrl }, filters = new BookingUpdateFilters { booking_id = booking.booking_id } });
+                }
+                catch (Exception ex)
+                {
+                    Console.WriteLine(ex.ToString());
+                }
 
             }
             var dateS = startTs.ToString("dd/MM/yyyy");
