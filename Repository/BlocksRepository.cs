@@ -23,7 +23,7 @@ namespace CommonLibrary.Repository
                 conn.Open();
                 using (var command = new NpgsqlCommand("SELECT utility.assert_blockAvailability(@venue_id, @block_range, @type, @date, @service)", conn))
                 {
-                    var blockRange = new NpgsqlRange<int>(block_start, true, block_end, true);
+                    var blockRange = new NpgsqlRange<int>(block_start, true, block_end, false);
                     command.Parameters.AddWithValue("venue_id", NpgsqlDbType.Uuid, venueId);
                     command.Parameters.AddWithValue("block_range", blockRange);
                     command.Parameters.AddWithValue("type", NpgsqlDbType.Char, type);

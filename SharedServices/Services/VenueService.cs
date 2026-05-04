@@ -149,8 +149,7 @@ namespace CommonLibrary.SharedServices.Services
                 if (!serviceBased)
                 {
                     var displayName = MicrosoftIntegrationHelper.BuildDisplayName(orgCode, venue.name, null, i);
-                    var localUpn = MicrosoftIntegrationHelper.BuildLocalUpn(orgCode, venue.venue_id.ToString(), null, i);
-                    var fullUpn = MicrosoftIntegrationHelper.BuildFullUpn(localUpn, "");
+                    var localUpn = MicrosoftIntegrationHelper.BuildLocalUpn(orgCode, venue.venue_id.ToString(), "DEFAULT", i);
                     var password = MicrosoftIntegrationHelper.BuildPassword(orgCode, null, i);
                     var resp = await _microsoftClient.CreateMicrosoftUser(new MicrosoftUserRequest
                     {
