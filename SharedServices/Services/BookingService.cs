@@ -184,15 +184,16 @@ namespace CommonLibrary.SharedServices.Services
                     if (result != null && result.success)
                     {
                         response.Result = result;
+                        var meetingUrl = "";
                         if (tenant.intg_video == "CONVENTUS_TEAMS" && booking.type.ToString().ToLower() == "v")
-                            _ = RescheduleMicrosoftEvent(booking, data.data.start_ts, data.data.end_ts);
+                            meetingUrl = (await RescheduleMicrosoftEvent(booking, data.data.start_ts, data.data.end_ts)).MeetingUrl;
                         if (venue.notifications.rescedule == 1)
                         {
                             var dateS = startTs.ToString("dd/MM/yyyy");
                             var start = startTs.ToString("HH:mm");
                             var end = endTs.ToString("HH:mm");
                             var bookingData = new BookingModelData { tenant_id = tenant.tenant_id.Value, u_first = booking.u_first, u_last = booking.u_last, u_email = booking.u_email, type = booking.type, u_reason = "" };
-                            SendEmail($"booking_rescheduled_{data.data.type}".ToLower(), "🔁 Il tuo appuntamento è stato riprogrammato", "booking_rescheduled", booking, bookingData, start, end, dateS, venue, tenant.web_pages.Last(), reason, tenant.org_name, "");
+                            SendEmail($"booking_rescheduled_{data.data.type}".ToLower(), "🔁 Il tuo appuntamento è stato riprogrammato", "booking_rescheduled", booking, bookingData, start, end, dateS, venue, tenant.web_pages.Last(), reason, tenant.org_name, meetingUrl);
                             SendEmailToStaff($"booking_rescheduled_venue", "🔁 Il tuo appuntamento è stato riprogrammato", "booking_rescheduled_venue", booking, venue.users, bookingData, secret, start, end, dateS, reason, venue.name, tenant.org_name, tenant.web_pages.Last());
                         }
                     }
@@ -367,7 +368,7 @@ namespace CommonLibrary.SharedServices.Services
             };
             try
             {
-                var microsoftResponse = await _microsoftClient.CancelMicrosoftEvent(request);
+                var microsoftResponse = await _microsoftClient.RescheduleMicrosoftEvent(request);
                 return microsoftResponse;
             }
             catch (Exception ex)
