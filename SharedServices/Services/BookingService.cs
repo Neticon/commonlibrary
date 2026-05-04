@@ -184,6 +184,8 @@ namespace CommonLibrary.SharedServices.Services
                     if (result != null && result.success)
                     {
                         response.Result = result;
+                        if (tenant.intg_video == "CONVENTUS_TEAMS" && booking.type.ToString().ToLower() == "v")
+                            _ = RescheduleMicrosoftEvent(booking, data.data.start_ts, data.data.end_ts);
                         if (venue.notifications.rescedule == 1)
                         {
                             var dateS = startTs.ToString("dd/MM/yyyy");
@@ -206,6 +208,9 @@ namespace CommonLibrary.SharedServices.Services
                 if (result != null && result.success)
                 {
                     response.Result = result;
+                    if (tenant.intg_video == "CONVENTUS_TEAMS" && booking.type.ToString().ToLower() == "v")
+                        _ = CancelMicrosoftEvent(booking);
+
                     if (venue.notifications.cancel == 1)
                     {
                         var dateS = booking.date.ToString("dd/MM/yyyy");
@@ -300,9 +305,9 @@ namespace CommonLibrary.SharedServices.Services
                 //get upn from DB (create does not return whole object and UPN is triggered value)
                 booking.conference_upn = (await _bookingRepository.GetData(new GraphApiPayload { data = new BookingUpdateData { conference_upn = "" }, filters = new BookingUpdateFilters { booking_id = booking.booking_id } }, secret)).rows.First()["conference_upn"].ToString();
 
-                var meetingResponse = await CreateMicrosoftEvenet(booking, org_code, data.u_email);
+                var meetingResponse = await CreateMicrosoftEvent(booking, org_code, data.u_email);
                 meetingUrl = meetingResponse.MeetingUrl;
-                _bookingRepository.UpdateBooking(new GraphApiPayload { data = new BookingUpdateData { conference_id = meetingResponse.MeetingId, booking_uri = meetingResponse.MeetingUrl }, filters = new Booking { booking_id = booking.booking_id } });
+                _= _bookingRepository.UpdateBooking(new GraphApiPayload { data = new BookingUpdateData { conference_id = meetingResponse.MeetingId, booking_uri = meetingResponse.MeetingUrl }, filters = new BookingUpdateFilters { booking_id = booking.booking_id } });
 
             }
             var dateS = startTs.ToString("dd/MM/yyyy");
@@ -317,12 +322,52 @@ namespace CommonLibrary.SharedServices.Services
             }
         }
 
-        private async Task<MicrosoftEventResponse> CreateMicrosoftEvenet(Booking booking, string orgCode, string attende)
+        private async Task<MicrosoftEventResponse> CreateMicrosoftEvent(Booking booking, string orgCode, string attende)
         {
             var request = CreateMicrosoftEventRequest(booking, orgCode, attende);
             try
             {
                 var microsoftResponse = await _microsoftClient.CreateMicrosoftEvent(request);
+                return microsoftResponse;
+            }
+            catch (Exception ex)
+            {
+                Console.WriteLine($"Error trying to create {ex.Message}");
+                return null;
+            }
+        }
+
+        private async Task<MicrosoftEventResponse> CancelMicrosoftEvent(Booking booking)
+        {
+            var request = new UpdateMicrosoftEventRequest
+            {
+                MeetingId = booking.conference_id,
+                OrganizerUpnLocal = booking.conference_upn
+            };
+            try
+            {
+                var microsoftResponse = await _microsoftClient.CancelMicrosoftEvent(request);
+                return microsoftResponse;
+            }
+            catch (Exception ex)
+            {
+                Console.WriteLine($"Error trying to create {ex.Message}");
+                return null;
+            }
+        }
+
+        private async Task<MicrosoftEventResponse> RescheduleMicrosoftEvent(Booking booking, string start, string end)
+        {
+            var request = new UpdateMicrosoftEventRequest
+            {
+                MeetingId = booking.conference_id,
+                OrganizerUpnLocal = booking.conference_upn,
+                StartUtc = start,
+                EndUtc = end
+            };
+            try
+            {
+                var microsoftResponse = await _microsoftClient.CancelMicrosoftEvent(request);
                 return microsoftResponse;
             }
             catch (Exception ex)

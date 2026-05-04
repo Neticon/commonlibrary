@@ -9,5 +9,7 @@ namespace CommonLibrary.Integrations
         Task<RemoveMicrosoftUserResponse> RemoveMicrosoftUser(RemoveMicrosoftUserRequest request);
 
         Task<MicrosoftEventResponse> CreateMicrosoftEvent(MicrosoftEventRequest request);
+        Task<MicrosoftEventResponse> RescheduleMicrosoftEvent(UpdateMicrosoftEventRequest request);
+        Task<MicrosoftEventResponse> CancelMicrosoftEvent(UpdateMicrosoftEventRequest request);
     }
 }

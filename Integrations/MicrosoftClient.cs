@@ -37,5 +37,19 @@ namespace CommonLibrary.Integrations
             var response = await _microsoftUserClient.RemoveMicrosoftUserAsync(request, headers);
             return response;
         }
+
+        public async Task<MicrosoftEventResponse> RescheduleMicrosoftEvent(UpdateMicrosoftEventRequest request)
+        {
+            var headers = new Grpc.Core.Metadata { { "x-internal-key", _internalKey } };
+            var response = await _microsoftEventsClient.UpdateEventAsync(request, headers);
+            return response;
+        }
+
+        public async Task<MicrosoftEventResponse> CancelMicrosoftEvent(UpdateMicrosoftEventRequest request)
+        {
+            var headers = new Grpc.Core.Metadata { { "x-internal-key", _internalKey } };
+            var response = await _microsoftEventsClient.CancelEventAsync(request, headers);
+            return response;
+        }
     }
 }

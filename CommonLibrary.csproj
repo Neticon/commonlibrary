@@ -6,7 +6,7 @@
     <Nullable>enable</Nullable>
 
     <!-- NuGet metadata -->
-    <Version>2.0.31</Version>
+    <Version>2.0.32</Version>
     <Authors>Djordje Stojakovic</Authors>
     <Company>Neticon</Company>
     <PackageId>CommonLibrary</PackageId>
@@ -52,9 +52,9 @@
 	<ItemGroup>
 		<None Include="Integrations\**\*.proto" Pack="true" PackagePath="protos" />
 	</ItemGroup>
-	<!--<ItemGroup>
+	<ItemGroup>
 		<Protobuf Include="Integrations\Protos\email.proto" GrpcServices="Client" />
 		<Protobuf Include="Integrations\Protos\MicrosoftUser.proto" GrpcServices="Client" />
 		<Protobuf Include="Integrations\Protos\microsoftEvent.proto" GrpcServices="Client" />
-	</ItemGroup>-->
+	</ItemGroup>
 </Project>
