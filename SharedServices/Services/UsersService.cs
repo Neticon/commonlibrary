@@ -193,6 +193,30 @@ namespace CommonLibrary.SharedServices.Services
             }
         }
 
+        public async Task ResendTempPassword()
+        {
+            var tempPassword = CommonHelperFunctions.GeneratePassword();
+           // var emailDecr = AesEncryption.DecryptEcb(model.filters.email, CurrentUser.OrgSecret);
+
+            var request = new AdminSetUserPasswordRequest
+            {
+                UserPoolId = UserPoolId,
+                Username = "artashesisakhanyan@gmail.com",
+                Password = tempPassword,
+                Permanent = false
+            };
+
+            var provider = GetCognitoProvider();
+            try
+            {
+                var a = await provider.AdminSetUserPasswordAsync(request);
+            }
+            catch (Exception ex)
+            {
+                throw new Exception("Failed to reset temp password for cognito user." + ex.Message);
+            }
+        }
+
         private AmazonCognitoIdentityProviderClient GetCognitoProvider()
         {
             var accessKey = Environment.GetEnvironmentVariable("AWS_COGNITO_ACCESS_KEY");

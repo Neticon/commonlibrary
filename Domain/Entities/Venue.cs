@@ -8,7 +8,7 @@
         public override string _schema => "service_portal";
         public Guid? venue_id { get; set; }
         public Guid? tenant_id { get; set; }
-        public TimeSpan? create_dt { get; set; }
+        public DateTime? create_dt { get; set; }
         [EncryptECB]
         public string? create_bu { get; set; }
         public DateTime? modify_dt { get; set; }
@@ -17,7 +17,7 @@
         public TimeSpan? delete_dt { get; set; }
         [EncryptECB]
         public string? delete_bu { get; set; }
-        public string? mods { get; set; }
+        public List<object>? mods { get; set; }
         public string? name { get; set; }
         public string? street { get; set; }
         public string? street_number { get; set; }

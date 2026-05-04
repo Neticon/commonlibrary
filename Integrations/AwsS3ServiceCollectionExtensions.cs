@@ -18,10 +18,10 @@ public static class AwsS3ServiceCollectionExtensions
             Console.WriteLine("TOKEN" + Environment.GetEnvironmentVariable("AWS_WEB_IDENTITY_TOKEN_FILE"));
             Console.WriteLine("ARN" + Environment.GetEnvironmentVariable("AWS_ROLE_ARN"));
 
-            var sourceCredentials = new AssumeRoleWithWebIdentityCredentials(
-                Environment.GetEnvironmentVariable("AWS_WEB_IDENTITY_TOKEN_FILE"),
-                Environment.GetEnvironmentVariable("AWS_ROLE_ARN"), $"IRSA-{Guid.NewGuid().ToString("N").Substring(0, 8)}"
-            );
+            //var sourceCredentials = new AssumeRoleWithWebIdentityCredentials(
+            //    Environment.GetEnvironmentVariable("AWS_WEB_IDENTITY_TOKEN_FILE"),
+            //    Environment.GetEnvironmentVariable("AWS_ROLE_ARN"), $"IRSA-{Guid.NewGuid().ToString("N").Substring(0, 8)}"
+            //);
 
             //var assumedCredentials = new AssumeRoleAWSCredentials(
             //    sourceCredentials,
@@ -29,7 +29,8 @@ public static class AwsS3ServiceCollectionExtensions
             //    $"S3Session-{Environment.MachineName}"
             //);
 
-            return new AmazonS3Client(sourceCredentials, region);
+            //return new AmazonS3Client(sourceCredentials, region);
+            return new AmazonS3Client(region);
         });
 
         return services;

@@ -9,5 +9,6 @@ namespace CommonLibrary.SharedServices.Interfaces
         Task UpdateUser(UpdateUserModel model);
         Task DeleteUser(DeleteUserModel model);
         Task<object> GetUsers(string model, string orgSecret);
+        Task ResendTempPassword();
     }
 }
