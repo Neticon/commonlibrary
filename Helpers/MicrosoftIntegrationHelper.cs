@@ -10,22 +10,23 @@ namespace CommonLibrary.Helpers
         {
             var servicePart = string.IsNullOrWhiteSpace(service)? "0": service.ToLower();
             var base36OrgCode = ToBase36(orgCode);
+            var reversedOrgCode = new string(orgCode.Reverse().ToArray());
 
-            return $"{orgCode.Reverse()}{base36OrgCode}:{servicePart}#s{counter}";
+            return $"{reversedOrgCode}{base36OrgCode}:{servicePart}#s{counter}";
         }
 
         public static string BuildLocalUpn (string org_code, string venue_id ,string service, int counter)
         {
-            var servicePart = string.IsNullOrWhiteSpace(service) ? "" : $"-{service.ToLower()}";
+            var servicePart = string.IsNullOrWhiteSpace(service) ? "" : $"-{service}";
 
             return $"{org_code}_{venue_id}{servicePart}_{counter}";
         }
 
         public static string BuildDisplayName(string orgCode, string venueName, string service, int counter)
         {
-            var servicePart = string.IsNullOrWhiteSpace(service) ? "" : $"- {service.ToLower()}";
+            var servicePart = string.IsNullOrWhiteSpace(service) ? "" : $" - {service}";
 
-            return $"CONF {orgCode} {venueName} {servicePart} - {counter}";
+            return $"{venueName}{servicePart} ({counter}) - Conventus";
         }
 
         public static string BuildFullUpn(string localPart, string domain) => $"{localPart}@{domain}";

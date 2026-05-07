@@ -168,12 +168,11 @@ namespace CommonLibrary.SharedServices.Services
                         var service_id = service["id"].ToString();
                         var displayName = MicrosoftIntegrationHelper.BuildDisplayName(orgCode, venue.name, service_id, i);
                         var localUpn = MicrosoftIntegrationHelper.BuildLocalUpn(orgCode, venue.venue_id.ToString(), service_id, i);
-                        var fullUpn = MicrosoftIntegrationHelper.BuildFullUpn(localUpn, "neticon.onmicrosoft.com");
                         var password = MicrosoftIntegrationHelper.BuildPassword(orgCode, service_id, i);
                         var request = new MicrosoftUserRequest
                         {
                             DisplayName = displayName,
-                            FullUpn = fullUpn,
+                            FullUpn = localUpn,
                             Password = password,
                             UsageLocation = usageLocation,
                         };

@@ -299,8 +299,9 @@ namespace CommonLibrary.SharedServices.Services
 
         private async Task SendNotificationsAndCreateMeeting(Booking booking, string org_code, BookingModelData data, Tenant tenant, DateTimeOffset startTs, DateTimeOffset endTs, Venue venue, string secret, string u_reasonDb)
         {
-
             var meetingUrl = string.Empty;
+            var reason = BookingEmailHelper.GetReasonForMail(u_reasonDb, venue).Item1;
+
             if (tenant.intg_video == "CONVENTUS_TEAMS" && booking.type.ToString().ToLower() == "v")
             {
                 //get upn from DB (create does not return whole object and UPN is triggered value)
@@ -308,7 +309,7 @@ namespace CommonLibrary.SharedServices.Services
 
                 try
                 {
-                    var meetingResponse = await CreateMicrosoftEvent(booking, org_code, data.u_email);
+                    var meetingResponse = await CreateMicrosoftEvent(booking, org_code, data.u_email, data.u_first, data.u_last, venue.name, reason);
                     meetingUrl = meetingResponse.MeetingUrl;
                     _ = _bookingRepository.UpdateBooking(new GraphApiPayload { data = new BookingUpdateData { conference_id = meetingResponse.MeetingId, booking_uri = meetingResponse.MeetingUrl }, filters = new BookingUpdateFilters { booking_id = booking.booking_id } });
                 }
@@ -323,16 +324,22 @@ namespace CommonLibrary.SharedServices.Services
             var end = endTs.ToString("HH:mm");
             if (venue.notifications.notify == 1)
             {
-                var reason = BookingEmailHelper.GetReasonForMail(u_reasonDb, venue).Item1;
-
                 SendEmail($"booking_scheduled_{data.type}".ToLower(), "📅 Il tuo appuntamento è stato confermato", "booking_scheduled", booking, data, start, end, dateS, venue, tenant.web_pages.Last(), reason, tenant.org_name, meetingUrl);
                 SendEmailToStaff($"booking_scheduled_venue", "📅 Il tuo appuntamento è stato confermato", "booking_scheduled_venue", booking, venue.users, data, secret, start, end, dateS, reason, venue.name, tenant.org_name, tenant.web_pages.Last());
             }
         }
 
-        private async Task<MicrosoftEventResponse> CreateMicrosoftEvent(Booking booking, string orgCode, string attende)
+        private async Task<MicrosoftEventResponse> CreateMicrosoftEvent(Booking booking, string orgCode, string email, string firstname, string lastname, string venueName, string reason)
         {
-            var request = CreateMicrosoftEventRequest(booking, orgCode, attende);
+            var subject = venueName;
+            if (!string.IsNullOrEmpty(reason))
+                subject = subject + $" - {reason}";
+            var request = CreateMicrosoftEventRequest(booking, orgCode, new EventAttende
+            {
+                Email = email,
+                FirstName = firstname,
+                LastName = lastname
+            }, subject);
             try
             {
                 var microsoftResponse = await _microsoftClient.CreateMicrosoftEvent(request);
@@ -385,7 +392,7 @@ namespace CommonLibrary.SharedServices.Services
             }
         }
 
-        private MicrosoftEventRequest CreateMicrosoftEventRequest(Booking booking, string org_code, string attende)
+        private MicrosoftEventRequest CreateMicrosoftEventRequest(Booking booking, string org_code, EventAttende attende, string subject)
         {
             return new MicrosoftEventRequest
             {
@@ -395,7 +402,7 @@ namespace CommonLibrary.SharedServices.Services
                 ExternalId = booking.booking_id.ToString(),
                 OrganizerUpnLocal = booking.conference_upn,
                 OrgCode = org_code,
-                Subject = $"Booking {booking.booking_id}"
+                Subject = subject
             };
         }
 

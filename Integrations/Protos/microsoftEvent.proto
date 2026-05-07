@@ -11,13 +11,19 @@ service MicrosoftEvents{
 }
 
 message MicrosoftEventRequest{
-	string attende = 1;
+	EventAttende attende = 1;
 	string subject = 2;
 	string startUtc = 3;
 	string endUtc = 4;
 	string organizerUpnLocal = 5;
 	string externalId = 6;
 	string org_code = 7;
+}
+
+message EventAttende{
+	string email = 1;
+	string first_name = 2;
+	string last_name = 3;
 }
 
 message MicrosoftEventResponse{
