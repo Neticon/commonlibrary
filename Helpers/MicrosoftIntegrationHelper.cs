@@ -17,7 +17,7 @@ namespace CommonLibrary.Helpers
 
         public static string BuildLocalUpn (string org_code, string venue_id ,string service, int counter)
         {
-            var servicePart = string.IsNullOrWhiteSpace(service) ? "" : $"-{service}";
+            var servicePart = string.IsNullOrWhiteSpace(service) ? "" : $"_{service}";
 
             return $"{org_code}_{venue_id}{servicePart}_{counter}";
         }
