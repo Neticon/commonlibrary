@@ -11,6 +11,7 @@ namespace CommonLibrary.SharedServices.Interfaces
         Task<ServiceResponse> UpdateBooking(BookingUpdateModel data, string venue_id);
         Task<ServiceResponse> RateBooking(BookingRateModel data);
         Task<OBFSearchResponse> SearchBooking(ObfSearchModel searchModel);
+        Task<ServiceResponse> DeleteBooking(BookingUpdateModel data);
 
     }
 }

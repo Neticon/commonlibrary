@@ -23,6 +23,17 @@
         public string? review_result { get; set; }
         public string? review_description { get; set; }
         public int? review_rank { get; set; }
+        public bool? is_deleted { get; set; }
+        public string? delete_bu { get; set; }
+        public DateTime? delete_dt { get; set; }
+
+        public string? u_first {  get; set; }
+        public string? u_last { get; set; }
+        public string? u_message { get; set; }
+        public string? u_phone { get; set; }
+        public string? u_reason { get; set; }
+        public string? u_salutation { get; set; }
+        public Guid? pnvs_id { get; set; }
     }
 
     public class BookingUpdateFilters

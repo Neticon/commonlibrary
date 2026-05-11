@@ -111,7 +111,7 @@ namespace CommonLibrary.SharedServices.Services
                     response.Result = result;
 
                     //after response operations -  no await
-                    _ = InsertObfIndexes(data, org_code, secret, booking.booking_id);
+                    _ = InsertObfIndexes(data, org_code, secret, booking.booking_id.Value);
                     _ = SendNotificationsAndCreateMeeting(booking, org_code, data, tenant, startTs, endTs, venue, secret, u_reasonDb);
                 }
                 else
@@ -192,7 +192,7 @@ namespace CommonLibrary.SharedServices.Services
                             var dateS = startTs.ToString("dd/MM/yyyy");
                             var start = startTs.ToString("HH:mm");
                             var end = endTs.ToString("HH:mm");
-                            var bookingData = new BookingModelData { tenant_id = tenant.tenant_id.Value, u_first = booking.u_first, u_last = booking.u_last, u_email = booking.u_email, type = booking.type, u_reason = "" };
+                            var bookingData = new BookingModelData { tenant_id = tenant.tenant_id.Value, u_first = booking.u_first, u_last = booking.u_last, u_email = booking.u_email, type = booking.type.Value, u_reason = "" };
                             SendEmail($"booking_rescheduled_{data.data.type}".ToLower(), "🔁 Il tuo appuntamento è stato riprogrammato", "booking_rescheduled", booking, bookingData, start, end, dateS, venue, tenant.web_pages.Last(), reason, tenant.org_name, meetingUrl);
                             SendEmailToStaff($"booking_rescheduled_venue", "🔁 Il tuo appuntamento è stato riprogrammato", "booking_rescheduled_venue", booking, venue.users, bookingData, secret, start, end, dateS, reason, venue.name, tenant.org_name, tenant.web_pages.Last());
                         }
@@ -214,11 +214,11 @@ namespace CommonLibrary.SharedServices.Services
 
                     if (venue.notifications.cancel == 1)
                     {
-                        var dateS = booking.date.ToString("dd/MM/yyyy");
+                        var dateS = booking.date.Value.ToString("dd/MM/yyyy");
                         var start = DateTime.Parse(booking.start_ts).ToString("HH:mm");
                         var end = DateTime.Parse(booking.end_ts).ToString("HH:mm");
                         var subject = "❌ Il tuo appuntamento è stato annullato";
-                        var bookingData = new BookingModelData { tenant_id = tenant.tenant_id.Value, u_first = booking.u_first, u_last = booking.u_last, u_email = booking.u_email, type = booking.type };
+                        var bookingData = new BookingModelData { tenant_id = tenant.tenant_id.Value, u_first = booking.u_first, u_last = booking.u_last, u_email = booking.u_email, type = booking.type.Value };
                         SendEmail($"booking_cancellation", subject, "booking_cancelled", booking, bookingData, start, end, dateS, venue, tenant.web_pages.Last(), reason, tenant.org_name, "", true);
                         SendEmailToStaff($"booking_cancellation_venue", subject, "booking_cancelled_venue", booking, venue.users, bookingData, secret, start, end, dateS, reason, venue.name, tenant.org_name, tenant.web_pages.Last());
                     }
@@ -230,7 +230,13 @@ namespace CommonLibrary.SharedServices.Services
             }
             else
             {
-                var result = await _bookingRepository.UpdateEntity(data, ignoreEncryption: true);
+                data.data.modify_bu = CurrentUser.Decr_Email;
+                if (!string.IsNullOrEmpty(data.data.u_phone)) {
+                    var validationResult = await _validationService.GetRedisDeviceIntel(data.data.u_phone, "", "");
+                    data.data.pnvs_id = new Guid(validationResult.PhoneValidation);
+                }
+
+                var result = await _bookingRepository.UpdateEntity(data, CurrentUser.OrgSecret);
                 if (result != null && result.success)
                     response.Result = result;
                 else
@@ -258,6 +264,29 @@ namespace CommonLibrary.SharedServices.Services
 
             var secret = await _secretService.GetEncryptionSecret("");
             return result;
+        }
+
+        public async Task<ServiceResponse> DeleteBooking(BookingUpdateModel data)
+        {
+            var response = new ServiceResponse { StatusCode = 200 };
+            var booking = (await _bookingRepository.GetDataTyped(new GraphApiPayload { data = new Booking { start_ts = "", block_status = "" }, filters = data.filters }, CurrentUser.OrgSecret)).rows.FirstOrDefault();
+            if (booking == null)
+            {
+                response.StatusCode = 404;
+                return response;
+            }
+            var startDate = DateTime.Parse(booking.start_ts);
+            if (DateTime.UtcNow < startDate && booking.block_status == "CANCELED")
+            {
+                data.data.delete_bu = CurrentUser.Email;
+                data.data.delete_dt = DateTime.UtcNow;
+                var result = await _bookingRepository.UpdateBooking(data);
+                response.Result = result;
+            }
+            else
+                response.StatusCode = 400;
+
+            return response;
         }
 
         public async Task<OBFSearchResponse> SearchBooking(ObfSearchModel searchModel)
@@ -305,13 +334,13 @@ namespace CommonLibrary.SharedServices.Services
             if (tenant.intg_video == "CONVENTUS_TEAMS" && booking.type.ToString().ToLower() == "v")
             {
                 //get upn from DB (create does not return whole object and UPN is triggered value)
-                booking.conference_upn = (await _bookingRepository.GetData(new GraphApiPayload { data = new BookingUpdateData { conference_upn = "" }, filters = new BookingUpdateFilters { booking_id = booking.booking_id } }, secret)).rows.First()["conference_upn"].ToString();
+                booking.conference_upn = (await _bookingRepository.GetData(new GraphApiPayload { data = new BookingUpdateData { conference_upn = "" }, filters = new BookingUpdateFilters { booking_id = booking.booking_id.Value } }, secret)).rows.First()["conference_upn"].ToString();
 
                 try
                 {
                     var meetingResponse = await CreateMicrosoftEvent(booking, org_code, data.u_email, data.u_first, data.u_last, venue.name, reason);
                     meetingUrl = meetingResponse.MeetingUrl;
-                    _ = _bookingRepository.UpdateBooking(new GraphApiPayload { data = new BookingUpdateData { conference_id = meetingResponse.MeetingId, booking_uri = meetingResponse.MeetingUrl }, filters = new BookingUpdateFilters { booking_id = booking.booking_id } });
+                    _ = _bookingRepository.UpdateBooking(new GraphApiPayload { data = new BookingUpdateData { conference_id = meetingResponse.MeetingId, booking_uri = meetingResponse.MeetingUrl }, filters = new BookingUpdateFilters { booking_id = booking.booking_id.Value } });
                 }
                 catch (Exception ex)
                 {
@@ -416,7 +445,7 @@ namespace CommonLibrary.SharedServices.Services
                 },
                 filters = new BookingUpdateFilters
                 {
-                    booking_id = booking.booking_id,
+                    booking_id = booking.booking_id.Value,
                     date = booking.date.ToString(), //checkFormat
                     tenant_id = booking.tenant_id.ToString(),
                     venue_id = booking.venue_id.ToString(),
