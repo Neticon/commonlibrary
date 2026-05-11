@@ -22,7 +22,7 @@
         public string? conference_id { get; set; }
         public string? review_result { get; set; }
         public string? review_description { get; set; }
-        public string? review_rank { get; set; }
+        public int? review_rank { get; set; }
     }
 
     public class BookingUpdateFilters
