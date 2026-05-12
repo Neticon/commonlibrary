@@ -58,7 +58,7 @@
     {
         SCHEDULED,
         RESCHEDULED,
-        CANCELED,
+        CANCELLED,
         CLOSED
     }
 }

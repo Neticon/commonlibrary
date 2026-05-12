@@ -147,7 +147,7 @@ namespace CommonLibrary.SharedServices.Services
                 data.data.modify_bu = CurrentUser.Email;
             data.data.modify_dt = DateTime.UtcNow;
 
-            if (data.data.block_status == "RESCHEDULED")
+            if (data.data.block_status == Domain.Entities.BlockStatus.RESCHEDULED.ToString())
             {
                 if (data.data.block_start == null || data.data.block_end == null)
                 {
@@ -203,7 +203,7 @@ namespace CommonLibrary.SharedServices.Services
                     }
                 };
             }
-            else if (data.data.block_status == "CANCELLED")
+            else if (data.data.block_status == Domain.Entities.BlockStatus.CANCELLED.ToString())
             {
                 var result = await _bookingRepository.UpdateEntity(data, ignoreEncryption: true);
                 if (result != null && result.success)
@@ -276,7 +276,7 @@ namespace CommonLibrary.SharedServices.Services
                 return response;
             }
             var startDate = DateTime.Parse(booking.start_ts);
-            if (DateTime.UtcNow < startDate && booking.block_status == "CANCELED")
+            if (DateTime.UtcNow < startDate && booking.block_status == Domain.Entities.BlockStatus.CANCELLED.ToString())
             {
                 data.data.delete_bu = CurrentUser.Email;
                 data.data.delete_dt = DateTime.UtcNow;
