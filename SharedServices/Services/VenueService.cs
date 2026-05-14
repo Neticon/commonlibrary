@@ -21,14 +21,17 @@ namespace CommonLibrary.SharedServices.Services
         private readonly IValidationService _validationService;
         private readonly IVenueGenerationService _venueGenerationService;
         private readonly IMicrosoftClient _microsoftClient;
+        private readonly IGenericEntityRepository<ProductPlans> _productPlanRepo;
 
-        public VenueService(IGenericEntityRepository<Venue> genericRepository, IValidationService validationService, ICurrentUserService currentUserService, IVenueGenerationService venueGenerationService, IMicrosoftClient microsoftClient, ITenantRepository tenantRepository) : base(currentUserService)
+
+        public VenueService(IGenericEntityRepository<Venue> genericRepository, IValidationService validationService, ICurrentUserService currentUserService, IVenueGenerationService venueGenerationService, IMicrosoftClient microsoftClient, ITenantRepository tenantRepository, IGenericEntityRepository<ProductPlans> productPlanRepo) : base(currentUserService)
         {
             _genericRepository = genericRepository;
             _validationService = validationService;
             _venueGenerationService = venueGenerationService;
             _microsoftClient = microsoftClient;
             _tenantRepository = tenantRepository;
+            _productPlanRepo = productPlanRepo;
         }
 
         public async Task<ServiceResponse> CreateVenue(VenueModel data)
@@ -44,18 +47,45 @@ namespace CommonLibrary.SharedServices.Services
             venue.evs_id = new Guid(validationResult.EmailValidation);
             venue.pnvs_id = new Guid(validationResult.PhoneValidation);
 
-            var resp = await _genericRepository.SaveEntity(venue, CurrentUser.OrgSecret);
-            if (resp.success == true && data.isPublish)
+            var tenant = (await _tenantRepository.GetDataTyped(new GraphApiPayload { data = new Tenant { intg_video = "", cntrct_plan = "" }, filters = new Tenant { tenant_id = CurrentUser.TenantId } })).rows.First();
+            var tenantIntConfig = tenant.intg_video;
+            if (tenantIntConfig == INTG_VIDEO.CONVENTUS_TEAMS.ToString() || tenantIntConfig == INTG_VIDEO.TEAMS.ToString() && data.isPublish)
             {
-                var tenantIntConfig = await _tenantRepository.GetIntegrationConfig(CurrentUser.TenantId);
-                if (tenantIntConfig == INTG_VIDEO.CONVENTUS_TEAMS.ToString() || tenantIntConfig == INTG_VIDEO.TEAMS.ToString())
+                var bookingMode = GetBookingModeFromConfig(data.data.configuration);
+                var productPlan = (await _productPlanRepo.GetDataTyped(new GraphApiPayload { data = new ProductPlans { service_limit = 1, simultaneous_limit = 1 }, filters = new ProductPlans { plan_id = tenant.cntrct_plan } })).rows.First();
+                var createUsers = await RunTeamsUsersCheckAndRebuild(venue, CurrentUser.OrgCode, bookingMode == "SERVICE", productPlan.simultaneous_limit.Value, null);
+
+                if (createUsers)
                 {
-                    var bookingMode = GetBookingModeFromConfig(data.data.configuration);
-                    CreateMicrosoftConferenseUsers(venue, CurrentUser.OrgCode, bookingMode == "SERVICE");
-                    _venueGenerationService.ReplaceJs(CurrentUser.TenantId.ToString());
+                    var respDB = await _genericRepository.SaveEntity(venue, CurrentUser.OrgSecret);
+                    if (respDB.success)
+                    {
+                        _venueGenerationService.ReplaceJs(CurrentUser.TenantId.ToString());
+                    }
+                    else //remove created users if fails
+                    {
+                        RemoveMicrosoftConferenseUsers(venue.conf_user.Select(q => q.upn).ToList());
+                    }
+                    return new ServiceResponse { Result = respDB };
+                }
+                else
+                {
+                    return new ServiceResponse
+                    {
+                        Result = "Failed to execute microsoft integrations for users"
+                    };
                 }
             }
-            return new ServiceResponse { Result = resp };
+            else
+            {
+                var respDB = await _genericRepository.SaveEntity(venue, CurrentUser.OrgSecret);
+                if (respDB.success)
+                {
+                    _venueGenerationService.ReplaceJs(CurrentUser.TenantId.ToString());
+                }
+
+                return new ServiceResponse { Result = respDB };
+            }
         }
 
         public async Task<ServiceResponse> DeleteVenue(DeleteVenueModel data)
@@ -65,20 +95,41 @@ namespace CommonLibrary.SharedServices.Services
                 throw new Exception($"Cross tenant deletion!");
             data.filters.tenant_id = null;
             data.data.is_deleted = true;
-            var resp = await _genericRepository.UpdateEntity(data, CurrentUser.OrgSecret);
-            var tenantIntConfig = await _tenantRepository.GetIntegrationConfig(CurrentUser.TenantId);
-            if(resp.success && data.isPublish)
+            var tenant = (await _tenantRepository.GetDataTyped(new GraphApiPayload { data = new Tenant { intg_video = "", cntrct_plan = "" }, filters = new Tenant { tenant_id = CurrentUser.TenantId } })).rows.First();
+            var tenantIntConfig = tenant.intg_video;
+            if (tenantIntConfig == INTG_VIDEO.CONVENTUS_TEAMS.ToString() || tenantIntConfig == INTG_VIDEO.TEAMS.ToString() && data.isPublish)
             {
-                if (tenantIntConfig == INTG_VIDEO.CONVENTUS_TEAMS.ToString() || tenantIntConfig == INTG_VIDEO.TEAMS.ToString())
+                var venue = (await _genericRepository.GetDataTyped(new GraphApiPayload { data = new Venue { venue_id = new Guid(), configuration = new object(), conf_user = new List<ConfUser>() }, filters = data.filters }, CurrentUser.OrgSecret)).rows.First();
+                var bookingMode = GetBookingModeFromConfig(venue.configuration);
+                var remove = await RemoveMicrosoftConferenseUsers(venue.conf_user.Select(q => q.upn).ToList());
+                if (remove)
                 {
-                    var venue = (await _genericRepository.GetDataTyped(new GraphApiPayload { data = new Venue { venue_id = new Guid(), configuration = new object(), reasons = new object(), name = "", country_code = "" }, filters = data.filters }, CurrentUser.OrgSecret)).rows.First();
-                    var bookingMode = GetBookingModeFromConfig(venue.configuration);
-                    _ = RemoveMicrosoftConferenseUsers(venue, CurrentUser.OrgCode, bookingMode == "SERVICE", tenantIntConfig);
+                    var resp = await _genericRepository.UpdateEntity(data, CurrentUser.OrgSecret);
+                    if (resp.success)
+                        _venueGenerationService.ReplaceJs(CurrentUser.TenantId.ToString());
+                    else
+                    {
+                        var productPlan = (await _productPlanRepo.GetDataTyped(new GraphApiPayload { data = new ProductPlans { service_limit = 1, simultaneous_limit = 1 }, filters = new ProductPlans { plan_id = tenant.cntrct_plan } })).rows.First();
+                        var createUsers = await RunTeamsUsersCheckAndRebuild(venue, CurrentUser.OrgCode, bookingMode == "SERVICE", productPlan.simultaneous_limit.Value, null);
+                    }
+                    return new ServiceResponse { Result = resp };
                 }
-                _venueGenerationService.ReplaceJs(CurrentUser.TenantId.ToString());
+                else
+                {
+                    return new ServiceResponse
+                    {
+                        Result = "Failed to execute microsoft integrations for users"
+                    };
+                }
             }
+            else
+            {
+                var resp = await _genericRepository.UpdateEntity(data, CurrentUser.OrgSecret);
+                if (resp.success)
+                    _venueGenerationService.ReplaceJs(CurrentUser.TenantId.ToString());
+                return new ServiceResponse { Result = resp };
 
-            return new ServiceResponse { Result = resp };
+            }
         }
 
         public async Task<ServiceResponse> GetVenues(object data)
@@ -109,49 +160,113 @@ namespace CommonLibrary.SharedServices.Services
                 if (phoneUpdate)
                     venue.pnvs_id = new Guid(validationResult.PhoneValidation);
             }
+            var tenant = (await _tenantRepository.GetDataTyped(new GraphApiPayload { data = new Tenant { intg_video = "", cntrct_plan = "" }, filters = new Tenant { tenant_id = CurrentUser.TenantId } })).rows.First();
+            var tenantIntConfig = tenant.intg_video;
 
-            var payload = new GraphApiPayload { data = venue, filters = data.filters };
-
-            var resp = await _genericRepository.UpdateEntity(payload, CurrentUser.OrgSecret, includeNullList: includeNullList);
-            if (resp.success == true && data.isPublish)
+            if (data.isPublish && (tenantIntConfig == INTG_VIDEO.CONVENTUS_TEAMS.ToString() || tenantIntConfig == INTG_VIDEO.TEAMS.ToString()))
             {
-                _venueGenerationService.ReplaceJs(CurrentUser.TenantId.ToString());
-                var bookingMode = GetBookingModeFromConfig(data.data.configuration);
-                var tenantIntConfig = await _tenantRepository.GetIntegrationConfig(CurrentUser.TenantId);
-                if (bookingMode != null && (tenantIntConfig == INTG_VIDEO.CONVENTUS_TEAMS.ToString() || tenantIntConfig == INTG_VIDEO.TEAMS.ToString()))
+                var currentVenueJson = (await _genericRepository.GetData(new GraphApiPayload { data = new Venue { venue_id = new Guid(), configuration = new object(), reasons = new object(), name = "", country_code = "", conf_user = new List<ConfUser>() }, filters = data.filters }, CurrentUser.OrgSecret)).rows.First();
+
+                var currentVenue = JsonConvert.DeserializeObject<Venue>(currentVenueJson.ToString());
+
+                var productPlan = (await _productPlanRepo.GetDataTyped(new GraphApiPayload { data = new ProductPlans { service_limit = 1, simultaneous_limit = 1 }, filters = new ProductPlans { plan_id = tenant.cntrct_plan } })).rows.First();
+
+                var bookingMode = GetBookingModeFromConfig(currentVenue.configuration);
+
+                var microsoftResult = await RunTeamsUsersCheckAndRebuild(venue, CurrentUser.OrgCode, bookingMode == "SERVICE", productPlan.simultaneous_limit.Value, currentVenue);
+
+                if (microsoftResult)
                 {
-                    var currentVenueJson = (await _genericRepository.GetData(new GraphApiPayload { data = new Venue { venue_id = new Guid(), configuration = new object(), reasons = new object(), name = "", country_code = "" }, filters = data.filters }, CurrentUser.OrgSecret)).rows.First();
-                    var currentVenue = JsonConvert.DeserializeObject<Venue>(currentVenueJson.ToString());
-                    var currentBookingMode = GetBookingModeFromConfig(currentVenue.configuration);
-                    if (currentBookingMode != bookingMode)
+                    var payload = new GraphApiPayload { data = venue, filters = data.filters };
+                    var resp = await _genericRepository.UpdateEntity(payload, CurrentUser.OrgSecret, includeNullList: includeNullList);
+                    if (resp.success)
                     {
-                        if (venue.name == null)
-                            venue.name = currentVenue.name;
-                        if (venue.reasons == null)
-                            venue.reasons = currentVenue.reasons;
-                        venue.venue_id = currentVenue.venue_id;
-                        if (venue.country_code == null)
-                            venue.country_code = currentVenue.country_code;
-                        await RemoveMicrosoftConferenseUsers(venue, CurrentUser.OrgCode, bookingMode == "SERVICE", tenantIntConfig);
-                        await CreateMicrosoftConferenseUsers(venue, CurrentUser.OrgCode, bookingMode == "SERVICE");
+                        _venueGenerationService.ReplaceJs(CurrentUser.TenantId.ToString());
                     }
+                    else // need to restore old microsoft users so sending old data as new and new as old do compare 
+                    {
+                        var restoreMicrosoftResult = await RunTeamsUsersCheckAndRebuild(currentVenue, CurrentUser.OrgCode, bookingMode == "SERVICE", productPlan.simultaneous_limit.Value, venue);
+                    }
+                    return new ServiceResponse
+                    {
+                        Result = resp
+                    };
+                }
+                else
+                {
+                    return new ServiceResponse
+                    {
+                        Result = "Failed to execute microsoft integrations for users"
+                    };
                 }
             }
-            return new ServiceResponse { Result = resp };
+            else
+            {
+
+                var payload = new GraphApiPayload { data = venue, filters = data.filters };
+                var resp = await _genericRepository.UpdateEntity(payload, CurrentUser.OrgSecret, includeNullList: includeNullList);
+                if (resp.success && data.isPublish)
+                    _ = _venueGenerationService.ReplaceJs(CurrentUser.TenantId.ToString());
+
+                return new ServiceResponse
+                {
+                    Result = resp
+                };
+
+            }
         }
 
-        private async Task CreateMicrosoftConferenseUsers(Venue venue, string orgCode, bool serviceBased)
+        private async Task<bool> RunTeamsUsersCheckAndRebuild(Venue venue, string orgCode, bool serviceBased, int slots, Venue currentVenue)
         {
+            var success = true;
+            var currentUsersUpn = new List<string>();
+            if (currentVenue.conf_user != null && currentVenue.conf_user.Count > 0)
+                currentUsersUpn = currentVenue.conf_user.Select(q => q.upn).ToList();
+            var configUsers = CreateMicrosoftConferenseUsers(venue, orgCode, serviceBased, slots, currentVenue);
+            var configUsersUpn = configUsers.Select(q => q.FullUpn);
+
+            var newUsersUpn = configUsersUpn.Except(currentUsersUpn);
+            var removeUsersUpn = currentUsersUpn.Except(configUsersUpn);
+
+            foreach (var user in newUsersUpn)
+            {
+                var request = configUsers.FirstOrDefault(q => q.FullUpn == user);
+                var result = await _microsoftClient.CreateMicrosoftUser(request);
+                if (result.UserId == null)
+                {
+                    return false;
+                }
+
+            }
+
+            foreach (var user in removeUsersUpn)
+            {
+                var resp = await _microsoftClient.RemoveMicrosoftUser(new RemoveMicrosoftUserRequest { FullUpn = user });
+                if (resp.Removed == false)
+                {
+                    return false;
+                }
+            }
+
+            if (success)
+                venue.conf_user = configUsersUpn.Select(q => new ConfUser { upn = q }).ToList();
+
+            return success;
+        }
+
+        private List<MicrosoftUserRequest> CreateMicrosoftConferenseUsers(Venue venue, string orgCode, bool serviceBased, int slots, Venue oldVenue)
+        {
+            var usersByConfig = new List<MicrosoftUserRequest>();
             //get config from tenant if it is client teams
-            var usageLocation = venue.country_code;
-            for (int i = 1; i <= 4; i++)
+            var usageLocation = venue.country_code ?? oldVenue.country_code;
+            for (int i = 1; i <= slots; i++)
             {
                 if (!serviceBased)
                 {
-                    var displayName = MicrosoftIntegrationHelper.BuildDisplayName(orgCode, venue.name, null, i);
-                    var localUpn = MicrosoftIntegrationHelper.BuildLocalUpn(orgCode, venue.venue_id.ToString(), "DEFAULT", i);
+                    var displayName = MicrosoftIntegrationHelper.BuildDisplayName(orgCode, venue.name ?? oldVenue.name, null, i);
+                    var localUpn = MicrosoftIntegrationHelper.BuildLocalUpn(orgCode, venue.venue_id == null ? oldVenue.venue_id.ToString() : venue.venue_id.ToString(), "DEFAULT", i);
                     var password = MicrosoftIntegrationHelper.BuildPassword(orgCode, null, i);
-                    var resp = await _microsoftClient.CreateMicrosoftUser(new MicrosoftUserRequest
+                    usersByConfig.Add(new MicrosoftUserRequest
                     {
                         DisplayName = displayName,
                         FullUpn = localUpn,
@@ -162,7 +277,7 @@ namespace CommonLibrary.SharedServices.Services
 
                 else
                 {
-                    var services = JsonConvert.DeserializeObject<List<JObject>>(venue.reasons.ToString());
+                    var services = JsonConvert.DeserializeObject<List<JObject>>(venue.reasons != null ? venue.reasons.ToString() : oldVenue.reasons.ToString());
                     foreach (var service in services)
                     {
                         var service_id = service["id"].ToString();
@@ -176,59 +291,28 @@ namespace CommonLibrary.SharedServices.Services
                             Password = password,
                             UsageLocation = usageLocation,
                         };
-                        try
-                        {
-                            var resp = await _microsoftClient.CreateMicrosoftUser(request);
-                        }
-                        catch (Exception ex)
-                        {
-                            var a = 1;
-                        }
+                        usersByConfig.Add(request);
                     }
                 }
-
             }
+            return usersByConfig;
         }
 
-        private async Task RemoveMicrosoftConferenseUsers(Venue venue, string orgCode, bool serviceBased, string config)
+        private async Task<bool> RemoveMicrosoftConferenseUsers(List<string> removeUpns)
         {
-            for (int i = 1; i <= 4; i++)
+            foreach (var upn in removeUpns)
             {
-                if (serviceBased) // in this case remove DEFAULT users, and create service
+                var request = new RemoveMicrosoftUserRequest
                 {
-                    var localUpn = MicrosoftIntegrationHelper.BuildLocalUpn(orgCode, venue.venue_id.ToString(), null, i);
-                    var fullUpn = MicrosoftIntegrationHelper.BuildFullUpn(localUpn, "neticon.onmicrosoft.com");
-                    var resp = await _microsoftClient.RemoveMicrosoftUser(new RemoveMicrosoftUserRequest
-                    {
-                        FullUpn = fullUpn,
-                        Config = config
-                    });
-                }
-                else
-                {
-                    var services = JsonConvert.DeserializeObject<List<JObject>>(venue.reasons.ToString());
-                    foreach (var service in services)
-                    {
-                        var service_id = service["id"].ToString();
-                        var localUpn = MicrosoftIntegrationHelper.BuildLocalUpn(orgCode, venue.venue_id.ToString(), service_id, i);
-                        var fullUpn = MicrosoftIntegrationHelper.BuildFullUpn(localUpn, "neticon.onmicrosoft.com");
-                        var request = new RemoveMicrosoftUserRequest
-                        {
-                            FullUpn = fullUpn,
-                            Config = config
-                        };
-                        try
-                        {
-                            var resp = await _microsoftClient.RemoveMicrosoftUser(request);
-                        }
-                        catch (Exception ex)
-                        {
-                            var a = 1;
-                        }
-                    }
-                }
+                    FullUpn = upn,
+                    //   Config = config
+                };
+                var resp = await _microsoftClient.RemoveMicrosoftUser(request);
+                if (!resp.Removed)
+                    return false;
 
             }
+            return true;
         }
 
         private string GetBookingModeFromConfig(object config)

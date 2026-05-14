@@ -40,6 +40,7 @@
         public List<WorkHour>? work_hours { get; set; }
         public VenueNotifications? notifications { get; set; }
         public List<VenueUser>? users { get; set; }
+        public List<ConfUser>? conf_user { get; set; }
         public List<VenueExceptions>? exceptions { get; set; }
         public object? reasons { get; set; }
         public Links? links { get; set; }
@@ -94,6 +95,11 @@
         public int n { get; set; }
         public string u { get; set; }
         public string r { get; set; }
+    }
+
+    public class ConfUser
+    {
+        public string upn { get; set; }
     }
 
 }
