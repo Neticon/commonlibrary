@@ -9,5 +9,6 @@ namespace CommonLibrary.SharedServices.Interfaces
         Task<ServiceResponse> DeleteVenue(DeleteVenueModel data);
         Task<ServiceResponse> CreateVenue(VenueModel data);
         Task<ServiceResponse> UpdateVenue(VenueModel data);
+        Task<ServiceResponse> GetPublicationState(string venueId);
     }
 }

@@ -95,11 +95,20 @@
         public int n { get; set; }
         public string u { get; set; }
         public string r { get; set; }
+        public string default_service { get; set; }
+        public string default_slot { get; set; }
     }
 
     public class ConfUser
     {
         public string upn { get; set; }
+        public ConfUserStatus status { get; set; }  
+    }
+
+    public enum ConfUserStatus
+    {
+        Active,
+        Pending_Delete
     }
 
 }
