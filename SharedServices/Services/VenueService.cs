@@ -192,7 +192,10 @@ namespace CommonLibrary.SharedServices.Services
                 var currentVenueJson = (await _genericRepository.GetData(new GraphApiPayload { data = new Venue { venue_id = new Guid(), configuration = new object(), reasons = new object(), name = "", country_code = "", conf_user = new List<ConfUser>() }, filters = data.filters }, CurrentUser.OrgSecret)).rows.First();
                 var currentVenue = JsonConvert.DeserializeObject<Venue>(currentVenueJson.ToString());
                 var productPlan = (await _productPlanRepo.GetDataTyped(new GraphApiPayload { data = new ProductPlans { service_limit = 1, simultaneous_limit = 1 }, filters = new ProductPlans { plan_id = tenant.cntrct_plan } })).rows.First();
-                var bookingMode = GetBookingModeFromConfig(currentVenue.configuration);
+
+                var bookingMode = GetBookingModeFromConfig(venue.configuration);
+                if (bookingMode == null)
+                    bookingMode = GetBookingModeFromConfig(currentVenue.configuration);
 
                 return await ExecuteWithTeamsPublication(
                     new Guid(data.filters.venue_id),
@@ -414,6 +417,8 @@ namespace CommonLibrary.SharedServices.Services
 
         private string GetBookingModeFromConfig(object config)
         {
+            if (config == null)
+                return null;
             var configJson = (JToken)config;
             if (configJson["booking_mode"] == null)
                 return null;
