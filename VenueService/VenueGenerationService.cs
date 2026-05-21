@@ -103,7 +103,8 @@ namespace VenueGenerationService
             var domainsHash = new List<string>();
             foreach (var domain in tenant.domains)
             {
-                domainsHash.Add(await CreateHashWithReverseAlgorythm(domain));
+                var cleanDomain = domain.Replace("https://", "").Replace("http://", "");
+                domainsHash.Add(await CreateHashWithReverseAlgorythm(cleanDomain));
             }
 
             tenant.domains = domainsHash;
