@@ -57,7 +57,7 @@ namespace VenueGenerationService
             var tenantData = await GetTenantData(tenantId);
             if (tenantData == null)
                 throw new Exception("Failed to get domains hash and org_code");
-            templateJs = templateJs.Replace(DomHashPlaceholder, JsonConvert.SerializeObject(tenantData.web_pages, Formatting.None));
+            templateJs = templateJs.Replace(DomHashPlaceholder, JsonConvert.SerializeObject(tenantData.domains, Formatting.None));
 
             var org_code = tenantData.org_code;
 
@@ -101,12 +101,12 @@ namespace VenueGenerationService
             if (tenant == null)
                 return null;
             var domainsHash = new List<string>();
-            foreach (var domain in tenant.web_pages)
+            foreach (var domain in tenant.domains)
             {
                 domainsHash.Add(await CreateHashWithReverseAlgorythm(domain));
             }
 
-            tenant.web_pages = domainsHash;
+            tenant.domains = domainsHash;
 
             return tenant;
         }
@@ -221,6 +221,7 @@ namespace VenueGenerationService
             public List<string> web_pages { get; set; }
             public string org_code { get; set; }
             public object library { get; set; }
+            public List<string> domains { get; set; }
         }
     }
 }
