@@ -1,4 +1,5 @@
-﻿using CommonLibrary.Models.API;
+﻿using CommonLibrary.Helpers;
+using CommonLibrary.Models.API;
 using CommonLibrary.Repository.Interfaces;
 using CommonLibrary.Repository.Redis;
 using CommonLibrary.SharedServices.Interfaces;
@@ -20,6 +21,11 @@ namespace CommonLibrary.SharedServices.Services
             _tenantRepo = tenantRepo;
             _secretService = secretService;
             _redisService = redisService;
+        }
+
+        public async Task<string> GetConventusSecret()
+        {
+            return await _secretService.GetEncryptionSecret(CommonConstants.Org_Code_Conventus);
         }
 
         public async Task<CurrentUser?> GetCurrentUserContext(string email)

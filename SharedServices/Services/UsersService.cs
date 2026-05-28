@@ -45,9 +45,9 @@ namespace CommonLibrary.SharedServices.Services
             if (validation.Item1 != 200)
                 throw new Exception("Phone is not valid");
             model.data.role = model.data.role.ToUpper();
-            if (!ValidRoles.Contains(model.data.role))
+            if (!IsHelpDesk && !ValidRoles.Contains(model.data.role))
                 throw new Exception("Invalid role");
-            var idpCode = "";
+            var idpCode = CommonConstants.Org_Code_Conventus;
             var orgName = "";
             if (model.data.tenant_id != null)
             {
@@ -59,12 +59,18 @@ namespace CommonLibrary.SharedServices.Services
             }
             var secret = await _secretService.GetEncryptionSecret(idpCode);
             var hashedMail = AesEncryption.EncryptEcb(model.data.email, secret);
-            var tempPassword = CommonHelperFunctions.GeneratePassword();
-            var request = new AdminCreateUserRequest
+
+            //cognito is not creating for SUPER ROLE
+            var idp_attribute = "";
+            var temp_password = "";
+            if (model.data.role != UserRole.SUPER.ToString())
             {
-                UserPoolId = UserPoolId,
-                Username = model.data.email,
-                UserAttributes = new List<AttributeType>
+                temp_password = CommonHelperFunctions.GeneratePassword();
+                var request = new AdminCreateUserRequest
+                {
+                    UserPoolId = UserPoolId,
+                    Username = model.data.email,
+                    UserAttributes = new List<AttributeType>
                 {
                     new AttributeType { Name = "email", Value = model.data.email },
                     new AttributeType { Name = "email_verified", Value = "true" },
@@ -76,21 +82,23 @@ namespace CommonLibrary.SharedServices.Services
                     new AttributeType { Name = "custom:postal_code", Value = hashedMail  },
                     new AttributeType { Name = "custom:organization_code", Value = idpCode },
                 },
-                TemporaryPassword = tempPassword, // sendNotification with temp Passwod
-                MessageAction = "SUPPRESS" // Suppress email invitation (change to get invitation)
-            };
-            var provider = GetCognitoProvider();
-            AdminCreateUserResponse createUserResponse;
+                    TemporaryPassword = temp_password, // sendNotification with temp Passwod
+                    MessageAction = "SUPPRESS" // Suppress email invitation (change to get invitation)
+                };
+                var provider = GetCognitoProvider();
+                AdminCreateUserResponse createUserResponse;
 
-            createUserResponse = await provider.AdminCreateUserAsync(request);
+                createUserResponse = await provider.AdminCreateUserAsync(request);
 
-            var addToGroupRequest = new AdminAddUserToGroupRequest
-            {
-                UserPoolId = UserPoolId,
-                Username = model.data.email,
-                GroupName = idpCode
-            };
-            await provider.AdminAddUserToGroupAsync(addToGroupRequest);
+                var addToGroupRequest = new AdminAddUserToGroupRequest
+                {
+                    UserPoolId = UserPoolId,
+                    Username = model.data.email,
+                    GroupName = idpCode
+                };
+                await provider.AdminAddUserToGroupAsync(addToGroupRequest);
+                idp_attribute = createUserResponse.User.Username;
+            }
 
             var user = new User
             {
@@ -102,11 +110,13 @@ namespace CommonLibrary.SharedServices.Services
                 role = model.data.role,
                 idp_group = idpCode,
                 tenant_id = model.data.tenant_id,
-                idp_attribute = createUserResponse.User.Username
+                idp_attribute = idp_attribute
             };
 
             await _genericEntityRepo.SaveEntity(user, secret);
-            _ = SendEmail(model.data.email, user, tempPassword, model.data.first_name, orgName);
+
+            if (model.data.role != UserRole.SUPER.ToString())
+                _ = SendEmail(model.data.email, user, temp_password, model.data.first_name, orgName);
         }
 
         public async Task UpdateUser(UpdateUserModel model)

@@ -16,5 +16,8 @@ namespace CommonLibrary.SharedServices.Services
         {
             get => CurrentUserService.CurrentUser;
         }
+
+        protected AppType AppType => AppConfig.AppType;
+        protected bool IsHelpDesk => AppConfig.AppType == AppType.Helpdesk;
     }
 }

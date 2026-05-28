@@ -2,7 +2,10 @@ using CommonLibrary.Helpers;
 using CommonLibrary.Integrations;
 using CommonLibrary.Repository.Interfaces;
 using CommonLibrary.Repository.Redis;
+using CommonLibrary.SharedServices;
 using CommonLibrary.SharedServices.Interfaces;
+using Npgsql;
+using NpgsqlTypes;
 using ServicePortal.Application.Interfaces;
 using ServicePortal.Application.Models;
 
@@ -14,6 +17,7 @@ namespace ServicePortal.Application.Services
         private readonly IGenericRepository<UserContextModel> _userContextRepository;
         private readonly IRedisService _redisService;
         private readonly IContextSerivice _contextService;
+        private readonly bool IsHelpDesk = AppConfig.AppType == AppType.Helpdesk;
 
         public AuthService(IValidationService validationService, IGenericRepository<UserContextModel> genericRepository, IRedisService redisService, IContextSerivice contextSerivice)
         {
@@ -27,13 +31,13 @@ namespace ServicePortal.Application.Services
         {
             var ipData = await _validationService.GetIpData(ip);
             var lastAccess = GenerateLastAccessObject(ip, ipData.city.name, ipData.country.isoCode);
-            var query = GenerateGetContextQuery(hashedMail, org_code, lastAccess);
+            var query = IsHelpDesk ? GenerateGetContextQuerySuper(hashedMail, org_code, lastAccess) : GenerateGetContextQuery(hashedMail, org_code, lastAccess);
             var userConextResponse = await _userContextRepository.ExecuteStandardCommand(query);
             if (userConextResponse.success && userConextResponse.rows.Count > 0)
             {
                 var secret = await _redisService.GetString($"tenantSecret_{org_code}");
                 var context = userConextResponse.rows.FirstOrDefault();
-                context.user.decr_email = AesEncryption.DecryptEcb(context.user.email, secret);
+                context.user.decr_email = AesEncryption.DecryptEcb(context.user.email, IsHelpDesk ? await _contextService.GetConventusSecret() : secret);
                 context.user.country_ip = ipData.country.isoCode;
                 var currentUser = await _contextService.GetCurrentUserContext(hashedMail);
                 if (currentUser == null)
@@ -49,16 +53,29 @@ namespace ServicePortal.Application.Services
                     _contextService.SetCurrentUserContext(currentUser.Email, currentUser);
                 }
                 var encryPaths = EncryptionMetadataHelper.GetEncryptedPropertyPaths(typeof(UserContextModel));
-                ObjectEncryption.DecryptObject(context, secret, encryPaths.Item1, encryPaths.Item2);
+                ObjectEncryption.DecryptObject(context, IsHelpDesk ? await _contextService.GetConventusSecret() : secret, encryPaths.Item1, encryPaths.Item2);
                 return new Tuple<UserContextModel, string, long>(context, currentUser.CSRF, currentUser.CSRF_Expiry);
             }
             else
                 throw new Exception("Failed to get user context");
         }
 
-        private string GenerateGetContextQuery(string email, string org_code, string lastAccess)
+        private NpgsqlCommand GenerateGetContextQuery(string email, string org_code, string lastAccess)
         {
-            return $"select utility.get_user_context('{email}','{org_code}','{lastAccess}'::jsonb) as result;";
+            var query = new NpgsqlCommand(PredefinedQueryPatterns.GET_USER_CONTEXT);
+            query.Parameters.AddWithValue("@p_email", NpgsqlDbType.Text, email);
+            query.Parameters.AddWithValue("@p_org_code", NpgsqlDbType.Text, org_code);
+            query.Parameters.AddWithValue("@p_last_access", NpgsqlDbType.Jsonb, lastAccess);
+            return query;
+        }
+
+        private NpgsqlCommand GenerateGetContextQuerySuper(string email, string org_code, string lastAccess)
+        {
+            var query = new NpgsqlCommand(PredefinedQueryPatterns.GET_USER_CONTEXT_SUPER);
+            query.Parameters.AddWithValue("@p_email", NpgsqlDbType.Text, email);
+            query.Parameters.AddWithValue("@p_org_code", NpgsqlDbType.Text, org_code);
+            query.Parameters.AddWithValue("@p_last_access", NpgsqlDbType.Jsonb, lastAccess);
+            return query;
         }
 
         private string GenerateLastAccessObject(string ip, string city, string country)

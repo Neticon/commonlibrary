@@ -29,6 +29,8 @@
         public static string GET_BOOKING_REVIEWS_RADAR = "select utility.get_booking_reviews_radar(@payload) as x";
         public static string GET_BOOKING_FREQUENCIES = "select utility.get_booking_frequencies(@payload) as x";
         public static string GET_USAGE_STATISTICS_MV = "select utility.get_usage_statistics_mv(@payload) as x";
+        public static string GET_USER_CONTEXT = "select utility.get_user_context(@p_email, @p_org_code, @p_last_access) as result;";
+        public static string GET_USER_CONTEXT_SUPER = "select utility.get_user_context_super(@p_email, @p_org_code, @p_last_access) as result;";
 
     }
 

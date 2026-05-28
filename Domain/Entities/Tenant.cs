@@ -2,7 +2,9 @@
 {
     public class Tenant : BaseEntity
     {
+        [IgnoreForSerialization]
         public override string _table => "tenant";
+        [IgnoreForSerialization]
         public override string _schema => "help_desk";
         public Guid? tenant_id { get; set; }
         public TimeSpan? create_dt { get; set; }

@@ -1,4 +1,5 @@
 ﻿using CommonLibrary.Helpers;
+using CommonLibrary.SharedServices;
 using CommonLibrary.SharedServices.Interfaces;
 using ServicePortal.Application.Interfaces;
 using ServicePortal.Application.Models;
@@ -11,6 +12,7 @@ namespace ServicePortal.Application.Services
         private CurrentUser? _cachedUser;
 
         public CurrentUser? CurrentUser => _cachedUser;
+        private bool IsHelpDesk => AppConfig.AppType == AppType.Helpdesk;
 
         //add secretaManagerService 
         public CurrentUserService(IContextSerivice tenantContextService)
@@ -28,7 +30,8 @@ namespace ServicePortal.Application.Services
                 var tenantContext = await _contextService.GetTenantContext(orgCode);
                 if(tenantContext == null)
                     throw new Exception("Failed to get context for user!");
-                var email = AesEncryption.DecryptEcb(hashedMail, tenantContext.TenantSecret);
+                var emailSecret = IsHelpDesk ? await _contextService.GetConventusSecret() : tenantContext.TenantSecret;
+                var email = AesEncryption.DecryptEcb(hashedMail, emailSecret);
                 cacheContextUser = new CurrentUser { OrgCode = orgCode, Email = hashedMail, Decr_Email = email, OrgSecret = tenantContext.TenantSecret, TenantId = tenantContext.TenantId };
             }
 

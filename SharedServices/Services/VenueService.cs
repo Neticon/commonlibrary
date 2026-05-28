@@ -76,7 +76,7 @@ namespace CommonLibrary.SharedServices.Services
                     var publicationState = new VenuePublicationState { venue_id = new Guid(data.filters.venue_id), status = VenuePublicationStatus.busy };
                     await SaveCurrentPublicationState(publicationState);
                     publicationState.status = VenuePublicationStatus.idle;
-                    await TryReplaceJs(publicationState);
+                    await TryReplaceJs(CurrentUser.TenantId, publicationState);
                     _ = SaveCurrentPublicationState(publicationState);
                 }
 
@@ -86,9 +86,6 @@ namespace CommonLibrary.SharedServices.Services
 
         public async Task<ServiceResponse> DeleteVenue(DeleteVenueModel data)
         {
-            //check is tenant same as in context
-            if (!CurrentUser.TenantId.ToString().Equals(data.filters.tenant_id))
-                throw new Exception($"Cross tenant deletion!");
             data.filters.tenant_id = null;
             data.data.is_deleted = true;
             var tenant = (await _tenantRepository.GetDataTyped(new GraphApiPayload { data = new Tenant { intg_video = "", cntrct_plan = "" }, filters = new Tenant { tenant_id = CurrentUser.TenantId } })).rows.First();
@@ -121,7 +118,7 @@ namespace CommonLibrary.SharedServices.Services
                 var resp = await _genericRepository.UpdateEntity(data, CurrentUser.OrgSecret);
                 if (resp.success)
                 {
-                    await TryReplaceJs(publicationState);
+                    await TryReplaceJs(new Guid(data.filters.tenant_id), publicationState);
                 }
                 else
                 {
@@ -148,7 +145,7 @@ namespace CommonLibrary.SharedServices.Services
                     var publicationState = new VenuePublicationState { venue_id = new Guid(data.filters.venue_id), status = VenuePublicationStatus.busy };
                     await SaveCurrentPublicationState(publicationState);
                     publicationState.status = VenuePublicationStatus.idle;
-                    await TryReplaceJs(publicationState);
+                    await TryReplaceJs(new Guid(data.filters.tenant_id), publicationState);
                     _ = SaveCurrentPublicationState(publicationState);
                 }
 
@@ -216,7 +213,7 @@ namespace CommonLibrary.SharedServices.Services
                     var publicationState = new VenuePublicationState { venue_id = new Guid(data.filters.venue_id), status = VenuePublicationStatus.busy };
                     await SaveCurrentPublicationState(publicationState);
                     publicationState.status = VenuePublicationStatus.idle;
-                    await TryReplaceJs(publicationState);
+                    await TryReplaceJs(CurrentUser.TenantId, publicationState);
                     _ = SaveCurrentPublicationState(publicationState);
                 }
 
@@ -257,7 +254,7 @@ namespace CommonLibrary.SharedServices.Services
             var resp = await dbOperation();
             if (resp.success)
             {
-                var jsGenerated = await TryReplaceJs(publicationState);
+                var jsGenerated = await TryReplaceJs(CurrentUser.TenantId, publicationState);
                 if (jsGenerated && postPublishOperation != null)
                 {
                     var postSuccess = await postPublishOperation();
@@ -282,16 +279,17 @@ namespace CommonLibrary.SharedServices.Services
             return new ServiceResponse { Result = resp };
         }
 
-        private async Task<bool> TryReplaceJs(VenuePublicationState publicationState)
+        public async Task<bool> TryReplaceJs(Guid tenantId, VenuePublicationState publicationState = null)
         {
             try
             {
-                await _venueGenerationService.ReplaceJs(CurrentUser.TenantId.ToString());
+                await _venueGenerationService.ReplaceJs(tenantId.ToString());
                 return true;
             }
             catch (Exception ex)
             {
-                SetPublicationError(publicationState, ex.Message, "JS_GENERATE_PUBLISH");
+                if (publicationState != null)
+                    SetPublicationError(publicationState, ex.Message, "JS_GENERATE_PUBLISH");
                 return false;
             }
         }
