@@ -25,7 +25,7 @@ namespace ServicePortal.Application.Services
                 return _cachedUser;
 
             var cacheContextUser = await _contextService.GetCurrentUserContext(hashedMail);
-            if (cacheContextUser == null) //no context, fallback to create context
+            if (cacheContextUser == null || cacheContextUser.OrgCode != orgCode) //no context, fallback to create context
             { 
                 var tenantContext = await _contextService.GetTenantContext(orgCode);
                 if(tenantContext == null)

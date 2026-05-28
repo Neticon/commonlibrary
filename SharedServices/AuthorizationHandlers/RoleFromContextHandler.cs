@@ -1,4 +1,6 @@
-﻿using Microsoft.AspNetCore.Authorization;
+﻿using CommonLibrary.Domain.Entities;
+using Microsoft.AspNetCore.Authorization;
+using WebApp.API.Controllers.Helper;
 using ServicePortal.Application.Interfaces;
 
 public sealed class RoleFromDbHandler
@@ -19,7 +21,10 @@ public sealed class RoleFromDbHandler
         var orgCode = context.User.FindFirst("custom:organization_code")?.Value;
         var user = await _currentUserService.GetAsync(email, orgCode);
 
-        if (user.Role == requirement.Role)
+        var userRoleInt = CommonHelperFunctions.GetRoleInt(user.Role);
+        var requiredRoleInt = CommonHelperFunctions.GetRoleInt(requirement.Role);
+
+        if (userRoleInt >= requiredRoleInt)
         {
             context.Succeed(requirement);
         }
