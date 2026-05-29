@@ -51,6 +51,13 @@ namespace ServicePortal.Application.Services
                 {
                     currentUser.Role = context.user.role;
                     _contextService.SetCurrentUserContext(currentUser.Email, currentUser);
+                }else if(currentUser.OrgCode != org_code) //FOR HD => CHANGE SELECTED ORG_CODE
+                {
+                    currentUser.OrgCode = org_code;
+                    currentUser.TenantId = new Guid(context.tenant.tenant_id);
+                    currentUser.OrgSecret = secret;
+                    currentUser.Venues = context.venues.venue_id;
+                    _contextService.SetCurrentUserContext(currentUser.Email, currentUser);
                 }
                 var encryPaths = EncryptionMetadataHelper.GetEncryptedPropertyPaths(typeof(UserContextModel));
                 ObjectEncryption.DecryptObject(context, IsHelpDesk ? await _contextService.GetConventusSecret() : secret, encryPaths.Item1, encryPaths.Item2);
