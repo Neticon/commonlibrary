@@ -1,16 +1,20 @@
-﻿using CommonLibrary.Domain.Entities;
+using CommonLibrary.SharedServices;
 using Microsoft.AspNetCore.Authorization;
-using WebApp.API.Controllers.Helper;
+using Microsoft.AspNetCore.Http;
 using ServicePortal.Application.Interfaces;
+using WebApp.API.Controllers.Helper;
 
 public sealed class RoleFromDbHandler
     : AuthorizationHandler<RoleRequirement>
 {
     private readonly ICurrentUserService _currentUserService;
+    private readonly IHttpContextAccessor _httpContextAccessor;
+    private const string REQUEST_ID_HEADER = "X-Request-ID";
 
-    public RoleFromDbHandler(ICurrentUserService currentUserService)
+    public RoleFromDbHandler(ICurrentUserService currentUserService, IHttpContextAccessor httpContextAccessor)
     {
         _currentUserService = currentUserService;
+        _httpContextAccessor = httpContextAccessor;
     }
 
     protected override async Task HandleRequirementAsync(
@@ -18,7 +22,18 @@ public sealed class RoleFromDbHandler
         RoleRequirement requirement)
     {
         var email = context.User.FindFirst("custom:postal_code")?.Value;
-        var orgCode = context.User.FindFirst("custom:organization_code")?.Value;
+
+        string orgCode;
+        if (AppConfig.AppType == AppType.Helpdesk)
+        {
+            _httpContextAccessor.HttpContext.Request.Headers.TryGetValue(REQUEST_ID_HEADER, out var headerOrgCode);
+            orgCode = headerOrgCode;
+        }
+        else
+        {
+            orgCode = context.User.FindFirst("custom:organization_code")?.Value;
+        }
+
         var user = await _currentUserService.GetAsync(email, orgCode);
 
         var userRoleInt = CommonHelperFunctions.GetRoleInt(user.Role);
