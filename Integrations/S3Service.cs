@@ -4,7 +4,7 @@ using Amazon.S3;
 using Amazon.S3.Model;
 using Amazon.SecurityToken;
 using Amazon.SecurityToken.Model;
-using ServicePortal.Application.Models;
+using CommonLibrary.Models;
 using System.Text;
 
 namespace CommonLibrary.Integrations

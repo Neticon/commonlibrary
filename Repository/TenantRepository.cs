@@ -2,7 +2,7 @@
 using CommonLibrary.Models;
 using CommonLibrary.Repository.Interfaces;
 using Microsoft.Extensions.Configuration;
-using ServicePortal.API.Infrastructure.Repository;
+using CommonLibrary.Repository;
 
 namespace CommonLibrary.Repository
 {

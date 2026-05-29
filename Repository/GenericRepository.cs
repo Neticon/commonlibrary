@@ -6,10 +6,9 @@ using Microsoft.Extensions.Configuration;
 using Newtonsoft.Json;
 using Newtonsoft.Json.Linq;
 using Npgsql;
-using ServicePortal.Domain.PSQL;
 using System.Text;
 
-namespace ServicePortal.API.Infrastructure.Repository
+namespace CommonLibrary.Repository
 {
     public class GenericRepository<T> : IGenericRepository<T>
     {

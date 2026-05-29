@@ -8,7 +8,7 @@ using Newtonsoft.Json;
 using Newtonsoft.Json.Linq;
 using Npgsql;
 using NpgsqlTypes;
-using ServicePortal.Domain.PSQL;
+using CommonLibrary.Domain.PSQL;
 
 namespace CommonLibrary.Repository
 {

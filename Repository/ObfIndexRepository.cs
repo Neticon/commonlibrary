@@ -6,7 +6,7 @@ using Microsoft.Extensions.Configuration;
 using Newtonsoft.Json;
 using Npgsql;
 using NpgsqlTypes;
-using ServicePortal.API.Infrastructure.Repository;
+using CommonLibrary.Repository;
 
 namespace CommonLibrary.Repository
 {

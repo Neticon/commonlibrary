@@ -8,7 +8,6 @@ using CommonLibrary.Repository.Interfaces;
 using CommonLibrary.SharedServices.Interfaces;
 using Integration.Grpc;
 using Newtonsoft.Json;
-using ServicePortal.Application.Interfaces;
 using System.Diagnostics;
 using WebApp.API.Controllers.Helper;
 

@@ -1,7 +1,7 @@
 ﻿using CommonLibrary.Domain.Entities;
-using ServicePortal.Application.Models;
+using CommonLibrary.Models;
 
-namespace ServicePortal.Application.Interfaces
+namespace CommonLibrary.SharedServices.Interfaces
 {
     public interface ICurrentUserService
     {

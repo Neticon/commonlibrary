@@ -1,7 +1,7 @@
 using CommonLibrary.SharedServices;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Http;
-using ServicePortal.Application.Interfaces;
+using CommonLibrary.SharedServices.Interfaces;
 using WebApp.API.Controllers.Helper;
 
 public sealed class RoleFromDbHandler

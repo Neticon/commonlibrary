@@ -10,8 +10,7 @@ using Integration.Grpc;
 using Mapster;
 using Newtonsoft.Json;
 using Newtonsoft.Json.Linq;
-using ServicePortal.Application.Interfaces;
-using ServicePortal.Domain.PSQL;
+using CommonLibrary.Domain.PSQL;
 using VenueGenerationService;
 
 namespace CommonLibrary.SharedServices.Services

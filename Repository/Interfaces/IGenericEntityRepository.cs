@@ -1,7 +1,6 @@
 ﻿using CommonLibrary.Domain.Entities;
 using CommonLibrary.Domain.PSQL;
 using Newtonsoft.Json.Linq;
-using ServicePortal.Domain.PSQL;
 
 namespace CommonLibrary.Repository.Interfaces
 {

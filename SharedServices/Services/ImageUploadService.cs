@@ -2,9 +2,7 @@
 using CommonLibrary.Integrations;
 using CommonLibrary.Models;
 using CommonLibrary.SharedServices.Interfaces;
-using ServicePortal.Application.Interfaces;
-using ServicePortal.Application.Models;
-using ServicePortal.Domain.PSQL;
+using CommonLibrary.Domain.PSQL;
 using SixLabors.ImageSharp;
 using SixLabors.ImageSharp.Formats.Webp;
 using SixLabors.ImageSharp.PixelFormats;

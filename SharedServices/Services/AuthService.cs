@@ -6,10 +6,9 @@ using CommonLibrary.SharedServices;
 using CommonLibrary.SharedServices.Interfaces;
 using Npgsql;
 using NpgsqlTypes;
-using ServicePortal.Application.Interfaces;
-using ServicePortal.Application.Models;
+using CommonLibrary.Models;
 
-namespace ServicePortal.Application.Services
+namespace CommonLibrary.SharedServices.Services
 {
     public class AuthService : IAuthService
     {

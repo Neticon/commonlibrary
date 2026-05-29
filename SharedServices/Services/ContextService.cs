@@ -4,7 +4,7 @@ using CommonLibrary.Repository.Interfaces;
 using CommonLibrary.Repository.Redis;
 using CommonLibrary.SharedServices.Interfaces;
 using Newtonsoft.Json;
-using ServicePortal.Application.Models;
+using CommonLibrary.Models;
 
 namespace CommonLibrary.SharedServices.Services
 {

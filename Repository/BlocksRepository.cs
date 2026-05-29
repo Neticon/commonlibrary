@@ -5,7 +5,7 @@ using CommonLibrary.Repository.Interfaces;
 using Microsoft.Extensions.Configuration;
 using Npgsql;
 using NpgsqlTypes;
-using ServicePortal.API.Infrastructure.Repository;
+using CommonLibrary.Repository;
 using System.Text.Json;
 
 namespace CommonLibrary.Repository

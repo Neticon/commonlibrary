@@ -1,15 +1,15 @@
 using CommonLibrary.Domain;
 
-namespace ServicePortal.Application.Models
+namespace CommonLibrary.Models
 {
     public class UserContextModel
     {
         public UserData user { get; set; }
-        public Tenant tenant { get; set; }
+        public TenantContext tenant { get; set; }
         public Venues venues { get; set; }
     }
 
-    public class Tenant
+    public class TenantContext
     {
         public List<string> domains { get; set; }
         public string active_d { get; set; }

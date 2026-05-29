@@ -7,8 +7,6 @@ using CommonLibrary.SharedServices.Interfaces;
 using Microsoft.Extensions.Configuration;
 using Newtonsoft.Json;
 using Newtonsoft.Json.Linq;
-using ServicePortal.API.Infrastructure.Repository;
-using ServicePortal.Domain.PSQL;
 using System.Net.Sockets;
 
 namespace CommonLibrary.Repository

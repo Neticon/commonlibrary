@@ -1,5 +1,5 @@
 ﻿using CommonLibrary.Models.API;
-using ServicePortal.Application.Models;
+using CommonLibrary.Models;
 
 namespace CommonLibrary.SharedServices.Interfaces
 {

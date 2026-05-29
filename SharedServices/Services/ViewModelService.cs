@@ -7,7 +7,6 @@ using Newtonsoft.Json;
 using Newtonsoft.Json.Linq;
 using Npgsql;
 using NpgsqlTypes;
-using ServicePortal.Application.Interfaces;
 
 namespace CommonLibrary.SharedServices.Services
 {

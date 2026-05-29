@@ -1,6 +1,4 @@
-﻿using Google.Protobuf.WellKnownTypes;
-
-namespace ServicePortal.Application.Models
+﻿namespace CommonLibrary.Models
 {
     public class CurrentUser
     {

@@ -4,8 +4,7 @@ using CommonLibrary.Repository.Interfaces;
 using CommonLibrary.SharedServices.Interfaces;
 using Newtonsoft.Json;
 using Newtonsoft.Json.Linq;
-using ServicePortal.Application.Interfaces;
-using ServicePortal.Domain.PSQL;
+using CommonLibrary.Domain.PSQL;
 
 namespace CommonLibrary.SharedServices.Services
 {

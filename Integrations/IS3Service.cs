@@ -1,5 +1,5 @@
 ﻿using Amazon.S3.Model;
-using ServicePortal.Application.Models;
+using CommonLibrary.Models;
 
 namespace CommonLibrary.Integrations
 {

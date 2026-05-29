@@ -7,7 +7,6 @@ using Newtonsoft.Json;
 using Newtonsoft.Json.Linq;
 using Npgsql;
 using NpgsqlTypes;
-using ServicePortal.Application.Interfaces;
 using WebApp.API.Controllers.Helper;
 
 namespace CommonLibrary.SharedServices.Services

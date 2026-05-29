@@ -1,10 +1,9 @@
 ﻿using CommonLibrary.Helpers;
+using CommonLibrary.Models;
 using CommonLibrary.SharedServices;
 using CommonLibrary.SharedServices.Interfaces;
-using ServicePortal.Application.Interfaces;
-using ServicePortal.Application.Models;
 
-namespace ServicePortal.Application.Services
+namespace CommonLibrary.SharedServices.Services
 {
     public class CurrentUserService : ICurrentUserService
     {

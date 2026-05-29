@@ -12,7 +12,6 @@ using CommonLibrary.SharedServices.Interfaces;
 using Integration.Grpc;
 using Newtonsoft.Json;
 using Npgsql;
-using ServicePortal.Application.Interfaces;
 using WebApp.API.Controllers.Helper;
 
 namespace CommonLibrary.SharedServices.Services

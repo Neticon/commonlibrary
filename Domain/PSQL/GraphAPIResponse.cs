@@ -1,4 +1,4 @@
-﻿namespace ServicePortal.Domain.PSQL
+﻿namespace CommonLibrary.Domain.PSQL
 {
     public class GraphAPIResponse<T>
     {

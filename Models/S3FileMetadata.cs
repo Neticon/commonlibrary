@@ -1,4 +1,4 @@
-﻿namespace ServicePortal.Application.Models
+﻿namespace CommonLibrary.Models
 {
     public class S3FileMetadata
     {
