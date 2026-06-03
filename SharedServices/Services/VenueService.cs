@@ -428,6 +428,72 @@ namespace CommonLibrary.SharedServices.Services
             await _redisService.SetString(key, JsonConvert.SerializeObject(state));
         }
 
+        public async Task<ServiceResponse> RetryPublish(string venueId)
+        {
+            var key = $"{VENUE_PULICATION_STATE_PREFIX}{venueId}";
+            var redisValue = await _redisService.GetString(key);
+            if (redisValue == null)
+                return new ServiceResponse { StatusCode = 404 };
+
+            var state = JsonConvert.DeserializeObject<VenuePublicationState>(redisValue);
+            if (state.status != VenuePublicationStatus.error)
+                return new ServiceResponse
+                {
+                    Result = new GraphAPIResponse<Venue> { success = false, message = "Publication is not in error state" }
+                };
+
+            var filters = new VenueModelFilter { venue_id = venueId };
+
+            state.status = VenuePublicationStatus.busy;
+            await SaveCurrentPublicationState(state);
+            state.status = VenuePublicationStatus.idle;
+
+            if (state.Step == "JS_GENERATE_PUBLISH")
+            {
+                var success = await TryReplaceJs(CurrentUser.TenantId, state);
+                _ = SaveCurrentPublicationState(state);
+                return new ServiceResponse
+                {
+                    Result = new GraphAPIResponse<Venue> { success = success, message = state.Message, operation = state.Step }
+                };
+            }
+
+            if (state.Step == "ENTRA_REMOVE_USER")
+            {
+                var venue = (await _genericRepository.GetDataTyped(new GraphApiPayload
+                {
+                    data = new Venue { venue_id = new Guid(), conf_user = new List<ConfUser>() },
+                    filters = filters
+                }, CurrentUser.OrgSecret)).rows.First();
+
+                var removeSuccess = await CleanUpPendingDeleteUsers(venue, filters);
+                if (!removeSuccess)
+                {
+                    SetPublicationError(state, "Failed to remove old entra users.", "ENTRA_REMOVE_USER");
+                    _ = SaveCurrentPublicationState(state);
+                    return new ServiceResponse
+                    {
+                        Result = new GraphAPIResponse<Venue> { success = false, message = state.Message, operation = state.Step }
+                    };
+                }
+
+                await TryReplaceJs(CurrentUser.TenantId, state);
+                _ = SaveCurrentPublicationState(state);
+                return new ServiceResponse
+                {
+                    Result = new GraphAPIResponse<Venue> { success = state.status != VenuePublicationStatus.error, message = state.Message, operation = state.Step }
+                };
+            }
+
+            state.status = VenuePublicationStatus.error;
+            _ = SaveCurrentPublicationState(state);
+            return new ServiceResponse
+            {
+                StatusCode = 422,
+                Result = new GraphAPIResponse<Venue> { success = false, message = $"Publication step '{state.Step}' cannot be automatically retried.", operation = state.Step }
+            };
+        }
+
         public async Task<ServiceResponse> GetPublicationState(string venueId)
         {
             var key = $"{VENUE_PULICATION_STATE_PREFIX}{venueId}";
