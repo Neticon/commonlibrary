@@ -245,7 +245,8 @@ namespace CommonLibrary.SharedServices.Services
                     {
                         success = false,
                         operation = publicationState.Step,
-                        message = publicationState.Message
+                        message = publicationState.Message,
+                        affected_ids = new List<object> { venueId }
                     }
                 };
             }
@@ -273,6 +274,9 @@ namespace CommonLibrary.SharedServices.Services
                 resp.operation = publicationState.Step;
                 resp.message = publicationState.Message;
             }
+
+            if (resp.affected_ids == null || !resp.affected_ids.Any())
+                resp.affected_ids = new List<object> { venueId };
 
             _ = SaveCurrentPublicationState(publicationState);
             return new ServiceResponse { Result = resp };

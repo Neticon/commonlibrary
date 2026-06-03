@@ -11,5 +11,6 @@ namespace CommonLibrary.SharedServices.Interfaces
         Task<ServiceResponse> UpdateVenue(VenueModel data);
         Task<ServiceResponse> GetPublicationState(string venueId);
         Task<ServiceResponse> RetryPublish(string venueId);
+        Task<bool> TryReplaceJs(Guid tenantId, VenuePublicationState publicationState = null);
     }
 }
