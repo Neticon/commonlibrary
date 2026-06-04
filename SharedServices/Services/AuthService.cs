@@ -28,7 +28,16 @@ namespace CommonLibrary.SharedServices.Services
 
         public async Task<Tuple<UserContextModel, string, long>> GetUserContext(string org_code, string hashedMail, string ip)
         {
-            var ipData = await _validationService.GetIpData(ip);
+            GeoIPResponse ipData = null;
+            try
+            {
+                ipData = await _validationService.GetIpData(ip);
+            }catch(Exception ex)
+            {
+                var errMsg = $"Failed validation ip = {ip} with exception ={ex.ToString()}";
+                Console.Write(errMsg);
+                return new Tuple<UserContextModel, string, long>(new UserContextModel { }, errMsg, 0);
+            }
             var lastAccess = GenerateLastAccessObject(ip, ipData.city.name, ipData.country.isoCode);
             var query = IsHelpDesk ? GenerateGetContextQuerySuper(hashedMail, org_code, lastAccess) : GenerateGetContextQuery(hashedMail, org_code, lastAccess);
             var userConextResponse = await _userContextRepository.ExecuteStandardCommand(query);
