@@ -7,11 +7,11 @@
         [IgnoreForSerialization]
         public override string _schema => "help_desk";
         public Guid? tenant_id { get; set; }
-        public TimeSpan? create_dt { get; set; }
+        public DateTime? create_dt { get; set; }
         public string? create_bu { get; set; }
-        public TimeSpan? modify_dt { get; set; }
+        public DateTime? modify_dt { get; set; }
         public string? modify_bu { get; set; }
-        public TimeSpan? delete_dt { get; set; }
+        public DateTime? delete_dt { get; set; }
         public string? delete_bu { get; set; }
         public string? mods { get; set; }
         public string? org_name { get; set; }
