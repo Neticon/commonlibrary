@@ -139,15 +139,13 @@ namespace CommonLibrary.SharedServices.Services
             var encryptPathsVenue = EncryptionMetadataHelper.GetEncryptedPropertyPaths(typeof(Venue));
             ObjectEncryption.DecryptObject(venue, secret, encryptPathsVenue.Item1, encryptPathsVenue.Item2);
 
-            var reasonResult = BookingEmailHelper.GetReasonForMail(booking.u_reason, venue);
-            var reason = reasonResult.Item1;
-
             if (string.IsNullOrEmpty(data.data.modify_bu))
                 data.data.modify_bu = CurrentUser.Email;
             data.data.modify_dt = DateTime.UtcNow;
 
             if (data.data.block_status == Domain.Entities.BlockStatus.RESCHEDULED.ToString())
             {
+                var reasonResult = BookingEmailHelper.GetReasonForMail(booking.u_reason, venue);
                 if (data.data.block_start == null || data.data.block_end == null)
                 {
                     response.Result = 204;
@@ -182,6 +180,7 @@ namespace CommonLibrary.SharedServices.Services
                     var result = await _bookingRepository.UpdateEntity(data, ignoreEncryption: true);
                     if (result != null && result.success)
                     {
+                        var reason = reasonResult.Item1;
                         response.Result = result;
                         var meetingUrl = "";
                         if (tenant.intg_video == "CONVENTUS_TEAMS" && booking.type.ToString().ToLower() == "v")
@@ -204,6 +203,9 @@ namespace CommonLibrary.SharedServices.Services
             }
             else if (data.data.block_status == Domain.Entities.BlockStatus.CANCELLED.ToString())
             {
+                var reasonResult = BookingEmailHelper.GetReasonForMail(booking.u_reason, venue);
+                var reason = reasonResult.Item1;
+
                 var result = await _bookingRepository.UpdateEntity(data, ignoreEncryption: true);
                 if (result != null && result.success)
                 {
