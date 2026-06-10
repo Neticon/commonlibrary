@@ -351,11 +351,22 @@ namespace CommonLibrary.SharedServices.Services
         private List<MicrosoftUserRequest> CreateMicrosoftConferenseUsers(Venue venue, string orgCode, bool serviceBased, int slots, Venue oldVenue)
         {
             var usersByConfig = new List<MicrosoftUserRequest>();
+
+            var configSource = venue.configuration ?? oldVenue.configuration;
+            var serviceReasons = configSource != null ? ((JToken)configSource)["service_reason"] : null;
+
             var usageLocation = venue.country_code ?? oldVenue.country_code;
             for (int i = 1; i <= slots; i++)
             {
                 if (!serviceBased)
                 {
+                    var hasV = serviceReasons?
+                        .Where(sr => sr["service_id"]?.ToString().Equals("DEFAULT", StringComparison.OrdinalIgnoreCase) == true)
+                        .SelectMany(sr => sr["blocks"] ?? Enumerable.Empty<JToken>())
+                        .Any(block => block["v"]?.Count() > 0) == true;
+                    if (!hasV)
+                        break;
+
                     var displayName = MicrosoftIntegrationHelper.BuildDisplayName(orgCode, venue.name ?? oldVenue.name, null, i);
                     var localUpn = MicrosoftIntegrationHelper.BuildLocalUpn(orgCode, venue.venue_id == null ? oldVenue.venue_id.ToString() : venue.venue_id.ToString(), "DEFAULT", i);
                     var password = MicrosoftIntegrationHelper.BuildPassword(orgCode, null, i);
@@ -373,6 +384,14 @@ namespace CommonLibrary.SharedServices.Services
                     foreach (var service in services)
                     {
                         var service_id = service["id"].ToString();
+
+                        var hasV = serviceReasons?
+                            .Where(sr => sr["service_id"]?.ToString().Equals(service_id, StringComparison.OrdinalIgnoreCase) == true)
+                            .SelectMany(sr => sr["blocks"] ?? Enumerable.Empty<JToken>())
+                            .Any(block => block["v"]?.Count() > 0) == true;
+                        if (!hasV)
+                            continue;
+
                         var displayName = MicrosoftIntegrationHelper.BuildDisplayName(orgCode, venue.name ?? oldVenue.name, service_id, i);
                         var localUpn = MicrosoftIntegrationHelper.BuildLocalUpn(orgCode, venue.venue_id == null ? oldVenue.venue_id.ToString() : venue.venue_id.ToString(), service_id, i);
                         var password = MicrosoftIntegrationHelper.BuildPassword(orgCode, service_id, i);
