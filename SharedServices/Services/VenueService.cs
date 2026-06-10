@@ -327,27 +327,27 @@ namespace CommonLibrary.SharedServices.Services
             }
 
             var usersCreated = new List<string>();
-            var success = true;
+            string? createErrorMessage = null;
 
             foreach (var user in newUsersUpn)
             {
                 var request = configUsers.FirstOrDefault(q => q.FullUpn == user);
                 var result = await _microsoftClient.CreateMicrosoftUser(request);
-                if (result.UserId == "")
+                if (!string.IsNullOrEmpty(result.ErrorMessage))
                 {
-                    success = false;
+                    createErrorMessage = result.ErrorMessage;
                     break;
                 }
                 else
                     usersCreated.Add(user);
             }
 
-            if (!success)
+            if (createErrorMessage != null)
             {
                 foreach (var user in usersCreated)
                     await _microsoftClient.RemoveMicrosoftUser(new RemoveMicrosoftUserRequest { FullUpn = user });
 
-                return (false, "Failed to create Microsoft conference users.");
+                return (false, createErrorMessage);
             }
 
             venue.conf_user = configUsersUpn.Select(q => new ConfUser { upn = q, status = ConfUserStatus.Active }).ToList();

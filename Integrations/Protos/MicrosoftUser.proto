@@ -25,6 +25,7 @@ message RemoveMicrosoftUserRequest{
 
 message MicrosoftUserResponse{
 	string userId = 1;
+	string errorMessage = 2;
 }
 
 message RemoveMicrosoftUserResponse{
