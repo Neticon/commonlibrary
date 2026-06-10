@@ -85,7 +85,7 @@ namespace CommonLibrary.SharedServices.Services
 
         public async Task<ServiceResponse> DeleteVenue(DeleteVenueModel data)
         {
-            data.filters.tenant_id = null;
+            //data.filters.tenant_id = null;
             data.data.is_deleted = true;
             var tenant = (await _tenantRepository.GetDataTyped(new GraphApiPayload { data = new Tenant { intg_video = "", cntrct_plan = "" }, filters = new Tenant { tenant_id = CurrentUser.TenantId } })).rows.First();
             var tenantIntConfig = tenant.intg_video;
@@ -98,20 +98,23 @@ namespace CommonLibrary.SharedServices.Services
 
                 var venue = (await _genericRepository.GetDataTyped(new GraphApiPayload { data = new Venue { venue_id = new Guid(), configuration = new object(), conf_user = new List<ConfUser>() }, filters = data.filters }, CurrentUser.OrgSecret)).rows.First();
                 var bookingMode = GetBookingModeFromConfig(venue.configuration);
-                var remove = await RemoveMicrosoftConferenseUsers(venue.conf_user.Select(q => q.upn).ToList());
-                if (!remove)
+                if (venue.conf_user != null)
                 {
-                    SetPublicationError(publicationState, "Failed to execute microsoft integrations for users", "ENTRA_REMOVE_USER");
-                    _ = SaveCurrentPublicationState(publicationState);
-                    return new ServiceResponse
+                    var remove = await RemoveMicrosoftConferenseUsers(venue.conf_user.Select(q => q.upn).ToList());
+                    if (!remove)
                     {
-                        Result = new GraphAPIResponse<Venue>
+                        SetPublicationError(publicationState, "Failed to execute microsoft integrations for users", "ENTRA_REMOVE_USER");
+                        _ = SaveCurrentPublicationState(publicationState);
+                        return new ServiceResponse
                         {
-                            success = false,
-                            operation = publicationState.Step,
-                            message = publicationState.Message
-                        }
-                    };
+                            Result = new GraphAPIResponse<Venue>
+                            {
+                                success = false,
+                                operation = publicationState.Step,
+                                message = publicationState.Message
+                            }
+                        };
+                    }
                 }
 
                 var resp = await _genericRepository.UpdateEntity(data, CurrentUser.OrgSecret);
@@ -307,7 +310,7 @@ namespace CommonLibrary.SharedServices.Services
         private async Task<(bool Success, string? Message)> RunTeamsUsersCheckAndRebuild(Venue venue, string orgCode, bool serviceBased, int slots, Venue currentVenue)
         {
             var currentUsersUpn = new List<string>();
-            if (currentVenue.conf_user != null && currentVenue.conf_user.Count > 0)
+            if (currentVenue != null && currentVenue.conf_user != null && currentVenue.conf_user.Count > 0)
                 currentUsersUpn = currentVenue.conf_user.Select(q => q.upn).ToList();
             var configUsers = CreateMicrosoftConferenseUsers(venue, orgCode, serviceBased, slots, currentVenue);
             var configUsersUpn = configUsers.Select(q => q.FullUpn);
