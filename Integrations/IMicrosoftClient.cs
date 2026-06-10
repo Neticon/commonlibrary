@@ -7,6 +7,7 @@ namespace CommonLibrary.Integrations
     {
         Task<MicrosoftUserResponse> CreateMicrosoftUser(MicrosoftUserRequest request);
         Task<RemoveMicrosoftUserResponse> RemoveMicrosoftUser(RemoveMicrosoftUserRequest request);
+        Task<CheckLicenseAvailabilityResponse> CheckLicenseAvailability(CheckLicenseAvailabilityRequest request);
 
         Task<MicrosoftEventResponse> CreateMicrosoftEvent(MicrosoftEventRequest request);
         Task<MicrosoftEventResponse> RescheduleMicrosoftEvent(UpdateMicrosoftEventRequest request);

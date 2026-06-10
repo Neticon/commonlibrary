@@ -234,10 +234,10 @@ namespace CommonLibrary.SharedServices.Services
             await SaveCurrentPublicationState(publicationState);
             publicationState.status = VenuePublicationStatus.idle;
 
-            var teamsSuccess = await RunTeamsUsersCheckAndRebuild(venue, orgCode, serviceBased, simultaneousLimit, currentVenue);
-            if (!teamsSuccess)
+            var teamsResult = await RunTeamsUsersCheckAndRebuild(venue, orgCode, serviceBased, simultaneousLimit, currentVenue);
+            if (!teamsResult.Success)
             {
-                SetPublicationError(publicationState, "Failed to create entra users", "ENTRA_CREATE_USER");
+                SetPublicationError(publicationState, teamsResult.Message, "ENTRA_CREATE_USER");
                 _ = SaveCurrentPublicationState(publicationState);
                 return new ServiceResponse
                 {
@@ -304,19 +304,27 @@ namespace CommonLibrary.SharedServices.Services
             state.Step = step;
         }
 
-        private async Task<bool> RunTeamsUsersCheckAndRebuild(Venue venue, string orgCode, bool serviceBased, int slots, Venue currentVenue)
+        private async Task<(bool Success, string? Message)> RunTeamsUsersCheckAndRebuild(Venue venue, string orgCode, bool serviceBased, int slots, Venue currentVenue)
         {
-            var success = true;
             var currentUsersUpn = new List<string>();
             if (currentVenue.conf_user != null && currentVenue.conf_user.Count > 0)
                 currentUsersUpn = currentVenue.conf_user.Select(q => q.upn).ToList();
             var configUsers = CreateMicrosoftConferenseUsers(venue, orgCode, serviceBased, slots, currentVenue);
             var configUsersUpn = configUsers.Select(q => q.FullUpn);
 
-            var newUsersUpn = configUsersUpn.Except(currentUsersUpn);
+            var newUsersUpn = configUsersUpn.Except(currentUsersUpn).ToList();
             var removeUsersUpn = currentUsersUpn.Except(configUsersUpn);
 
+            if (newUsersUpn.Count > 0)
+            {
+                var licenseCheck = await _microsoftClient.CheckLicenseAvailability(
+                    new CheckLicenseAvailabilityRequest { Required = newUsersUpn.Count });
+                if (!licenseCheck.Success)
+                    return (false, licenseCheck.Message);
+            }
+
             var usersCreated = new List<string>();
+            var success = true;
 
             foreach (var user in newUsersUpn)
             {
@@ -334,18 +342,15 @@ namespace CommonLibrary.SharedServices.Services
             if (!success)
             {
                 foreach (var user in usersCreated)
-                {
-                    var resp = await _microsoftClient.RemoveMicrosoftUser(new RemoveMicrosoftUserRequest { FullUpn = user });
-                }
+                    await _microsoftClient.RemoveMicrosoftUser(new RemoveMicrosoftUserRequest { FullUpn = user });
+
+                return (false, "Failed to create Microsoft conference users.");
             }
 
-            if (success)
-            {
-                venue.conf_user = configUsersUpn.Select(q => new ConfUser { upn = q, status = ConfUserStatus.Active }).ToList();
-                venue.conf_user.AddRange(removeUsersUpn.Select(q => new ConfUser { upn = q, status = ConfUserStatus.Pending_Delete }));
-            }
+            venue.conf_user = configUsersUpn.Select(q => new ConfUser { upn = q, status = ConfUserStatus.Active }).ToList();
+            venue.conf_user.AddRange(removeUsersUpn.Select(q => new ConfUser { upn = q, status = ConfUserStatus.Pending_Delete }));
 
-            return success;
+            return (true, null);
         }
 
         private List<MicrosoftUserRequest> CreateMicrosoftConferenseUsers(Venue venue, string orgCode, bool serviceBased, int slots, Venue oldVenue)

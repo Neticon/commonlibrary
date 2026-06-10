@@ -38,6 +38,13 @@ namespace CommonLibrary.Integrations
             return response;
         }
 
+        public async Task<CheckLicenseAvailabilityResponse> CheckLicenseAvailability(CheckLicenseAvailabilityRequest request)
+        {
+            var headers = new Grpc.Core.Metadata { { "x-internal-key", _internalKey } };
+            var response = await _microsoftUserClient.CheckLicenseAvailabilityAsync(request, headers);
+            return response;
+        }
+
         public async Task<MicrosoftEventResponse> RescheduleMicrosoftEvent(UpdateMicrosoftEventRequest request)
         {
             var headers = new Grpc.Core.Metadata { { "x-internal-key", _internalKey } };

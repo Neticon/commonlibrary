@@ -7,6 +7,7 @@ package microsoftUsers;
 service MicrosoftUser{
 	rpc CreateMicrosoftUser(MicrosoftUserRequest) returns (MicrosoftUserResponse);
 	rpc RemoveMicrosoftUser(RemoveMicrosoftUserRequest) returns (RemoveMicrosoftUserResponse);
+	rpc CheckLicenseAvailability(CheckLicenseAvailabilityRequest) returns (CheckLicenseAvailabilityResponse);
 }
 
 message MicrosoftUserRequest{
@@ -28,4 +29,13 @@ message MicrosoftUserResponse{
 
 message RemoveMicrosoftUserResponse{
 	bool removed = 1;
+}
+
+message CheckLicenseAvailabilityRequest{
+	int32 required = 1;
+}
+
+message CheckLicenseAvailabilityResponse{
+	bool success = 1;
+	string message = 2;
 }
