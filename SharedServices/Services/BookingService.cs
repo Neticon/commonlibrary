@@ -24,10 +24,11 @@ namespace CommonLibrary.SharedServices.Services
         private readonly ISecretService _secretService;
         private readonly IEmailClient _emailClient;
         private readonly IMicrosoftClient _microsoftClient;
+        private readonly IBookingNotificationQueue _notificationQueue;
 
         private readonly string[] INDEXED_FIELDS = ["u_first", "u_last", "u_email", "u_phone", "u_message", "u_reason"];
 
-        public BookingService(IBlocksRepository blocksRepository, IValidationService validationService, IBookingRepository bookingRepository, IVenueRepository venueRepository, IObfIndexRepository obfIndexRepository, ITenantRepository tenantRepository, ISecretService secretService, IEmailClient emailClient, IMicrosoftClient microsoftClient, ICurrentUserService currentUserService) : base(currentUserService)
+        public BookingService(IBlocksRepository blocksRepository, IValidationService validationService, IBookingRepository bookingRepository, IVenueRepository venueRepository, IObfIndexRepository obfIndexRepository, ITenantRepository tenantRepository, ISecretService secretService, IEmailClient emailClient, IMicrosoftClient microsoftClient, ICurrentUserService currentUserService, IBookingNotificationQueue notificationQueue) : base(currentUserService)
         {
             _blocksRepository = blocksRepository;
             _validationService = validationService;
@@ -38,6 +39,7 @@ namespace CommonLibrary.SharedServices.Services
             _secretService = secretService;
             _microsoftClient = microsoftClient;
             _emailClient = emailClient;
+            _notificationQueue = notificationQueue;
         }
 
         public async Task<ServiceResponse> CreateBooking(BookingModelData data, string ip)
@@ -210,6 +212,8 @@ namespace CommonLibrary.SharedServices.Services
                 if (result != null && result.success)
                 {
                     response.Result = result;
+                    _ = _notificationQueue.RemoveBookingNotificationsAsync(booking.booking_id.ToString());
+
                     if (tenant.intg_video == "CONVENTUS_TEAMS" && booking.type.ToString().ToLower() == "v")
                         _ = CancelMicrosoftEvent(booking);
 

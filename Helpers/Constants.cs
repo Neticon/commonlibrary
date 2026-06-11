@@ -18,4 +18,10 @@
         public static List<string> ValidGetOperations = ["list", "detail", null];
     }
 
+    public static class ReminderStreamConstants
+    {
+        public const string StreamName = "reminders_stream";
+        public const string GroupName = "reminder_workers";
+    }
+
 }

@@ -31,6 +31,7 @@
         public static string GET_USAGE_STATISTICS_MV = "select utility.get_usage_statistics_mv(@payload) as x";
         public static string GET_USER_CONTEXT = "select utility.get_user_context(@p_email, @p_org_code, @p_last_access) as result;";
         public static string GET_USER_CONTEXT_SUPER = "select utility.get_user_context_super(@p_email, @p_org_code, @p_last_access) as result;";
+        public static string GET_BOOKINGS_WITH_INTEL = "select utility.get_bookings_with_intel(@p_user_fn, @p_user_email, @p_tenant_id, @p_venue_ids, @p_period, @p_request_id) as result;";
 
     }
 
