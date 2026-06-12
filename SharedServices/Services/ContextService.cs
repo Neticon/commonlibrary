@@ -5,6 +5,7 @@ using CommonLibrary.Repository.Redis;
 using CommonLibrary.SharedServices.Interfaces;
 using Newtonsoft.Json;
 using CommonLibrary.Models;
+using CommonLibrary.Domain.Entities;
 
 namespace CommonLibrary.SharedServices.Services
 {
@@ -13,14 +14,16 @@ namespace CommonLibrary.SharedServices.Services
         private readonly ITenantRepository _tenantRepo;
         private readonly ISecretService _secretService;
         private readonly IRedisService _redisService;
+        private readonly IGenericEntityRepository<ProductPlans> _productPlanRepo;
         private readonly string REDIS_KEY_PREFIX_TENANT = "tenant_context:";
         private readonly string REDIS_KEY_PREFIX_USER = "user_context:";
 
-        public ContextService(ITenantRepository tenantRepo, ISecretService secretService, IRedisService redisService)
+        public ContextService(ITenantRepository tenantRepo, ISecretService secretService, IRedisService redisService, IGenericEntityRepository<ProductPlans> productPlanRepo)
         {
             _tenantRepo = tenantRepo;
             _secretService = secretService;
             _redisService = redisService;
+            _productPlanRepo = productPlanRepo;
         }
 
         public async Task<string> GetConventusSecret()
@@ -43,10 +46,13 @@ namespace CommonLibrary.SharedServices.Services
             if (redisContext != null)
                 return JsonConvert.DeserializeObject<TenantContextModel>(redisContext);
             var secret = await _secretService.GetEncryptionSecret(orgCode);
-            var tenantId = await _tenantRepo.GetTenantId(orgCode);
-            if (tenantId == null)
+            var tenant = await _tenantRepo.GetTenantContext(orgCode);
+            if (tenant == null)
                 throw new Exception($"GetCurrentTenantContext => Failed to find tenant id for org_code {orgCode}");
-            var tenantContext = new TenantContextModel { TenantId = tenantId.Value, TenantSecret = secret };
+            var productPlanResp = await _productPlanRepo.GetDataTyped(new GraphApiPayload { data = new object(), filters = new ProductPlans { plan_id = tenant.cntrct_plan } });
+            if (productPlanResp.success == false)
+                throw new Exception($"GetCurrentTenantContext => Failed to find product plan for org_code {orgCode}, plan id {tenant.cntrct_plan}");
+            var tenantContext = new TenantContextModel { TenantId = tenant.tenant_id.Value, TenantSecret = secret, ProductPlan = productPlanResp.rows.First() };
             _redisService.SetString(key, JsonConvert.SerializeObject(tenantContext));
             return tenantContext;
         }

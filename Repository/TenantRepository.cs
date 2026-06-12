@@ -34,15 +34,14 @@ namespace CommonLibrary.Repository
             return null;
         }
 
-        public async Task<Guid?> GetTenantId(string orgCode)
+        public async Task<Tenant> GetTenantContext(string orgCode)
         {
-            var fields = new Dictionary<string, string>() { { "tenant_id", "\"\"" } };
-            var filters = new Dictionary<string, string>() { { "org_code", $"\"{orgCode}\"" } };
-            var query = GenerateDoSelectQuery(fields, filters, meta._schema, meta._table);
+            var payload = new GraphApiPayload { data = new Tenant { tenant_id = new Guid(), cntrct_plan = "" }, filters = new Tenant { org_code = orgCode } };
+            var query = GenerateDoSelectQuery(payload, meta._schema, meta._table);
             var result = await ExecuteDoSelectCommand(query);
             if (result.success && result.rows.Count > 0)
             {
-                return result.rows.First().tenant_id;
+                return result.rows.First();
             }
             return null;
         }

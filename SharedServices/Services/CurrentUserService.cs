@@ -31,7 +31,7 @@ namespace CommonLibrary.SharedServices.Services
                     throw new Exception("Failed to get context for user!");
                 var emailSecret = IsHelpDesk ? await _contextService.GetConventusSecret() : tenantContext.TenantSecret;
                 var email = AesEncryption.DecryptEcb(hashedMail, emailSecret);
-                cacheContextUser = new CurrentUser { OrgCode = orgCode, Email = hashedMail, Decr_Email = email, OrgSecret = tenantContext.TenantSecret, TenantId = tenantContext.TenantId };
+                cacheContextUser = new CurrentUser { OrgCode = orgCode, Email = hashedMail, Decr_Email = email, OrgSecret = tenantContext.TenantSecret, TenantId = tenantContext.TenantId, ProductPlans = tenantContext.ProductPlan };
             }
 
             _cachedUser = cacheContextUser;
