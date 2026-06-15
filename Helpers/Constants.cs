@@ -16,6 +16,7 @@
     {
         public static string Org_Code_Conventus = "CONVENTUS";
         public static List<string> ValidGetOperations = ["list", "detail", null];
+        public static string Booking_Mode_Service = "SERVICE";
     }
 
     public static class ReminderStreamConstants

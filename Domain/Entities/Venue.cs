@@ -111,4 +111,13 @@
         Pending_Delete
     }
 
+    public class VenueServiceReason
+    {
+        public string id { get; set; }
+        public string name { get; set; }
+        public string desc { get; set; }
+        public string? img { get; set; }
+        public decimal? price { get; set; }
+    }
+
 }

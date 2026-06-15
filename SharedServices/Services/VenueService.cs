@@ -39,6 +39,18 @@ namespace CommonLibrary.SharedServices.Services
 
         public async Task<ServiceResponse> CreateVenue(VenueModel data)
         {
+            var existingVenues = (await _genericRepository.GetDataTyped(
+             new GraphApiPayload
+             {
+                 data = new Venue { venue_id = new Guid() },
+                 filters = new Venue { tenant_id = CurrentUser.TenantId, is_deleted = false }
+             }, CurrentUser.OrgSecret)).rows;
+            if (existingVenues.Count >= CurrentUser.ProductPlans.venue_limit)
+                return new ServiceResponse
+                {
+                    Result = new GraphAPIResponse<Venue> { success = false, message = "Venue limit reached for your subscription plan." }
+                };
+
             var validationResult = await _validationService.GetRedisDeviceIntel(data.data.email, data.data.phone, "");
             if (validationResult == null)
                 throw new Exception("Invalid email or phone");
@@ -50,12 +62,29 @@ namespace CommonLibrary.SharedServices.Services
             venue.evs_id = new Guid(validationResult.EmailValidation);
             venue.pnvs_id = new Guid(validationResult.PhoneValidation);
 
-            var tenant = (await _tenantRepository.GetDataTyped(new GraphApiPayload { data = new Tenant { intg_video = "", cntrct_plan = "" }, filters = new Tenant { tenant_id = CurrentUser.TenantId } })).rows.First();
+            var tenant = (await _tenantRepository.GetDataTyped(new GraphApiPayload { data = new Tenant { intg_video = "", cntrct_plan = "", has_service = false }, filters = new Tenant { tenant_id = CurrentUser.TenantId } })).rows.First();
+            var bookingMode = GetBookingModeFromConfig(data.data.configuration);
+
+            if (bookingMode == CommonConstants.Booking_Mode_Service && !tenant.has_service.Value)
+                return new ServiceResponse
+                {
+                    Result = new GraphAPIResponse<Venue> { success = false, message = "Tenant does not have service mode activated" }
+                };
+
+            if (data.data.reasons.HasValue && data.data.reasons.Value.Value != null)
+            {
+                var (validShape, shapeErr) = ValidateReasonsShape(data.data.reasons.Value.Value);
+                if (!validShape)
+                    return new ServiceResponse { Result = new GraphAPIResponse<Venue> { success = false, message = shapeErr } };
+                var (validMode, modeErr) = ValidateReasonsConsistency(data.data.reasons.Value.Value, bookingMode);
+                if (!validMode)
+                    return new ServiceResponse { Result = new GraphAPIResponse<Venue> { success = false, message = modeErr } };
+            }
+
             var tenantIntConfig = tenant.intg_video;
 
             if (tenantIntConfig == INTG_VIDEO.CONVENTUS_TEAMS.ToString() || tenantIntConfig == INTG_VIDEO.TEAMS.ToString() && data.isPublish)
             {
-                var bookingMode = GetBookingModeFromConfig(data.data.configuration);
                 var productPlan = (await _productPlanRepo.GetDataTyped(new GraphApiPayload { data = new ProductPlans { service_limit = 1, simultaneous_limit = 1 }, filters = new ProductPlans { plan_id = tenant.cntrct_plan } })).rows.First();
 
                 return await ExecuteWithTeamsPublication(
@@ -166,6 +195,21 @@ namespace CommonLibrary.SharedServices.Services
             var includeNullList = new List<string>();
             if (data.data.reasons.HasValue)
                 includeNullList.Add("reasons");
+
+            if (data.data.reasons.HasValue && data.data.reasons.Value.Value != null)
+            {
+                var (validShape, shapeErr) = ValidateReasonsShape(data.data.reasons.Value.Value);
+                if (!validShape)
+                    return new ServiceResponse { Result = new GraphAPIResponse<Venue> { success = false, message = shapeErr } };
+                var incomingBookingMode = GetBookingModeFromConfig(data.data.configuration);
+                if (incomingBookingMode != null)
+                {
+                    var (validMode, modeErr) = ValidateReasonsConsistency(data.data.reasons.Value.Value, incomingBookingMode);
+                    if (!validMode)
+                        return new ServiceResponse { Result = new GraphAPIResponse<Venue> { success = false, message = modeErr } };
+                }
+            }
+
             var venue = data.data.Adapt<Venue>();
             if (data.data.reasons.HasValue)
                 venue.reasons = data.data.reasons.Value.Value;
@@ -183,8 +227,12 @@ namespace CommonLibrary.SharedServices.Services
                 if (phoneUpdate)
                     venue.pnvs_id = new Guid(validationResult.PhoneValidation);
             }
-            var tenant = (await _tenantRepository.GetDataTyped(new GraphApiPayload { data = new Tenant { intg_video = "", cntrct_plan = "" }, filters = new Tenant { tenant_id = CurrentUser.TenantId } })).rows.First();
+            var tenant = (await _tenantRepository.GetDataTyped(new GraphApiPayload { data = new Tenant { intg_video = "", cntrct_plan = "", has_service = false }, filters = new Tenant { tenant_id = CurrentUser.TenantId } })).rows.First();
             var tenantIntConfig = tenant.intg_video;
+
+            var updatedBookingMode = GetBookingModeFromConfig(data.data.configuration);
+            if (updatedBookingMode == CommonConstants.Booking_Mode_Service && !tenant.has_service.Value)
+                return new ServiceResponse { Result = new GraphAPIResponse<Venue> { success = false, message = "Tenant does not have service mode activated" } };
 
             if (data.isPublish && (tenantIntConfig == INTG_VIDEO.CONVENTUS_TEAMS.ToString() || tenantIntConfig == INTG_VIDEO.TEAMS.ToString()))
             {
@@ -451,6 +499,61 @@ namespace CommonLibrary.SharedServices.Services
             if (configJson["booking_mode"] == null)
                 return null;
             return configJson["booking_mode"].ToString();
+        }
+
+        private enum ReasonsShape { String, StringList, ServiceList }
+
+        private ReasonsShape? GetReasonsShape(object reasons)
+        {
+            var token = reasons as JToken ?? JToken.FromObject(reasons);
+            if (token.Type == JTokenType.String) return ReasonsShape.String;
+            if (token.Type == JTokenType.Array)
+            {
+                var arr = (JArray)token;
+                if (!arr.Any()) return ReasonsShape.StringList;
+                return arr.First().Type == JTokenType.Object ? ReasonsShape.ServiceList : ReasonsShape.StringList;
+            }
+            return null;
+        }
+
+        private (bool isValid, string error) ValidateReasonsShape(object reasons)
+        {
+            var token = reasons as JToken ?? JToken.FromObject(reasons);
+            if (token.Type == JTokenType.String) return (true, null);
+            if (token.Type == JTokenType.Array)
+            {
+                var arr = (JArray)token;
+                if (!arr.Any()) return (true, null);
+                if (arr.First().Type == JTokenType.String) return (true, null);
+                if (arr.First().Type == JTokenType.Object)
+                {
+                    foreach (var item in arr)
+                    {
+                        VenueServiceReason svc;
+                        try { svc = item.ToObject<VenueServiceReason>(); }
+                        catch { return (false, "Invalid service object in reasons"); }
+
+                        if (string.IsNullOrWhiteSpace(svc?.id))
+                            return (false, "Each service in reasons must have a non-empty 'id'");
+                        if (string.IsNullOrWhiteSpace(svc?.name))
+                            return (false, "Each service in reasons must have a non-empty 'name'");
+                    }
+                    return (true, null);
+                }
+            }
+            return (false, "reasons must be a string, list of strings, or list of service objects");
+        }
+
+        private (bool isValid, string error) ValidateReasonsConsistency(object reasons, string bookingMode)
+        {
+            if (bookingMode == null) return (true, null);
+            var shape = GetReasonsShape(reasons);
+            bool isServiceMode = bookingMode == CommonConstants.Booking_Mode_Service;
+            if (isServiceMode && shape != ReasonsShape.ServiceList)
+                return (false, "reasons must be a list of service objects when booking_mode is SERVICE");
+            if (!isServiceMode && shape == ReasonsShape.ServiceList)
+                return (false, "reasons must be a string or list of strings when booking_mode is not SERVICE");
+            return (true, null);
         }
 
         private async Task SaveCurrentPublicationState(VenuePublicationState state)

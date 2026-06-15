@@ -6,6 +6,7 @@ using CommonLibrary.Domain.Entities;
 using CommonLibrary.Helpers;
 using CommonLibrary.Integrations;
 using CommonLibrary.Integrations.Model;
+using CommonLibrary.Models;
 using CommonLibrary.Models.API;
 using CommonLibrary.Repository.Interfaces;
 using CommonLibrary.SharedServices.Interfaces;
@@ -40,6 +41,15 @@ namespace CommonLibrary.SharedServices.Services
 
         public async Task CreateNewUser(CreateUserModel model)
         {
+            var existingUsers = (await _genericEntityRepo.GetDataTyped(
+                new GraphApiPayload
+                {
+                    data = new User { tenant_id = new Guid() },
+                    filters = new User { tenant_id = CurrentUser.TenantId, is_deleted = false }
+                }, CurrentUser.OrgSecret)).rows;
+            if (existingUsers.Count >= CurrentUser.ProductPlans.user_limit)
+                throw new Exception("User limit reached for your subscription plan.");
+
             var validation = await _validationService.ValidateRequest(new ValidateRequest { p = model.data.phone_number });
             if (validation.Item1 != 200)
                 throw new Exception("Phone is not valid");

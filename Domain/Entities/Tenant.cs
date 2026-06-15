@@ -32,6 +32,7 @@
         public bool? deployed { get; set; }
         public bool? integrated { get; set; }
         public bool? is_deleted { get; set; }
+        public bool? has_service { get; set; }  
         public bool? whitelabel { get; set; }
     }
 
