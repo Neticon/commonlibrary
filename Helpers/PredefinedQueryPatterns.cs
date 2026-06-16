@@ -32,6 +32,8 @@
         public static string GET_USER_CONTEXT = "select utility.get_user_context(@p_email, @p_org_code, @p_last_access) as result;";
         public static string GET_USER_CONTEXT_SUPER = "select utility.get_user_context_super(@p_email, @p_org_code, @p_last_access) as result;";
         public static string GET_BOOKINGS_WITH_INTEL = "select utility.get_bookings_with_intel(@p_user_fn, @p_user_email, @p_tenant_id, @p_venue_ids, @p_period, @p_request_id) as result;";
+        public static string HD_TENANT_LIST = "select utility.get_tenant_list(@p_payload) as result;";
+        public static string HD_TENANT_DETAIL = "select utility.get_tenant_detail(@p_payload) as result;";
 
     }
 
