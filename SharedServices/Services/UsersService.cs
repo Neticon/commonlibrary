@@ -212,28 +212,42 @@ namespace CommonLibrary.SharedServices.Services
             }
         }
 
-        public async Task ResendTempPassword()
+        public async Task ResetPassword(string email)
         {
-            var tempPassword = CommonHelperFunctions.GeneratePassword();
-           // var emailDecr = AesEncryption.DecryptEcb(model.filters.email, CurrentUser.OrgSecret);
+            var users = (await _genericEntityRepo.GetDataTyped(
+                new GraphApiPayload
+                {
+                    data = new User { first_name = null, tenant_id = new Guid() },
+                    filters = new User { email = email, is_deleted = false }
+                }, CurrentUser.OrgSecret)).rows;
 
-            var request = new AdminSetUserPasswordRequest
+            var user = users.FirstOrDefault() ?? throw new Exception("User not found.");
+
+            var tenantData = await _tenantRepository.GetOrgCodeAndName(user.tenant_id.Value);
+            if (tenantData == null)
+                throw new Exception("Failed to get tenant data.");
+
+            var emailDecr = AesEncryption.DecryptEcb(email, CurrentUser.OrgSecret);
+            var tempPassword = CommonHelperFunctions.GeneratePassword();
+
+            var setPasswordRequest = new AdminSetUserPasswordRequest
             {
                 UserPoolId = UserPoolId,
-                Username = "artashesisakhanyan@gmail.com",
+                Username = emailDecr,
                 Password = tempPassword,
                 Permanent = false
             };
-
             var provider = GetCognitoProvider();
             try
             {
-                var a = await provider.AdminSetUserPasswordAsync(request);
+                await provider.AdminSetUserPasswordAsync(setPasswordRequest);
             }
             catch (Exception ex)
             {
-                throw new Exception("Failed to reset temp password for cognito user." + ex.Message);
+                throw new Exception("Failed to reset password for cognito user. " + ex.Message);
             }
+
+            _ = SendResetPasswordEmail(emailDecr, user, tempPassword, user.first_name, tenantData.Item2);
         }
 
         private AmazonCognitoIdentityProviderClient GetCognitoProvider()
@@ -243,6 +257,35 @@ namespace CommonLibrary.SharedServices.Services
             //todo - get config from secrets
             var awsCredentials = new BasicAWSCredentials(accessKey, accessSecret);
             return new AmazonCognitoIdentityProviderClient(awsCredentials, RegionEndpoint.EUCentral1);
+        }
+
+        private async Task<string> SendResetPasswordEmail(string email, User user, string tempPass, string firstName, string tenantName)
+        {
+            var envPrefix = CommonHelperFunctions.GetEnvPrefix(Environment.GetEnvironmentVariable("ASPNETCORE_ENVIRONMENT"));
+            var request = new SendEmailRequest
+            {
+                TemplateId = "user_create",
+                ReferenceEntity = $"{user._schema}.{user._table}",
+                ReferenceId = Guid.NewGuid().ToString(),
+                Subject = "🔐 Reset della tua password Conventus",
+                MessageType = "password_reset",
+                TenantId = user.tenant_id.ToString(),
+                FromEmail = EMAIL_FROM_HD,
+                FromName = $"{envPrefix} Conventus Service Portal".TrimStart(' ')
+            };
+            request.EmailTo.Add(email);
+            request.Substitutions.Add("{{first_name}}", firstName);
+            request.Substitutions.Add("{{tenant.org_name}}", tenantName);
+            request.Substitutions.Add("{{temp_pw}}", tempPass);
+            request.Substitutions.Add("{{email}}", email);
+            request.Substitutions.Add("{{conventus_user_email}}", email);
+            try
+            {
+                var response = await _emailClient.SendEmailAsync(request);
+                return response;
+            }
+            catch (Exception ex) { Console.WriteLine(ex); }
+            return null;
         }
 
         private async Task<string> SendEmail(string email, User user, string tempPass, string firstName, string tenantName)
