@@ -33,7 +33,6 @@ namespace CommonLibrary.SharedServices.Services
             _secretService = secretService;
             _emailClient = emailClient;
         }
-        //todo- get from config
         public static string UserPoolId = Environment.GetEnvironmentVariable("AWS_COGNITO_POOL_ID");
         public static string[] ValidRoles = { "ASSISTANT", "VENUE_MANAGER" };
         public static string EMAIL_FROM_HD = Environment.GetEnvironmentVariable("EMAIL_FROM_HD");
@@ -41,14 +40,17 @@ namespace CommonLibrary.SharedServices.Services
 
         public async Task CreateNewUser(CreateUserModel model)
         {
-            var existingUsers = (await _genericEntityRepo.GetDataTyped(
-                new GraphApiPayload
-                {
-                    data = new User { tenant_id = new Guid() },
-                    filters = new User { tenant_id = CurrentUser.TenantId, is_deleted = false }
-                }, CurrentUser.OrgSecret)).rows;
-            if (existingUsers.Count >= CurrentUser.ProductPlans.user_limit)
-                throw new Exception("User limit reached for your subscription plan.");
+            if (model.data.role != UserRole.SUPER.ToString())
+            {
+                var existingUsers = (await _genericEntityRepo.GetDataTyped(
+                    new GraphApiPayload
+                    {
+                        data = new User { tenant_id = new Guid() },
+                        filters = new User { tenant_id = CurrentUser.TenantId, is_deleted = false }
+                    }, CurrentUser.OrgSecret)).rows;
+                if (existingUsers.Count >= CurrentUser.ProductPlans.user_limit)
+                    throw new Exception("User limit reached for your subscription plan.");
+            }
 
             var validation = await _validationService.ValidateRequest(new ValidateRequest { p = model.data.phone_number });
             if (validation.Item1 != 200)
@@ -257,6 +259,25 @@ namespace CommonLibrary.SharedServices.Services
             //todo - get config from secrets
             var awsCredentials = new BasicAWSCredentials(accessKey, accessSecret);
             return new AmazonCognitoIdentityProviderClient(awsCredentials, RegionEndpoint.EUCentral1);
+        }
+
+        public async Task SendVerificationCode(string email)
+        {
+            var emailDecr = AesEncryption.DecryptEcb(email, CurrentUser.OrgSecret);
+            var request = new AdminResetUserPasswordRequest
+            {
+                UserPoolId = UserPoolId,
+                Username = emailDecr
+            };
+            var provider = GetCognitoProvider();
+            try
+            {
+                await provider.AdminResetUserPasswordAsync(request);
+            }
+            catch (Exception ex)
+            {
+                throw new Exception("Failed to send verification code for cognito user. " + ex.Message);
+            }
         }
 
         private async Task<string> SendResetPasswordEmail(string email, User user, string tempPass, string firstName, string tenantName)
