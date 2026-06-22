@@ -336,11 +336,13 @@ namespace CommonLibrary.SharedServices.Services
             var meetingUrl = string.Empty;
             var reason = BookingEmailHelper.GetReasonForMail(u_reasonDb, venue).Item1;
 
+            //get upn from DB (create does not return whole object and UPN is triggered value)
+            var bookingWithTriggers = (await _bookingRepository.GetDataTyped(new GraphApiPayload { data = new Booking { conference_upn = "", slot_ref = 0 }, filters = new BookingUpdateFilters { booking_id = booking.booking_id.Value } }, secret)).rows.First();
+            booking.slot_ref = bookingWithTriggers.slot_ref;
+            booking.conference_upn = bookingWithTriggers.conference_upn;
+
             if (tenant.intg_video == "CONVENTUS_TEAMS" && booking.type.ToString().ToLower() == "v")
             {
-                //get upn from DB (create does not return whole object and UPN is triggered value)
-                booking.conference_upn = (await _bookingRepository.GetData(new GraphApiPayload { data = new BookingUpdateData { conference_upn = "" }, filters = new BookingUpdateFilters { booking_id = booking.booking_id.Value } }, secret)).rows.First()["conference_upn"].ToString();
-
                 try
                 {
                     var meetingResponse = await CreateMicrosoftEvent(booking, org_code, data.u_email, data.u_first, data.u_last, venue.name, reason);
@@ -508,7 +510,10 @@ namespace CommonLibrary.SharedServices.Services
         private async Task SendEmailToStaff(string templateId, string subject, string messageType, Booking booking, List<VenueUser> users, BookingModelData modelData, string secret, string start, string end, string date, string u_reason, string venueName, string tenantName, string pageUrl)
         {
             Console.WriteLine("SEND STAFF EMAIL");
-            var venueStaffEmails = users.Where(q => !q.r.Equals("ADMIN", StringComparison.OrdinalIgnoreCase) && q.n == 1).Select(q => q.u);
+            var venueStaff = users.Where(q => !q.r.Equals("ADMIN", StringComparison.OrdinalIgnoreCase) && q.n == 1 && int.Parse(q.default_slot) == booking.slot_ref);
+            if (u_reason.StartsWith("SRV"))
+                venueStaff = venueStaff.Where(q => q.default_service == u_reason);
+            var venueStaffEmails = venueStaff.Select(q => q.u);
             var emailsTo = new List<string>();
             foreach (var email in venueStaffEmails)
             {
