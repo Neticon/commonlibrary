@@ -7,6 +7,7 @@ using CommonLibrary.SharedServices.Interfaces;
 using Npgsql;
 using NpgsqlTypes;
 using CommonLibrary.Models;
+using CommonLibrary.Domain.Entities;
 
 namespace CommonLibrary.SharedServices.Services
 {
@@ -16,14 +17,17 @@ namespace CommonLibrary.SharedServices.Services
         private readonly IGenericRepository<UserContextModel> _userContextRepository;
         private readonly IRedisService _redisService;
         private readonly IContextSerivice _contextService;
+        private readonly IGenericEntityRepository<ProductPlans> _productPlansRepo;
         private readonly bool IsHelpDesk = AppConfig.AppType == AppType.Helpdesk;
 
-        public AuthService(IValidationService validationService, IGenericRepository<UserContextModel> genericRepository, IRedisService redisService, IContextSerivice contextSerivice)
+        public AuthService(IValidationService validationService, IGenericRepository<UserContextModel> genericRepository, IRedisService redisService, IContextSerivice contextSerivice, IGenericEntityRepository<ProductPlans> productPlansRepo)
         {
             _validationService = validationService;
             _userContextRepository = genericRepository;
             _redisService = redisService;
             _contextService = contextSerivice;
+            _productPlansRepo = productPlansRepo;
+
         }
 
         public async Task<Tuple<UserContextModel, string, long>> GetUserContext(string org_code, string hashedMail, string ip)
@@ -52,7 +56,11 @@ namespace CommonLibrary.SharedServices.Services
                 {
                     var csfrToken = Guid.NewGuid().ToString();
                     var expiresAt = DateTimeOffset.UtcNow.AddMinutes(60).ToUnixTimeSeconds();
-                    currentUser = new CurrentUser { Decr_Email = context.user.decr_email, Email = context.user.email, OrgCode = org_code, OrgSecret = secret, Role = context.user.role, TenantId = new Guid(context.tenant.tenant_id), CSRF = csfrToken, CSRF_Expiry = expiresAt, Venues = context.venues.venue_id };
+                    currentUser = new CurrentUser { Decr_Email = context.user.decr_email, Email = context.user.email, OrgCode = org_code, OrgSecret = secret, Role = context.user.role, TenantId = new Guid(context.tenant.tenant_id), CSRF = csfrToken, CSRF_Expiry = expiresAt, Venues = context.venues.venue_id,   };
+                    var productPlanResp = await _productPlansRepo.GetDataTyped(new GraphApiPayload { data = new object(), filters = new ProductPlans { plan_id = context.tenant.cntrct_plan } });
+                    if (productPlanResp.success == false)
+                        throw new Exception($"GetCurrentTenantContext => Failed to find product plan for org_code {org_code}, plan id {context.tenant.cntrct_plan}");
+                    currentUser.ProductPlans = productPlanResp.rows.FirstOrDefault();
                     _contextService.SetCurrentUserContext(currentUser.Email, currentUser);
                 }
                 else if (currentUser.Role != context.user.role)

@@ -16,6 +16,7 @@
         public string? schema { get; set; }
         public int? per_page { get; set; }
         public int? total_pages { get; set; }
+        public string? org_code { get; set; }
     }
 
     public class BulkGraphAPIResponse<T>
