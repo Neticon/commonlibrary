@@ -42,6 +42,9 @@ namespace CommonLibrary.SharedServices.Services
         {
             if (model.data.role != UserRole.SUPER.ToString())
             {
+                if(string.IsNullOrEmpty(model.data.phone_number))
+                    throw new Exception("Phone number is required for non SUPER user");
+
                 var existingUsers = (await _genericEntityRepo.GetDataTyped(
                     new GraphApiPayload
                     {
@@ -50,11 +53,11 @@ namespace CommonLibrary.SharedServices.Services
                     }, CurrentUser.OrgSecret)).rows;
                 if (existingUsers.Count >= CurrentUser.ProductPlans.user_limit)
                     throw new Exception("User limit reached for your subscription plan.");
+                var validation = await _validationService.ValidateRequest(new ValidateRequest { p = model.data.phone_number });
+                if (validation.Item1 != 200)
+                    throw new Exception("Phone is not valid");
             }
 
-            var validation = await _validationService.ValidateRequest(new ValidateRequest { p = model.data.phone_number });
-            if (validation.Item1 != 200)
-                throw new Exception("Phone is not valid");
             model.data.role = model.data.role.ToUpper();
             if (!IsHelpDesk && !ValidRoles.Contains(model.data.role))
                 throw new Exception("Invalid role");

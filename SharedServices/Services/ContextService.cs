@@ -17,6 +17,7 @@ namespace CommonLibrary.SharedServices.Services
         private readonly IGenericEntityRepository<ProductPlans> _productPlanRepo;
         private readonly string REDIS_KEY_PREFIX_TENANT = "tenant_context:";
         private readonly string REDIS_KEY_PREFIX_USER = "user_context:";
+        private readonly string REDIS_KEY_PREFIX_ORG_CODE = "tenant_org_code:";
 
         public ContextService(ITenantRepository tenantRepo, ISecretService secretService, IRedisService redisService, IGenericEntityRepository<ProductPlans> productPlanRepo)
         {
@@ -62,6 +63,21 @@ namespace CommonLibrary.SharedServices.Services
             long now = DateTimeOffset.UtcNow.ToUnixTimeSeconds();
             TimeSpan expiry = TimeSpan.FromSeconds(user.CSRF_Expiry - now);
             await _redisService.SetString($"{REDIS_KEY_PREFIX_USER}{email}", JsonConvert.SerializeObject(user), expiry);
+        }
+
+        public async Task<string> GetOrgCodeByTenantId(Guid tenantId)
+        {
+            var key = $"{REDIS_KEY_PREFIX_ORG_CODE}{tenantId}";
+            var cached = await _redisService.GetString(key);
+            if (cached != null)
+                return cached;
+
+            var result = await _tenantRepo.GetOrgCodeAndName(tenantId);
+            if (result == null)
+                throw new Exception($"GetOrgCodeByTenantId => No tenant found for id {tenantId}");
+
+            _redisService.SetString(key, result.Item1);
+            return result.Item1;
         }
     }
 }

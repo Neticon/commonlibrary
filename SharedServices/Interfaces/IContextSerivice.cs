@@ -9,5 +9,6 @@ namespace CommonLibrary.SharedServices.Interfaces
         public Task<CurrentUser?> GetCurrentUserContext(string email);
         public Task SetCurrentUserContext(string email, CurrentUser user);
         Task<string> GetConventusSecret();
+        Task<string> GetOrgCodeByTenantId(Guid tenantId);
     }
 }

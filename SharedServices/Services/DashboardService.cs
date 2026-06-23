@@ -14,14 +14,18 @@ namespace CommonLibrary.SharedServices.Services
     public class DashboardService : AppServiceBase, IDashboardSevice
     {
         private readonly IGenericRepository<JObject> _repository;
+        private readonly IContextSerivice _contextService;
+        private readonly ISecretService _secretService;
         private JsonSerializerSettings JsonIgnoreNullSettings = new JsonSerializerSettings
         {
             NullValueHandling = NullValueHandling.Ignore
         };
 
-        public DashboardService(IGenericRepository<JObject> repository, ICurrentUserService currentUserService): base(currentUserService) 
+        public DashboardService(IGenericRepository<JObject> repository, ICurrentUserService currentUserService, IContextSerivice contextService, ISecretService secretService) : base(currentUserService)
         {
             _repository = repository;
+            _contextService = contextService;
+            _secretService = secretService;
         }
 
         public async Task<ServiceResponse> BelowAvarageRatings(DashboardPayload data)
@@ -121,7 +125,9 @@ namespace CommonLibrary.SharedServices.Services
             }
             foreach (var row in result["rows"])
             {
-                ObjectEncryption.DecryptObject(row, CurrentUser.OrgSecret, fieldsForDecrypt, new List<string>());
+                var orgCode = await _contextService.GetOrgCodeByTenantId(new Guid(row["tenant_id"].ToString()));
+                var secret = await _secretService.GetEncryptionSecret(orgCode);
+                ObjectEncryption.DecryptObject(row, secret, fieldsForDecrypt, new List<string>());
             }
 
             response.Result = result;

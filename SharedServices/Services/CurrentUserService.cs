@@ -1,6 +1,7 @@
 ﻿using CommonLibrary.Domain.Entities;
 using CommonLibrary.Helpers;
 using CommonLibrary.Models;
+using CommonLibrary.Models.API;
 using CommonLibrary.SharedServices;
 using CommonLibrary.SharedServices.Interfaces;
 
@@ -46,6 +47,14 @@ namespace CommonLibrary.SharedServices.Services
 
             _cachedUser = cacheContextUser;
             return _cachedUser;
+        }
+
+        public async Task<TenantContextModel> GetTenantContext(string orgCode)
+        {
+            var tenantContext = await _contextService.GetTenantContext(orgCode);
+            if (tenantContext == null)
+                throw new Exception("Failed to get context for user!");
+            return tenantContext;
         }
     }
 }
