@@ -36,7 +36,7 @@
         public static string HD_TENANT_DETAIL = "select utility.get_tenant_detail(@p_payload) as result;";
         public static string HD_TENANT_FILTERS = "select utility.get_tenant_filters() as result;";
         public static string HD_GENERATE_ORG_CODE = "select utility.generate_org_code(@p_payload) as result;";
-        public static string HD_METRICS_SUMMARY = "select utility.get_metrics_summary_v2(@p_payload) as result;";
+        public static string HD_METRICS_SUMMARY = "select utility.get_metrics_summary_v4(@p_payload) as result;";
 
     }
 
