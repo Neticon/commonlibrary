@@ -21,6 +21,8 @@ namespace CommonLibrary.SharedServices.Services
         public async Task ProcessCounter(string tenantId, string venueId, string path, int code, string method = "")
         {
             var field = GetFieldName(path, code, method);
+            if (field == null)
+                return;
             await TriggerCounter(tenantId, venueId, field);
         }
 
@@ -85,7 +87,8 @@ namespace CommonLibrary.SharedServices.Services
             {
                 path = $"{path}-put";
             }
-            var key = PathKeys[path];
+            if (!PathKeys.TryGetValue(path, out var key))
+                return null;
             var finalCode = code.ToString();
             var field = key;
             if (code >= 500)
