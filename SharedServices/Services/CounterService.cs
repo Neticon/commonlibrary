@@ -81,12 +81,19 @@ namespace CommonLibrary.SharedServices.Services
             return ValidApiActions.Contains(action);
         }
 
+        private readonly Dictionary<string, (HashSet<int> Codes, string Field)> SpecialCodeMappings = new()
+        {
+            { "vs", (new HashSet<int> { 202, 204 }, "form_val_err") }
+        };
+
         private string GetFieldName(string path, int code, string method)
         {
             if (method == "PUT")
             {
                 path = $"{path}-put";
             }
+            if (SpecialCodeMappings.TryGetValue(path, out var special))
+                return special.Codes.Contains(code) ? special.Field : null;
             if (!PathKeys.TryGetValue(path, out var key))
                 return null;
             var finalCode = code.ToString();
