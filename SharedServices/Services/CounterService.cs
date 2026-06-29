@@ -116,7 +116,8 @@ namespace CommonLibrary.SharedServices.Services
             {"res","renew" },
             {"blk", "venue" },
             {"book", "book" },
-            {"book-put","mod" }
+            {"book-put","mod" },
+            {"vs", "form_val"}
         };
 
         private bool AddOk(string api)

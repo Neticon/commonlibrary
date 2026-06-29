@@ -37,6 +37,12 @@ namespace CommonLibrary.Exceptions.Middleware
                                 await counterService.TriggerCounter(tenantId, venueId, field);
                             }
                         }
+                        else if (path == "blk" && statusCode == 200)
+                        {
+                            var cnt = context.Items.ContainsKey("blk_cnt") || context.Request.Query["cnt"] == "true";
+                            if (cnt)
+                                await counterService.ProcessCounter(tenantId, venueId, path, statusCode, method);
+                        }
                         else
                         {
                             await counterService.ProcessCounter(tenantId, venueId, path, statusCode, method);
