@@ -20,7 +20,7 @@
         public static string RATE_BOOKING = "select utility.rate_booking(@id, @date, @value) as x";
         public static string APPEND_EVENT_BODY = "select utility.append_event_body(@id, @origin, @new_body) as x";
         public static string INSERT_EVENT = "select utility.insert_event(@id, @origin, @message_type, @body, @reference_entity, @reference_id, @tenant_id) as x";
-        public static string GET_NOTIFICATIONS = "select utility.get_notifications_for_period_v2(@p_period) as x";
+        public static string GET_NOTIFICATIONS = "select utility.get_notifications_for_period_v3(@p_period, @p_type) as x";
         public static string REMOVE_USER_FROM_VENUE = "select utility.remove_user_from_venues(@p_tenant_id, @p_u_email) as x";
         public static string OBF_INDEX_SEARCH_AND_FETCH = "select utility.obf_index_search_and_fetch_v3(@payload) as x";
         public static string GET_KEY_METRICS = "select utility.get_key_metrics(@payload) as x";
