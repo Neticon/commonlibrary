@@ -194,7 +194,7 @@ namespace CommonLibrary.SharedServices.Services
                             var end = endTs.ToString("HH:mm");
                             var bookingData = new BookingModelData { tenant_id = tenant.tenant_id.Value, u_first = booking.u_first, u_last = booking.u_last, u_email = booking.u_email, type = booking.type.Value, u_reason = "" };
                             SendEmail($"booking_rescheduled_{data.data.type}".ToLower(), "🔁 Il tuo appuntamento è stato riprogrammato", "booking_rescheduled", booking, bookingData, start, end, dateS, venue, tenant.web_pages.Last(), reason, tenant.org_name, meetingUrl);
-                            SendEmailToStaff($"booking_rescheduled_venue", "🔁 Il tuo appuntamento è stato riprogrammato", "booking_rescheduled_venue", booking, venue.users, bookingData, secret, start, end, dateS, reason, venue.name, tenant.org_name, tenant.web_pages.Last());
+                            SendEmailToStaff($"booking_rescheduled_venue", "🔁 Il tuo appuntamento è stato riprogrammato", "booking_rescheduled_venue", booking, venue.users, bookingData, secret, start, end, dateS, reason, venue.name, tenant.org_name, tenant.web_pages.Last(), venue.country_code);
                         }
                     }
                     else
@@ -225,7 +225,7 @@ namespace CommonLibrary.SharedServices.Services
                         var subject = "❌ Il tuo appuntamento è stato annullato";
                         var bookingData = new BookingModelData { tenant_id = tenant.tenant_id.Value, u_first = booking.u_first, u_last = booking.u_last, u_email = booking.u_email, type = booking.type.Value };
                         SendEmail($"booking_cancellation", subject, "booking_cancelled", booking, bookingData, start, end, dateS, venue, tenant.web_pages.Last(), reason, tenant.org_name, "", true);
-                        SendEmailToStaff($"booking_cancellation_venue", subject, "booking_cancelled_venue", booking, venue.users, bookingData, secret, start, end, dateS, reason, venue.name, tenant.org_name, tenant.web_pages.Last());
+                        SendEmailToStaff($"booking_cancellation_venue", subject, "booking_cancelled_venue", booking, venue.users, bookingData, secret, start, end, dateS, reason, venue.name, tenant.org_name, tenant.web_pages.Last(), venue.country_code);
                     }
                 }
                 else
@@ -361,7 +361,7 @@ namespace CommonLibrary.SharedServices.Services
             if (venue.notifications.notify == 1)
             {
                 SendEmail($"booking_scheduled_{data.type}".ToLower(), "📅 Il tuo appuntamento è stato confermato", "booking_scheduled", booking, data, start, end, dateS, venue, tenant.web_pages.Last(), reason, tenant.org_name, meetingUrl);
-                SendEmailToStaff($"booking_scheduled_venue", "📅 Il tuo appuntamento è stato confermato", "booking_scheduled_venue", booking, venue.users, data, secret, start, end, dateS, reason, venue.name, tenant.org_name, tenant.web_pages.Last());
+                SendEmailToStaff($"booking_scheduled_venue", "📅 Il tuo appuntamento è stato confermato", "booking_scheduled_venue", booking, venue.users, data, secret, start, end, dateS, reason, venue.name, tenant.org_name, tenant.web_pages.Last(), venue.country_code);
             }
         }
 
@@ -497,7 +497,8 @@ namespace CommonLibrary.SharedServices.Services
                     type = modelData.type.ToString(),
                     venue_email = venue.email,
                     venue_phone = venue.phone,
-                    meeting_url = meetingUrl
+                    meeting_url = meetingUrl,
+                    lang = venue.country_code
                 });
 
                 var response = await _emailClient.SendEmailAsync(request);
@@ -507,7 +508,7 @@ namespace CommonLibrary.SharedServices.Services
             return null;
         }
 
-        private async Task SendEmailToStaff(string templateId, string subject, string messageType, Booking booking, List<VenueUser> users, BookingModelData modelData, string secret, string start, string end, string date, string u_reason, string venueName, string tenantName, string pageUrl)
+        private async Task SendEmailToStaff(string templateId, string subject, string messageType, Booking booking, List<VenueUser> users, BookingModelData modelData, string secret, string start, string end, string date, string u_reason, string venueName, string tenantName, string pageUrl, string lang = "")
         {
             Console.WriteLine("SEND STAFF EMAIL");
             var venueStaff = users.Where(q => !q.r.Equals("ADMIN", StringComparison.OrdinalIgnoreCase) && q.n == 1 && int.Parse(q.default_slot) == booking.slot_ref);
@@ -569,6 +570,7 @@ namespace CommonLibrary.SharedServices.Services
                     tenant_name = tenantName,
                     type = modelData.type.ToString(),
                     u_reason = u_reason,
+                    lang = lang,
                 });
 
                 var response = await _emailClient.SendEmailAsync(request);

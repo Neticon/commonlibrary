@@ -26,7 +26,8 @@ namespace CommonLibrary.Helpers
                 TenantId = data.tenant_id.ToString(),
                 FromEmail = EMAIL_FROM_NOTIFICATIONS,
                 FromName = $"{data.envPrefix} {data.venue_name} - notifiche sulle prenotazioni da Conventus",
-                ReplyTo = NO_REPLY_EMAIL
+                ReplyTo = NO_REPLY_EMAIL,
+                Lang = data.lang ?? ""
             };
             request.EmailTo.Add(data.u_email);
             request.Substitutions.Add("{{first_name}}", data.u_first);
@@ -82,7 +83,8 @@ namespace CommonLibrary.Helpers
                 TenantId = data.tenant_id.ToString(),
                 FromEmail = EMAIL_FROM_NOTIFICATIONS,
                 FromName = $"{data.envPrefix} {data.venue_name} - notifiche sulle prenotazioni da Conventus",
-                ReplyTo = NO_REPLY_EMAIL
+                ReplyTo = NO_REPLY_EMAIL,
+                Lang = data.lang ?? ""
             };
             request.EmailTo.AddRange(data.emails);
             request.Substitutions.Add("{{appointee_first_name}}", data.appointee_first_name);
@@ -182,6 +184,7 @@ namespace CommonLibrary.Helpers
         public string u_reason { get; set; }
         public string country_name { get; set; }
         public string meeting_url { get; set; }
+        public string lang { get; set; }
     }
 
     public class BookingNotificationVenueEmailModel
@@ -206,6 +209,7 @@ namespace CommonLibrary.Helpers
         public string tenant_id { get; set; }
         public List<string> emails { get; set; }
         public string pageUrl { get; set; }
+        public string lang { get; set; }
     }
 
     public class BookingNotificationThankYouEmailModel

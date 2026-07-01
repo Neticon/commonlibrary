@@ -20,6 +20,7 @@ message SendEmailRequest{
 	string from_email = 9;
 	string from_name = 10;
 	string reply_to = 11;
+	string lang = 12;
 }
 
 message SendEmailResponse{
