@@ -74,7 +74,7 @@ namespace CommonLibrary.Helpers
                 data.pageUrl = $"https://{data.pageUrl}";
 
             var fromName = "";
-            if(data.service == null && data.slot_count > 1)
+            if(data.service == null)
             {
                 fromName = $"{data.envPrefix} {data.venue_name} - notifiche sulle prenotazioni da Conventus";
             }
@@ -222,7 +222,6 @@ namespace CommonLibrary.Helpers
         public string lang { get; set; }
         public string service {  get; set; }    
         public int slot { get; set; }
-        public int slot_count { get; set; }
     }
 
     public class BookingNotificationThankYouEmailModel

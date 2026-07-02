@@ -573,7 +573,6 @@ namespace CommonLibrary.SharedServices.Services
                     lang = lang,
                     service = reasonDB.StartsWith("SRV") ? reasonDB : null,
                     slot = slot,
-                    slot_count = CurrentUser.ProductPlans.simultaneous_limit ?? 1,
                 });
 
                 var response = await _emailClient.SendEmailAsync(request);
