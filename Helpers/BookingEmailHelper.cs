@@ -73,6 +73,16 @@ namespace CommonLibrary.Helpers
             if (!data.pageUrl.StartsWith("https"))
                 data.pageUrl = $"https://{data.pageUrl}";
 
+            var fromName = "";
+            if(data.service == null && data.slot_count > 1)
+            {
+                fromName = $"{data.envPrefix} {data.venue_name} - notifiche sulle prenotazioni da Conventus";
+            }
+            else
+            {
+                fromName = $"{data.envPrefix} {data.venue_name} - {data.service} {data.slot} - notifiche sulle prenotazioni da Conventus";
+            }
+
             var request = new SendEmailRequest
             {
                 TemplateId = data.templateId,
@@ -82,7 +92,7 @@ namespace CommonLibrary.Helpers
                 MessageType = data.messageType,
                 TenantId = data.tenant_id.ToString(),
                 FromEmail = EMAIL_FROM_NOTIFICATIONS,
-                FromName = $"{data.envPrefix} {data.venue_name} - notifiche sulle prenotazioni da Conventus",
+                FromName = fromName,
                 ReplyTo = NO_REPLY_EMAIL,
                 Lang = data.lang ?? ""
             };
@@ -210,6 +220,9 @@ namespace CommonLibrary.Helpers
         public List<string> emails { get; set; }
         public string pageUrl { get; set; }
         public string lang { get; set; }
+        public string service {  get; set; }    
+        public int slot { get; set; }
+        public int slot_count { get; set; }
     }
 
     public class BookingNotificationThankYouEmailModel
