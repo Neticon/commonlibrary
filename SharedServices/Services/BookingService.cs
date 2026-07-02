@@ -510,8 +510,9 @@ namespace CommonLibrary.SharedServices.Services
 
         private async Task SendEmailToStaff(string templateId, string subject, string messageType, Booking booking, List<VenueUser> users, BookingModelData modelData, string secret, string start, string end, string date, string u_reason, string reasonDB, string venueName, string tenantName, string pageUrl, int slot, string lang = "")
         {
-            Console.WriteLine("SEND STAFF EMAIL");
+            Console.WriteLine($"SEND STAFF EMAIL {JsonConvert.SerializeObject(users)}");
             var venueStaff = users.Where(q => !q.r.Equals("ADMIN", StringComparison.OrdinalIgnoreCase) && q.n == 1 && int.Parse(q.default_slot) == booking.slot_ref);
+            Console.WriteLine($"STAFF {JsonConvert.SerializeObject(venueStaff)}, U_REASon = {reasonDB}");
             if (reasonDB.StartsWith("SRV"))
                 venueStaff = venueStaff.Where(q => q.default_service == u_reason);
             var venueStaffEmails = venueStaff.Select(q => q.u);
