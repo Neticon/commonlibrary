@@ -22,12 +22,12 @@
         public DateTime? active_d { get; set; }
         public DateTime? expiry_d { get; set; }
         public string? status { get; set; }
-        public string? domains { get; set; }
+        public List<string>? domains { get; set; }
         public List<string>? web_pages { get; set; }
         public string? intg_venue { get; set; }
         public string? intg_video { get; set; }
-        public string? intg_keys { get; set; }
-        public string? library { get; set; }
+        public object? intg_keys { get; set; }
+        public object? library { get; set; }
         public bool? configured { get; set; }
         public bool? deployed { get; set; }
         public bool? integrated { get; set; }
