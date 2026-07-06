@@ -80,7 +80,7 @@ namespace CommonLibrary.Helpers
             }
             else
             {
-                fromName = $"{data.envPrefix} {data.venue_name} - {data.service} {data.slot} - notifiche sulle prenotazioni da Conventus";
+                fromName = $"{data.envPrefix} {data.venue_name} - {data.service} [{data.slot}] - notifiche sulle prenotazioni da Conventus";
             }
 
             var request = new SendEmailRequest
@@ -129,7 +129,8 @@ namespace CommonLibrary.Helpers
                 TenantId = data.tenant_id.ToString(),
                 FromEmail = EMAIL_FROM_NOTIFICATIONS,
                 FromName = $"{data.envPrefix} {data.venue_name} - notifiche sulle prenotazioni da Conventus",
-                ReplyTo = NO_REPLY_EMAIL
+                ReplyTo = NO_REPLY_EMAIL,
+                Lang = data.lang,
             };
             request.EmailTo.Add(data.appointee_email);
             request.Substitutions.Add("{{first_name}}", data.appointee_first_name);
@@ -240,5 +241,6 @@ namespace CommonLibrary.Helpers
         public string envPrefix { get; set; }
         public string tenant_id { get; set; }
         public string pageUrl { get; set; }
+        public string lang { get; set; }    
     }
 }
