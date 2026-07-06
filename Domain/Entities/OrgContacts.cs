@@ -8,10 +8,13 @@
         public override string _schema => "help_desk";
         public Guid? con_id { get; set; }
         public DateTime? create_dt { get; set; }
+        [EncryptECB]
         public string? create_bu { get; set; }
         public DateTime? modify_dt { get; set; }
+        [EncryptECB]
         public string? modify_bu { get; set; }
         public DateTime? delete_dt { get; set; }
+        [EncryptECB]
         public string? delete_bu { get; set; }
         public string? mods { get; set; }
         public Guid? tenant_id { get; set; }
