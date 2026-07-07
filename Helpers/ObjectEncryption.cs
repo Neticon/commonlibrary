@@ -113,11 +113,25 @@ public static class ObjectEncryption
             // Handle string properties with [Encrypted]
             if (prop.GetCustomAttribute<EncryptAttribute>() != null && value is string strVal)
             {
-                prop.SetValue(obj, encrypt ? AesEncryption.Encrypt(strVal, key) : AesEncryption.Decrypt(strVal, key));
+                try
+                {
+                    prop.SetValue(obj, encrypt ? AesEncryption.Encrypt(strVal, key) : AesEncryption.Decrypt(strVal, key));
+                }
+                catch
+                {
+                    Console.WriteLine($"Error trying to {(encrypt ? "encrypt" : "decrypt")} value => {strVal}");
+                }
             }
             else if (prop.GetCustomAttribute<EncryptECBAttribute>() != null && value is string strValEcb)
             {
-                prop.SetValue(obj, encrypt ? AesEncryption.EncryptEcb(strValEcb, key) : AesEncryption.DecryptEcb(strValEcb, key));
+                try
+                {
+                    prop.SetValue(obj, encrypt ? AesEncryption.EncryptEcb(strValEcb, key) : AesEncryption.DecryptEcb(strValEcb, key));
+                }
+                catch
+                {
+                    Console.WriteLine($"Error trying to {(encrypt ? "encrypt" : "decrypt")} value => {strValEcb}");
+                }
             }
             // Handle nested objects
             else if (value != null && !prop.PropertyType.IsPrimitive && prop.PropertyType != typeof(string))
@@ -218,11 +232,25 @@ public static class ObjectEncryption
             // Handle string properties with [Encrypted]
             if (fieldsToEncrypt.Contains(currentPath, StringComparer.OrdinalIgnoreCase) && value is string strVal)
             {
-                prop.SetValue(obj, encrypt ? AesEncryption.Encrypt(strVal, key) : AesEncryption.Decrypt(strVal, key));
+                try
+                {
+                    prop.SetValue(obj, encrypt ? AesEncryption.Encrypt(strVal, key) : AesEncryption.Decrypt(strVal, key));
+                }
+                catch
+                {
+                    Console.WriteLine($"Error trying to {(encrypt ? "encrypt" : "decrypt")} value => {strVal}");
+                }
             }
             else if (fieldsToEncryptECB.Contains(currentPath, StringComparer.OrdinalIgnoreCase) && value is string strValEcb)
             {
-                prop.SetValue(obj, encrypt ? AesEncryption.EncryptEcb(strValEcb, key) : AesEncryption.DecryptEcb(strValEcb, key));
+                try
+                {
+                    prop.SetValue(obj, encrypt ? AesEncryption.EncryptEcb(strValEcb, key) : AesEncryption.DecryptEcb(strValEcb, key));
+                }
+                catch
+                {
+                    Console.WriteLine($"Error trying to {(encrypt ? "encrypt" : "decrypt")} value => {strValEcb}");
+                }
             }
             // Handle nested objects
             else if (value != null && !prop.PropertyType.IsPrimitive && prop.PropertyType != typeof(string))
