@@ -125,7 +125,7 @@ namespace CommonLibrary.SharedServices.Services
             return response;
         }
 
-        public async Task<ServiceResponse> UpdateBooking(BookingUpdateModel data, string venue_id)
+        public async Task<ServiceResponse> UpdateBooking(BookingUpdateModel data)
         {
             var response = new ServiceResponse { StatusCode = 200 };
             var dataFromDB = await _bookingRepository.GetBookingUpdateData(data.filters.booking_id);
@@ -163,7 +163,7 @@ namespace CommonLibrary.SharedServices.Services
                 {
                     service = reasonResult.Item2 ? booking.u_reason : "DEFAULT";
                 }
-                var blockAvailability = await _blocksRepository.CheckBlocAvailability(data.data.block_start.Value, data.data.block_end.Value, data.data.type, new Guid(venue_id), data.data.date, service);
+                var blockAvailability = await _blocksRepository.CheckBlocAvailability(data.data.block_start.Value, data.data.block_end.Value, data.data.type, venue.venue_id.Value, data.data.date, service);
                 if (blockAvailability.avail == -2)
                     response.StatusCode = 403;
                 else if (blockAvailability.avail == -1)
