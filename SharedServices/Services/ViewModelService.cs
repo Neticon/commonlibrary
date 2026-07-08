@@ -104,6 +104,25 @@ namespace CommonLibrary.SharedServices.Services
             {
                 ObjectEncryption.DecryptObject(row["booking"], CurrentUser.OrgSecret, fieldsForDecrypt, fieldsForDecryptECB);
 
+                if (IsHelpDesk)
+                {
+                    var buFields = new List<string> { "create_bu", "modify_bu", "delete_bu" };
+                    foreach (var field in buFields)
+                    {
+                        var value = row["booking"][field]?.ToString();
+                        if (string.IsNullOrEmpty(value))
+                            continue;
+
+                        try
+                        {
+                            row["booking"][$"decr_{field}"] = AesEncryption.DecryptEcb(value, CurrentUser.OrgSecret);
+                        }
+                        catch (Exception ex)
+                        {
+                            Console.WriteLine(ex.ToString());
+                        }
+                    }
+                }
             }
 
             return new ServiceResponse { Result = resp };
