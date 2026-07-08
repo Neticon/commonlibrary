@@ -56,6 +56,13 @@ namespace CommonLibrary.Repository
             return queryResult;
         }
 
+        public async Task<GraphAPIResponse<T>> DeleteEntity(Object model, bool returnError = false)
+        {
+            var query = GenerateDoOperationsQuery(model, meta._schema, meta._table, DoOperationQueryType.delete);
+            var queryResult = await ExecuteStandardCommand(query, returnError);
+            return queryResult;
+        }
+
         public async Task<BulkGraphAPIResponse<T>> UpdateEntityBulk(List<Object> models, string secret = "", bool returnError = false, bool ignoreEncryption = false, List<string> includeNullList = null)
         {
             var encryptPaths = EncryptionMetadataHelper.GetEncryptedPropertyPaths(typeof(T));
