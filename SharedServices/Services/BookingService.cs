@@ -45,7 +45,8 @@ namespace CommonLibrary.SharedServices.Services
         public async Task<ServiceResponse> CreateBooking(BookingModelData data, string ip)
         {
             var response = new ServiceResponse { StatusCode = 200 };
-            var tenantJobject = await _tenantRepository.GetData(new GraphApiPayload { data = new Tenant { org_code = "", web_pages = new List<string>(), org_name = "", intg_video = "" }, filters = new TenantIdModel { tenant_id = data.tenant_id } });
+            var conventusSecret = await _secretService.GetEncryptionSecret(CommonConstants.Org_Code_Conventus);
+            var tenantJobject = await _tenantRepository.GetData(new GraphApiPayload { data = new Tenant { org_code = "", web_pages = new List<string>(), org_name = "", intg_video = "" }, filters = new TenantIdModel { tenant_id = data.tenant_id }}, conventusSecret);
             var tenant = JsonConvert.DeserializeObject<Tenant>(JsonConvert.SerializeObject(tenantJobject.rows[0]));
             var org_code = tenant.org_code;
             if (string.IsNullOrEmpty(org_code))
