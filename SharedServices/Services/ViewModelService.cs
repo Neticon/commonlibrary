@@ -103,6 +103,7 @@ namespace CommonLibrary.SharedServices.Services
             foreach (var row in resp.rows)
             {
                 ObjectEncryption.DecryptObject(row["booking"], CurrentUser.OrgSecret, fieldsForDecrypt, fieldsForDecryptECB);
+
             }
 
             return new ServiceResponse { Result = resp };
