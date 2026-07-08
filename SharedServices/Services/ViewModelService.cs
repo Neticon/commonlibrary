@@ -64,11 +64,11 @@ namespace CommonLibrary.SharedServices.Services
             // p_page/p_page_size feed an arithmetic offset calculation in the db function with no internal
             // fallback, so a NULL here breaks pagination (NULL * anything = NULL) instead of defaulting
             var query = new NpgsqlCommand(PredefinedQueryPatterns.VENUES_TENANT_VIEW_MODEL);
-            query.Parameters.AddWithValue("p_tenant_id", NpgsqlDbType.Uuid, (object?)payload.p_tenant_id ?? DBNull.Value);
-            query.Parameters.AddWithValue("p_org_code", NpgsqlDbType.Text, (object?)payload.p_org_code ?? DBNull.Value);
-            query.Parameters.AddWithValue("p_venue_id", NpgsqlDbType.Uuid, (object?)payload.p_venue_id ?? DBNull.Value);
-            query.Parameters.AddWithValue("p_page", NpgsqlDbType.Integer, payload.p_page ?? 1);
-            query.Parameters.AddWithValue("p_page_size", NpgsqlDbType.Integer, payload.p_page_size ?? 100);
+            query.Parameters.AddWithValue("p_tenant_id", NpgsqlDbType.Uuid, (object?)payload.tenant_id ?? DBNull.Value);
+            query.Parameters.AddWithValue("p_org_code", NpgsqlDbType.Text, (object?)payload.org_code ?? DBNull.Value);
+            query.Parameters.AddWithValue("p_venue_id", NpgsqlDbType.Uuid, (object?)payload.venue_id ?? DBNull.Value);
+            query.Parameters.AddWithValue("p_page", NpgsqlDbType.Integer, payload.page_size ?? 1);
+            query.Parameters.AddWithValue("p_page_size", NpgsqlDbType.Integer, payload.page_size ?? 100);
 
             var resp = await _repository.ExecuteStandardCommand(query);
 
