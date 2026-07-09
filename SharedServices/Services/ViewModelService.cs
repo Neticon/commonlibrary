@@ -70,7 +70,14 @@ namespace CommonLibrary.SharedServices.Services
             query.Parameters.AddWithValue("p_page", NpgsqlDbType.Integer, payload.page_size ?? 1);
             query.Parameters.AddWithValue("p_page_size", NpgsqlDbType.Integer, payload.page_size ?? 100);
 
-            var resp = await _repository.ExecuteStandardCommand(query);
+            var resp = await _repository.ExecuteStandardCommand(query, true);
+            if (!resp.success)
+            {
+                if(resp.stage == "lookup")
+                    return new ServiceResponse { StatusCode = 206, Result = resp.message };
+                else
+                    throw new Exception("PSQL Error");
+            }
 
             if (IsHelpDesk)
             {
