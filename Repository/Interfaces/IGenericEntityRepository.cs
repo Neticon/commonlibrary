@@ -10,7 +10,7 @@ namespace CommonLibrary.Repository.Interfaces
         Task<BulkGraphAPIResponse<T>> SaveEntityBulk(List<T> data, string secret = "", bool returnError = false, List<string> includeNullList = null);
         Task<GraphAPIResponse<T>> UpdateEntity(Object model, string secret = "", bool returnError = false, bool ignoreEncryption = false, List<string> includeNullList = null);
         Task<DoSelectOperationResponse<JObject>> GetData(Object model, string secret = "");
-        Task<DoSelectOperationResponse<T>> GetDataTyped(Object model, string secret = "");
+        Task<DoSelectOperationResponse<T>> GetDataTyped(Object model, string secret = "", bool ignoreEncryption = false);
         Task<BulkGraphAPIResponse<T>> UpdateEntityBulk(List<Object> models, string secret = "", bool returnError = false, bool ignoreEncryption = false, List<string> includeNullList = null);
         Task<GraphAPIResponse<T>> DeleteEntity(Object model, bool returnError = false);
     }

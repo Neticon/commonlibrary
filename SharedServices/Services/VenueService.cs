@@ -62,7 +62,7 @@ namespace CommonLibrary.SharedServices.Services
             venue.evs_id = new Guid(validationResult.EmailValidation);
             venue.pnvs_id = new Guid(validationResult.PhoneValidation);
 
-            var tenant = (await _tenantRepository.GetDataTyped(new GraphApiPayload { data = new Tenant { intg_video = "", cntrct_plan = "", has_service = false }, filters = new Tenant { tenant_id = CurrentUser.TenantId } })).rows.First();
+            var tenant = (await _tenantRepository.GetDataTyped(new GraphApiPayload { data = new Tenant { intg_video = "", cntrct_plan = "", has_service = false }, filters = new Tenant { tenant_id = CurrentUser.TenantId } }, ignoreEncryption: true)).rows.First();
             var bookingMode = GetBookingModeFromConfig(data.data.configuration);
 
             if (bookingMode == CommonConstants.Booking_Mode_Service && !tenant.has_service.Value)
@@ -116,7 +116,7 @@ namespace CommonLibrary.SharedServices.Services
         {
             //data.filters.tenant_id = null;
             data.data.is_deleted = true;
-            var tenant = (await _tenantRepository.GetDataTyped(new GraphApiPayload { data = new Tenant { intg_video = "", cntrct_plan = "" }, filters = new Tenant { tenant_id = CurrentUser.TenantId } })).rows.First();
+            var tenant = (await _tenantRepository.GetDataTyped(new GraphApiPayload { data = new Tenant { intg_video = "", cntrct_plan = "" }, filters = new Tenant { tenant_id = CurrentUser.TenantId } }, ignoreEncryption: true)).rows.First();
             var tenantIntConfig = tenant.intg_video;
 
             if (tenantIntConfig == INTG_VIDEO.CONVENTUS_TEAMS.ToString() || tenantIntConfig == INTG_VIDEO.TEAMS.ToString() && data.isPublish)
@@ -227,7 +227,7 @@ namespace CommonLibrary.SharedServices.Services
                 if (phoneUpdate)
                     venue.pnvs_id = new Guid(validationResult.PhoneValidation);
             }
-            var tenant = (await _tenantRepository.GetDataTyped(new GraphApiPayload { data = new Tenant { intg_video = "", cntrct_plan = "", has_service = false }, filters = new Tenant { tenant_id = CurrentUser.TenantId } })).rows.First();
+            var tenant = (await _tenantRepository.GetDataTyped(new GraphApiPayload { data = new Tenant { intg_video = "", cntrct_plan = "", has_service = false }, filters = new Tenant { tenant_id = CurrentUser.TenantId } }, ignoreEncryption : true)).rows.First();
             var tenantIntConfig = tenant.intg_video;
 
             var updatedBookingMode = GetBookingModeFromConfig(data.data.configuration);

@@ -97,11 +97,11 @@ namespace CommonLibrary.Repository
             return queryResult;
         }
 
-        public async Task<DoSelectOperationResponse<T>> GetDataTyped(Object model, string secret = "")
+        public async Task<DoSelectOperationResponse<T>> GetDataTyped(Object model, string secret = "", bool ignoreEncryption = false)
         {
             var query = GenerateDoSelectQuery(model, meta._schema, meta._table);
             var queryResult = await ExecuteDoSelectCommand(query);
-            if (queryResult.rows != null && queryResult.rows.Count > 0)
+            if (queryResult.rows != null && queryResult.rows.Count > 0 && !ignoreEncryption)
             {
                 var encryptPaths = EncryptionMetadataHelper.GetEncryptedPropertyPaths(typeof(T));
                 if ((encryptPaths.Item1.Count > 0 || encryptPaths.Item2.Count > 0) && string.IsNullOrEmpty(secret))
