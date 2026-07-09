@@ -33,7 +33,7 @@ namespace CommonLibrary.SharedServices.Services
         public async Task<ServiceResponse> GetUsersTenantViewModel(Guid tenantId)
         {
             var fieldsForDecrypt = new List<string> { "first_name", "last_name", "phone_number" };
-            var fieldsForDecryptECB = new List<string> { "create_bu", "modify_bu" };
+            var fieldsForDecryptECB = new List<string> { "create_bu", "modify_bu", "delete_bu" };
             var query = new NpgsqlCommand(PredefinedQueryPatterns.USERS_TENANT_VIEW_MODEL);
             query.Parameters.AddWithValue("tenant_id", NpgsqlDbType.Uuid, tenantId);
 
@@ -44,7 +44,7 @@ namespace CommonLibrary.SharedServices.Services
                 var users = row["users"];
                 foreach (var user in users)
                 {
-                    ObjectEncryption.DecryptObject(user, CurrentUser.OrgSecret, fieldsForDecrypt, fieldsForDecryptECB);
+                    ObjectEncryption.DecryptObject(user, CurrentUser.OrgSecret, fieldsForDecrypt, IsHelpDesk ? fieldsForDecryptECB : new List<string>());
                     try
                     {
                         user["decr_email"] = AesEncryption.DecryptEcb(user["email"].ToString(), CurrentUser.OrgSecret);
@@ -72,6 +72,37 @@ namespace CommonLibrary.SharedServices.Services
 
             var resp = await _repository.ExecuteStandardCommand(query);
 
+            if (IsHelpDesk)
+            {
+                var fieldsForDecryptECB = new List<string> { "create_bu", "modify_bu", "delete_bu" };
+                foreach (var row in resp.rows)
+                {
+                    var venues = row["venues"];
+                    foreach (var item in venues)
+                    {
+                        ObjectEncryption.DecryptObject(item["venue"], CurrentUser.OrgSecret, new List<string>(), fieldsForDecryptECB);
+
+                        if (item["venue"]["mods"] is JArray mods)
+                        {
+                            foreach (var mod in mods)
+                            {
+                                if (mod[0]?.Type == JTokenType.String)
+                                {
+                                    try
+                                    {
+                                        mod[0] = AesEncryption.DecryptEcb(mod[0].ToString(), CurrentUser.OrgSecret);
+                                    }
+                                    catch (Exception ex)
+                                    {
+                                        Console.WriteLine(ex.ToString());
+                                    }
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+
             return new ServiceResponse { Result = resp };
         }
 
@@ -96,6 +127,9 @@ namespace CommonLibrary.SharedServices.Services
         {
             var fieldsForDecrypt = new List<string> { "u_last", "u_first", "u_phone", "u_message", "u_salutation", "u_phone_local" };
             var fieldsForDecryptECB = new List<string> { "u_email" };
+            if (IsHelpDesk)
+                fieldsForDecryptECB.AddRange(new[] { "create_bu", "modify_bu", "delete_bu" });
+
             var query = new NpgsqlCommand(PredefinedQueryPatterns.BOOKING_DETAIL);
             query.Parameters.AddWithValue("booking_id", NpgsqlDbType.Uuid, bookingId);
 
@@ -103,26 +137,6 @@ namespace CommonLibrary.SharedServices.Services
             foreach (var row in resp.rows)
             {
                 ObjectEncryption.DecryptObject(row["booking"], CurrentUser.OrgSecret, fieldsForDecrypt, fieldsForDecryptECB);
-
-                if (IsHelpDesk)
-                {
-                    var buFields = new List<string> { "create_bu", "modify_bu", "delete_bu" };
-                    foreach (var field in buFields)
-                    {
-                        var value = row["booking"][field]?.ToString();
-                        if (string.IsNullOrEmpty(value))
-                            continue;
-
-                        try
-                        {
-                            row["booking"][$"decr_{field}"] = AesEncryption.DecryptEcb(value, CurrentUser.OrgSecret);
-                        }
-                        catch (Exception ex)
-                        {
-                            Console.WriteLine(ex.ToString());
-                        }
-                    }
-                }
             }
 
             return new ServiceResponse { Result = resp };
