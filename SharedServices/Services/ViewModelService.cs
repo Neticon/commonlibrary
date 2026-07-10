@@ -53,6 +53,24 @@ namespace CommonLibrary.SharedServices.Services
                     {
                         Console.WriteLine(ex.ToString());
                     }
+
+                    if (IsHelpDesk && user["mods"] is JArray mods)
+                    {
+                        foreach (var mod in mods)
+                        {
+                            if (mod[0]?.Type == JTokenType.String)
+                            {
+                                try
+                                {
+                                    mod[0] = AesEncryption.DecryptEcb(mod[0].ToString(), CurrentUser.OrgSecret);
+                                }
+                                catch (Exception ex)
+                                {
+                                    Console.WriteLine(ex.ToString());
+                                }
+                            }
+                        }
+                    }
                 }
             }
 
@@ -144,6 +162,24 @@ namespace CommonLibrary.SharedServices.Services
             foreach (var row in resp.rows)
             {
                 ObjectEncryption.DecryptObject(row["booking"], CurrentUser.OrgSecret, fieldsForDecrypt, fieldsForDecryptECB);
+
+                if (IsHelpDesk && row["booking"]["mods"] is JArray mods)
+                {
+                    foreach (var mod in mods)
+                    {
+                        if (mod[0]?.Type == JTokenType.String)
+                        {
+                            try
+                            {
+                                mod[0] = AesEncryption.DecryptEcb(mod[0].ToString(), CurrentUser.OrgSecret);
+                            }
+                            catch (Exception ex)
+                            {
+                                Console.WriteLine(ex.ToString());
+                            }
+                        }
+                    }
+                }
             }
 
             return new ServiceResponse { Result = resp };
