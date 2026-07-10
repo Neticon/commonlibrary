@@ -143,7 +143,7 @@ namespace CommonLibrary.SharedServices.Services
             ObjectEncryption.DecryptObject(venue, secret, encryptPathsVenue.Item1, encryptPathsVenue.Item2);
 
             if (string.IsNullOrEmpty(data.data.modify_bu))
-                data.data.modify_bu = AesEncryption.Encrypt(CurrentUser.Decr_Email, CurrentUser.OrgSecret);//HD email is encypted with CONVENTUS secret=> so create right email value for tenant 
+                data.data.modify_bu = AesEncryption.EncryptEcb(CurrentUser.Decr_Email, CurrentUser.OrgSecret);//HD email is encypted with CONVENTUS secret=> so create right email value for tenant 
             data.data.modify_dt = DateTime.UtcNow;
 
             if (data.data.block_status == Domain.Entities.BlockStatus.RESCHEDULED.ToString())
