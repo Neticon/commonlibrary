@@ -38,6 +38,8 @@
         public static string HD_GENERATE_ORG_CODE = "select utility.generate_org_code(@p_payload) as result;";
         public static string HD_METRICS_SUMMARY = "select utility.get_metrics_summary_v4(@p_payload) as result;";
         public static string HD_EVENT_LIST = "SELECT utility.do_select_sendgrid_events(@p_payload) as result";
+        public static string HD_VM_NOTIFICATIONS = "select utility.get_events(@p_payload) as result;";
+        public static string HD_VM_NOTIFICATIONS_STATS = "select utility.get_event_statistics(@p_payload) as result;";
     }
 
     public class PredefinedQueryPatternsReplacements
