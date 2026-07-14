@@ -513,8 +513,9 @@ namespace CommonLibrary.SharedServices.Services
         {
            // Console.WriteLine($"SEND STAFF EMAIL {JsonConvert.SerializeObject(users)}");
             var venueStaff = users.Where(q => !q.r.Equals("ADMIN", StringComparison.OrdinalIgnoreCase) && q.n == 1 && int.Parse(q.default_slot) == booking.slot_ref);
-           // Console.WriteLine($"STAFF {JsonConvert.SerializeObject(venueStaff)}, U_REASon = {reasonDB}");
-            if (reasonDB.StartsWith("SRV"))
+            // Console.WriteLine($"STAFF {JsonConvert.SerializeObject(venueStaff)}, U_REASon = {reasonDB}");
+            bool isService = reasonDB != null && reasonDB.StartsWith("SRV");
+            if (isService)
                 venueStaff = venueStaff.Where(q => q.default_service == reasonDB);
             var venueStaffEmails = venueStaff.Select(q => q.u);
             var emailsTo = new List<string>();
@@ -573,7 +574,7 @@ namespace CommonLibrary.SharedServices.Services
                     type = modelData.type.ToString(),
                     u_reason = u_reason,
                     lang = lang,
-                    service = reasonDB.StartsWith("SRV") ? reasonDB : null,
+                    service = isService ? reasonDB : null,
                     slot = slot,
                 });
 
