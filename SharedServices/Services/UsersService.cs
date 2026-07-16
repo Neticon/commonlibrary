@@ -144,7 +144,7 @@ namespace CommonLibrary.SharedServices.Services
             if (!string.IsNullOrEmpty(model.data.role))
             {
                 model.data.role = model.data.role.ToUpper();
-                if (!ValidRoles.Contains(model.data.role))
+                if (!IsHelpDesk && !ValidRoles.Contains(model.data.role))
                     throw new Exception("Invalid role");
             }
             model.data.modify_dt = DateTime.Now;
