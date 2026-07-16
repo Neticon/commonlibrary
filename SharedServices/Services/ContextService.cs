@@ -18,6 +18,7 @@ namespace CommonLibrary.SharedServices.Services
         private readonly string REDIS_KEY_PREFIX_TENANT = "tenant_context:";
         private readonly string REDIS_KEY_PREFIX_USER = "user_context:";
         private readonly string REDIS_KEY_PREFIX_ORG_CODE = "tenant_org_code:";
+        private readonly string REDIS_KEY_PREFIX_PRODUCT_PLAN = "tenant_product_plan:";
 
         public ContextService(ITenantRepository tenantRepo, ISecretService secretService, IRedisService redisService, IGenericEntityRepository<ProductPlans> productPlanRepo)
         {
@@ -63,6 +64,28 @@ namespace CommonLibrary.SharedServices.Services
             long now = DateTimeOffset.UtcNow.ToUnixTimeSeconds();
             TimeSpan expiry = TimeSpan.FromSeconds(user.CSRF_Expiry - now);
             await _redisService.SetString($"{REDIS_KEY_PREFIX_USER}{email}", JsonConvert.SerializeObject(user), expiry);
+        }
+
+        public async Task<ProductPlans> GetProductPlan(string orgCode)
+        {
+            var key = $"{REDIS_KEY_PREFIX_PRODUCT_PLAN}{orgCode}";
+            var cached = await _redisService.GetString(key);
+            if (cached != null)
+                return JsonConvert.DeserializeObject<ProductPlans>(cached);
+            var tenant = await _tenantRepo.GetTenantContext(orgCode);
+            if (tenant == null)
+                throw new Exception($"GetProductPlan => Failed to find tenant id for org_code {orgCode}");
+            var productPlanResp = await _productPlanRepo.GetDataTyped(new GraphApiPayload { data = new object(), filters = new ProductPlans { plan_id = tenant.cntrct_plan } });
+            if (productPlanResp.success == false)
+                throw new Exception($"GetProductPlan => Failed to find product plan for org_code {orgCode}, plan id {tenant.cntrct_plan}");
+            var plan = productPlanResp.rows.First();
+            await _redisService.SetString(key, JsonConvert.SerializeObject(plan));
+            return plan;
+        }
+
+        public async Task InvalidateProductPlan(string orgCode)
+        {
+            await _redisService.Delete($"{REDIS_KEY_PREFIX_PRODUCT_PLAN}{orgCode}");
         }
 
         public async Task<string> GetOrgCodeByTenantId(Guid tenantId)

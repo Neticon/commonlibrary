@@ -7,5 +7,6 @@ namespace CommonLibrary.Repository.Interfaces
         Task<Tuple<string, string>> GetOrgCodeAndName(Guid id);
         Task<Tenant> GetTenantContext(string orgCode);
         Task<string> GetIntegrationConfig(Guid id);
+        Task<List<string>> GetOrgCodesByPlanId(string planId);
     }
 }

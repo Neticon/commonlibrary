@@ -9,5 +9,6 @@ namespace CommonLibrary.SharedServices.Interfaces
         Task<CurrentUser> GetAsync(string hashedMail, string orgCode);
         CurrentUser? CurrentUser { get; }
         Task<TenantContextModel> GetTenantContext(string orgCode);
+        Task<ProductPlans> GetProductPlan();
     }
 }

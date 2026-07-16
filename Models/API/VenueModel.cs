@@ -45,6 +45,7 @@ namespace CommonLibrary.Models.API
         public Optional<object>? reasons { get; set; } //to:do - check for specific structure
         public Links? links { get; set; }
         public string? description { get; set; }
-        public object? configuration { get; set; } 
+        public object? configuration { get; set; }
+        public bool? service_halt { get; set; }
     }
 }

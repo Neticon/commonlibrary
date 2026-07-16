@@ -41,7 +41,7 @@ namespace CommonLibrary.SharedServices.Services
                         throw new Exception("Failed to get context for user!");
                     var emailSecret = IsHelpDesk ? await _contextService.GetConventusSecret() : tenantContext.TenantSecret;
                     var email = AesEncryption.DecryptEcb(hashedMail, emailSecret);
-                    cacheContextUser = new CurrentUser { OrgCode = orgCode, Email = hashedMail, Decr_Email = email, OrgSecret = tenantContext.TenantSecret, TenantId = tenantContext.TenantId, ProductPlans = tenantContext.ProductPlan };
+                    cacheContextUser = new CurrentUser { OrgCode = orgCode, Email = hashedMail, Decr_Email = email, OrgSecret = tenantContext.TenantSecret, TenantId = tenantContext.TenantId };
                 }
             }
 
@@ -55,6 +55,11 @@ namespace CommonLibrary.SharedServices.Services
             if (tenantContext == null)
                 throw new Exception("Failed to get context for user!");
             return tenantContext;
+        }
+
+        public async Task<ProductPlans> GetProductPlan()
+        {
+            return await _contextService.GetProductPlan(CurrentUser.OrgCode);
         }
     }
 }

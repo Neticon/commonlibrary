@@ -45,7 +45,7 @@ namespace CommonLibrary.SharedServices.Services
                  data = new Venue { venue_id = new Guid() },
                  filters = new Venue { tenant_id = CurrentUser.TenantId, is_deleted = false }
              }, CurrentUser.OrgSecret)).rows;
-            if (existingVenues.Count >= CurrentUser.ProductPlans.venue_limit)
+            if (existingVenues.Count >= (await CurrentUserService.GetProductPlan()).venue_limit)
                 return new ServiceResponse
                 {
                     Result = new GraphAPIResponse<Venue> { success = false, message = "Venue limit reached for your subscription plan." }

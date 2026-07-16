@@ -51,7 +51,7 @@ namespace CommonLibrary.SharedServices.Services
                         data = new User { tenant_id = new Guid() },
                         filters = new User { tenant_id = CurrentUser.TenantId, is_deleted = false }
                     }, CurrentUser.OrgSecret)).rows;
-                if (existingUsers.Count >= CurrentUser.ProductPlans.user_limit)
+                if (existingUsers.Count >= (await CurrentUserService.GetProductPlan()).user_limit)
                     throw new Exception("User limit reached for your subscription plan.");
                 var validation = await _validationService.ValidateRequest(new ValidateRequest { p = model.data.phone_number });
                 if (validation.Item1 != 200)

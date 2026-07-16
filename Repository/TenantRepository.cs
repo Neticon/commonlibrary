@@ -45,5 +45,16 @@ namespace CommonLibrary.Repository
             }
             return null;
         }
+
+        public async Task<List<string>> GetOrgCodesByPlanId(string planId)
+        {
+            var fields = new Dictionary<string, string>() { { "org_code", "\"\"" } };
+            var filters = new Dictionary<string, string>() { { "cntrct_plan", $"\"{planId}\"" } };
+            var query = GenerateDoSelectQuery(fields, filters, meta._schema, meta._table, pageSize: 1000);
+            var result = await ExecuteDoSelectCommand(query);
+            if (result.success && result.rows.Count > 0)
+                return result.rows.Select(t => t.org_code).ToList();
+            return new List<string>();
+        }
     }
 }

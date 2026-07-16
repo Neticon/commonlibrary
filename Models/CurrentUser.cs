@@ -1,6 +1,4 @@
-﻿using CommonLibrary.Domain.Entities;
-
-namespace CommonLibrary.Models
+﻿namespace CommonLibrary.Models
 {
     public class CurrentUser
     {
@@ -12,7 +10,6 @@ namespace CommonLibrary.Models
         public string Role {  get; set; }
         public string CSRF { get; set; }
         public long CSRF_Expiry { get; set; }
-        public List<string> Venues { get; set; }    
-        public ProductPlans ProductPlans { get; set; }
+        public List<string> Venues { get; set; }
     }
 }
