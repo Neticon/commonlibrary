@@ -12,13 +12,17 @@
         public string operation { get; set; }
         public List<string>? invalid_keys { get; set; }
         public int? count { get; set; }
-        public string? entity {  get; set; } 
+        public string? entity {  get; set; }
         public string? schema { get; set; }
         public int? per_page { get; set; }
         public int? total_pages { get; set; }
         public string? org_code { get; set; }
         public List<string> statuses { get; set; }
         public List<string> product_plans { get; set; }
+
+        // Catches any extra top-level keys the DB function returns that aren't modeled above
+        [Newtonsoft.Json.JsonExtensionData]
+        public Dictionary<string, Newtonsoft.Json.Linq.JToken> ExtraFields { get; set; }
     }
 
     public class BulkGraphAPIResponse<T>
