@@ -1,5 +1,7 @@
 ﻿using Amazon.CognitoIdentityProvider.Model;
+using CommonLibrary.Domain.Entities;
 using CommonLibrary.Exceptions;
+using CommonLibrary.SharedServices.Interfaces;
 using Microsoft.AspNetCore.Http;
 
 namespace CommonLibrary.Exceptions.Middleware
@@ -13,7 +15,7 @@ namespace CommonLibrary.Exceptions.Middleware
             _next = next;
         }
 
-        public async Task InvokeAsync(HttpContext context)
+        public async Task InvokeAsync(HttpContext context, ILogService logService)
         {
             var message = "";
             var statusCode = 0;
@@ -38,6 +40,10 @@ namespace CommonLibrary.Exceptions.Middleware
                         message = $"Internal server error => {exception.Message} ";
                         break;
                 }
+
+                if (statusCode == 500)
+                    await logService.WriteSystemLog(LogLevel.ERROR, OperationType.GLOBAL_EXCEPTION, exception.ToString(), nameof(ExceptionMiddleware));
+
                 context.Response.StatusCode = statusCode;
                 await context.Response.WriteAsync(message);
             }
