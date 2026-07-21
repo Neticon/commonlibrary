@@ -34,21 +34,23 @@ namespace CommonLibrary.SharedServices.Services
         {
             try
             {
+                var query = new NpgsqlCommand(PredefinedQueryPatterns.WRITE_ERROR_LOG);
+
                 var log = new LogsErr
                 {
                     log_level = logLevel.ToString(),
-                    event_type = "APPLICATION",
                     operation_type = operationType.ToString(),
                     message = message,
-                    stage_name = "logging",
                     entity = entity
                 };
+                var payload = new GraphApiPayload { data = log, filters = query };
+                var settings = new JsonSerializerSettings { NullValueHandling = NullValueHandling.Ignore };
 
-                var resp = await _entityRepository.SaveEntity(log, returnError: true);
-                if (!resp.success)
-                    Console.WriteLine($"Error in WriteSystemLogProcess , error : {resp.message}, payload : {JsonConvert.SerializeObject(log)}");
+                query.Parameters.AddWithValue("payload", NpgsqlTypes.NpgsqlDbType.Jsonb, JsonConvert.SerializeObject(payload, settings));
+
+                var resp = await _repository.ExecuteStandardCommand(query);
             }
-            catch(Exception ex) 
+            catch (Exception ex) 
             {
                 Console.WriteLine($"Error in WriteSystemLogProcess , exception : {ex.Message},{ex.StackTrace}");
             }
