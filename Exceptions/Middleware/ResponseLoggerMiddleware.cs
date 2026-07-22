@@ -17,7 +17,8 @@ namespace CommonLibrary.Exceptions.Middleware
             context.Response.OnCompleted(async () =>
             {
                 var method = context.Request.Method;
-                if (!context.Request.Path.Equals("/api/v1/vas", StringComparison.OrdinalIgnoreCase) && !context.Request.Path.Equals("/api/v1/res", StringComparison.OrdinalIgnoreCase) && !context.Request.Path.StartsWithSegments("/api/v1/cnt", StringComparison.OrdinalIgnoreCase))
+                var isGetBooking = method == "GET" && context.Request.Path.Value.Split("/").Last().Equals("book", StringComparison.OrdinalIgnoreCase);
+                if (!isGetBooking && !context.Request.Path.Equals("/api/v1/vas", StringComparison.OrdinalIgnoreCase) && !context.Request.Path.Equals("/api/v1/res", StringComparison.OrdinalIgnoreCase) && !context.Request.Path.StartsWithSegments("/api/v1/cnt", StringComparison.OrdinalIgnoreCase))
                 {
                     context.Request.Headers.TryGetValue("X-Tenant-ID", out var tenantId);
                     context.Request.Headers.TryGetValue("X-Request-ID", out var venueId);
